@@ -1,0 +1,68 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  13
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+Build  : 13-2946b4ed016f
+Exec   : foamRun
+Date   : Oct 22 2025
+Time   : 10:14:16
+Host   : "lenovo"
+PID    : 95165
+I/O    : uncollated
+Case   : /home/fede/Documents/teaching/HPCinAerospace/aeroHPC/OpenFOAM/tutorials/shockThermo/shockTube
+nProcs : 1
+sigFpe : Enabling floating point exception trapping (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+Create mesh for time = 0
+
+Selecting solver shockFluid
+Selecting thermodynamics package 
+{
+    type            hePsiThermo;
+    mixture         pureMixture;
+    transport       const;
+    thermo          ?;
+    equationOfState perfectGas;
+    specie          specie;
+    energy          sensibleInternalEnergy;
+}
+
+Using dynamicCode for codedBase hePsiThermo_pureMixture_const___perfectGas_specie___sensibleInternalEnergy___ at line 17 in "/home/fede/.OpenFOAM/13/codeTemplates/dynamicCode/fluidThermo"
+
+
+--> FOAM FATAL IO ERROR: 
+Unknown thermo type ?
+Supported thermo types: 
+14
+(
+RRHO 
+janaf 
+eConst 
+hIcoTabulated 
+hPower 
+eIcoTabulated 
+hTabulated 
+janaf9 
+hPolynomial 
+ePower 
+hConst 
+ePolynomial 
+mutation 
+eTabulated 
+)
+
+file: /home/fede/.OpenFOAM/13/codeTemplates/dynamicCode/fluidThermo from line 17 to 109.
+
+    From function void Foam::compileTemplate::setFilterVariable(Foam::dynamicCode&, const Foam::dynamicCodeContext&, const Foam::Pair<Foam::word>&) const
+    in file db/dynamicLibrary/compileTemplate/compileTemplate.C at line 88.
+
+FOAM exiting
+
