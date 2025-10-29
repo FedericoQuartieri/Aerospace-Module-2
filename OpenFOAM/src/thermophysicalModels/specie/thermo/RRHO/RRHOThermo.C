@@ -28,6 +28,7 @@ License
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
+/*
 template<class EquationOfState>
 void Foam::RRHOThermo<EquationOfState>::checkInputData() const
 {
@@ -52,6 +53,7 @@ void Foam::RRHOThermo<EquationOfState>::checkInputData() const
             << exit(FatalError);
     }
 }
+*/
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -62,11 +64,12 @@ Foam::RRHOThermo<EquationOfState>::RRHOThermo
     const word& name,
     const dictionary& dict
 )
-:   janafThermo<EquationOfState>(name, dict) {}
+: janafThermo<EquationOfState>(name, dict) {}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
+/*
 template<class EquationOfState>
 void Foam::RRHOThermo<EquationOfState>::write(Ostream& os) const
 {
@@ -89,10 +92,11 @@ void Foam::RRHOThermo<EquationOfState>::write(Ostream& os) const
     dict.add("lowCpCoeffs", lowCpCoeffs);
     os  << indent << dict.dictName() << dict;
 }
-
+*/
 
 // * * * * * * * * * * * * * * * Ostream Operator  * * * * * * * * * * * * * //
 
+/*
 template<class EquationOfState>
 Foam::Ostream& Foam::operator<<
 (
@@ -103,6 +107,7 @@ Foam::Ostream& Foam::operator<<
     jt.write(os);
     return os;
 }
+*/
 
 
 // ************************************************************************* //

@@ -47,8 +47,6 @@ int main(int argc, char *argv[])
 
     ThermoType t1("specie1", dict.subDict("specie1"));
 
-    Info<< "Checking Cp of mixture of hConstThermo:" << nl << endl;
-
     // RRHOTermo<> t = 
 
     /*

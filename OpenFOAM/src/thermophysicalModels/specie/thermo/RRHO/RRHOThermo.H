@@ -133,29 +133,45 @@ class RRHOThermo
 :
     public janafThermo<EquationOfState>
 {
-/*
+
+public:
+
+    // Public static data
+
+        //- Number of coefficients
+        static const int nCoeffs_ =
+            janafThermo<EquationOfState>::nCoeffs_;//7;
+
+
+    // Public typdefs
+
+        //- Coefficient array type
+        typedef FixedList<scalar, nCoeffs_> coeffArray;
+
+
 private:
 
     // Private Data
 
         // Temperature limits of applicability of functions
-        scalar Tlow_, Thigh_, Tcommon_;
+        //scalar Tlow_, Thigh_, Tcommon_;
 
         //- Cp coefficients for the high temperature range (Tcommon to Thigh)
-        coeffArray highCpCoeffs_;
+        //coeffArray highCpCoeffs_;
 
         //- Cp coefficients for the low temperature range (Tlow to Tcommon)
-        coeffArray lowCpCoeffs_;
+        //coeffArray lowCpCoeffs_;
 
 
     // Private Member Functions
 
         //- Check that input data is valid
-        void checkInputData() const;
+        //void checkInputData() const;
 
         //- Return the coefficients corresponding to the given temperature
-        inline const coeffArray& coeffs(const scalar T) const;
-*/
+        //inline const coeffArray& coeffs(const scalar T) const;
+
+
 public:
 
     // Constructors
@@ -179,7 +195,6 @@ public:
         inline RRHOThermo(const word&, const RRHOThermo&);
 
 
-/*
     // Member Functions
 
         //- Return the instantiated type name
@@ -189,11 +204,12 @@ public:
         }
 
         //- Limit the temperature to be in the range Tlow_ to Thigh_
-        inline scalar limit(const scalar T) const;
+        //inline scalar limit(const scalar T) const;
 
 
         // Access
 
+    /*
             //- Return const access to the low temperature limit
             inline scalar Tlow() const;
 
@@ -209,15 +225,15 @@ public:
             //- Return const access to the low temperature poly coefficients
             inline const coeffArray& lowCpCoeffs() const;
 
-
         // Fundamental properties
 
             //- Heat capacity at constant pressure [J/kg/K]
             inline scalar Cp(const scalar p, const scalar T) const;
-
+    */
  
             inline scalar Cp(const scalar p, const scalar T1, const scalar T2) const;
 
+    /*
             //- Absolute enthalpy [J/kg]
             inline scalar ha(const scalar p, const scalar T) const;
 
@@ -232,17 +248,22 @@ public:
 
             //- Gibbs free energy of the mixture in the standard state [J/kg]
             inline scalar gStd(const scalar T) const;
+    */
 
-            #include "HtoEthermo.H"
+            //#include "HtoEthermo.H"
 
 
         // Derivative term used for Jacobian
 
             //- Temperature derivative of heat capacity at constant pressure
-            inline scalar dCpdT1(const scalar p, const scalar T) const;
-            inline scalar dCpdT2(const scalar p, const scalar T) const;
+    
+            //inline scalar dCpdT(const scalar p, const scalar T) const;
+
+            inline scalar dCpdT1(const scalar p, const scalar T1) const;
+            inline scalar dCpdT2(const scalar p, const scalar T2) const;
 
 
+    /*
         // I-O
 
             //- Write to Ostream
@@ -282,6 +303,7 @@ public:
             Ostream&,
             const RRHOThermo&
         );
+    */
 };
 
 

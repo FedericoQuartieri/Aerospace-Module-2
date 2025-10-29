@@ -28,6 +28,7 @@ License
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
+/*
 template<class EquationOfState>
 inline const typename Foam::RRHOThermo<EquationOfState>::coeffArray&
 Foam::RRHOThermo<EquationOfState>::coeffs
@@ -44,7 +45,7 @@ Foam::RRHOThermo<EquationOfState>::coeffs
         return highCpCoeffs_;
     }
 }
-
+*/
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -73,6 +74,7 @@ inline Foam::RRHOThermo<EquationOfState>::RRHOThermo
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
+/*
 template<class EquationOfState>
 inline Foam::scalar Foam::RRHOThermo<EquationOfState>::limit
 (
@@ -145,29 +147,30 @@ inline Foam::scalar Foam::RRHOThermo<EquationOfState>::Cp
         ((((a[4]*T + a[3])*T + a[2])*T + a[1])*T + a[0])
       + EquationOfState::Cp(p, T);
 }
+*/
 
 
 template<class EquationOfState>
 inline Foam::scalar Foam::RRHOThermo<EquationOfState>::Cp
 (
     const scalar p,
-    const scalar T,
+    const scalar T1,
     const scalar T2
 ) const
 {
 
     // dummy function
     
-    const scalar result = Cp(p, T);
+    //const scalar result = Cp(p, T);
 
+    Info<< "p is: " << p << endl;
+    Info<< "T1 is: " << T1 << endl;
     Info<< "T2 is: " << T2 << endl;
 
-    return result;
+    return 0.0;
 }
 
-
-
-
+/*
 template<class EquationOfState>
 inline Foam::scalar Foam::RRHOThermo<EquationOfState>::hs
 (
@@ -254,10 +257,33 @@ inline Foam::scalar Foam::RRHOThermo<EquationOfState>::dCpdT
     const coeffArray& a = coeffs(T);
     return (((4*a[4]*T + 3*a[3])*T + 2*a[2])*T + a[1]);
 }
+*/
 
+template<class EquationOfState>
+inline Foam::scalar Foam::RRHOThermo<EquationOfState>::dCpdT1
+(
+    const scalar p,
+    const scalar T1
+) const
+{
+    // dummy
+    return 0.0;
+}
+
+template<class EquationOfState>
+inline Foam::scalar Foam::RRHOThermo<EquationOfState>::dCpdT2
+(
+    const scalar p,
+    const scalar T2
+) const
+{
+    // dummy
+    return 0.0;
+}
 
 // * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
 
+/*
 template<class EquationOfState>
 inline void Foam::RRHOThermo<EquationOfState>::operator+=
 (
@@ -307,10 +333,12 @@ inline void Foam::RRHOThermo<EquationOfState>::operator+=
         }
     }
 }
+*/
 
 
 // * * * * * * * * * * * * * * * Friend Operators  * * * * * * * * * * * * * //
 
+/*
 template<class EquationOfState>
 inline Foam::RRHOThermo<EquationOfState> Foam::operator+
 (
@@ -462,6 +490,7 @@ inline Foam::RRHOThermo<EquationOfState> Foam::operator==
         lowCpCoeffs
     );
 }
+*/
 
 
 // ************************************************************************* //
