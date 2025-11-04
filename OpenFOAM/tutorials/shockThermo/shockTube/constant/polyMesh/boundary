@@ -22,7 +22,7 @@ FoamFile
         nFaces          2;
         startFace       999;
     }
-    emptywalls
+    empty
     {
         type            empty;
         inGroups        List<word> 1(empty);

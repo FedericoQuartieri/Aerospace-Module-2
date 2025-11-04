@@ -16,32 +16,17 @@ FoamFile
 
 thermoType
 {
-    type            hePsiThermo;
-    mixture         pureMixture;
-    transport       const;
-    thermo          ?; //hConst;
+    type            highEnthalpyThermo; //hePsiThermo;
+    mixture         coefficientWilkeMulticomponentMixture;
+    transport       sutherland;
+    thermo          janaf;
+    energy          sensibleInternalEnergy;
     equationOfState perfectGas;
     specie          specie;
-    energy          sensibleInternalEnergy;
 }
 
-mixture
-{
-    specie
-    {
-        molWeight       28.96;
-    }
-    thermodynamics
-    {
-        Cp              1004.5;
-        hf              2.544e+06;
-    }
-    transport
-    {
-        mu              0;
-        Pr              1;
-    }
-}
+defaultSpecie N2;
 
+#include "speciesThermo.janaf"
 
 // ************************************************************************* //

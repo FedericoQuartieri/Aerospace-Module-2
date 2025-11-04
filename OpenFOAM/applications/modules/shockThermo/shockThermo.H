@@ -82,57 +82,42 @@ private:
         
         multivariateSurfaceInterpolationScheme<scalar>::fieldTable fields;
 
-
     // Thermophysical transport
 
         autoPtr<fluidMulticomponentThermophysicalTransportModel>
             thermophysicalTransport;
 
+    // Private Member Functions
 
-    // // Private Member Functions
+        //- Interpolate field vf according to direction dir
+        template<class Type>
+        inline tmp<SurfaceField<Type>> interpolate
+        (
+            const VolField<Type>& vf,
+            const surfaceScalarField& dir,
+            const word& reconFieldName = word::null
+        )
+        {
+            tmp<SurfaceField<Type>> tsf
+            (
+                fvc::interpolate
+                (
+                    vf,
+                    dir,
+                    "reconstruct("
+                  + (reconFieldName != word::null ? reconFieldName : vf.name())
+                  + ')'
+                )
+            );
 
-    //     //- Set rDeltaT for LTS
-    //     void setRDeltaT(const surfaceScalarField& amaxSf);
+            SurfaceField<Type>& sf = tsf.ref();
 
-    //     //- Correct the cached Courant numbers
-    //     void correctCoNum(const surfaceScalarField& amaxSf);
+            sf.rename(vf.name() + '_' + dir.name());
 
-    //     //- Construct the continuity equation and correct the density
-    //     void correctDensity();
+            return tsf;
+        }
 
-    //     //- Interpolate field vf according to direction dir
-    //     template<class Type>
-    //     inline tmp<SurfaceField<Type>> interpolate
-    //     (
-    //         const VolField<Type>& vf,
-    //         const surfaceScalarField& dir,
-    //         const word& reconFieldName = word::null
-    //     )
-    //     {
-    //         tmp<SurfaceField<Type>> tsf
-    //         (
-    //             fvc::interpolate
-    //             (
-    //                 vf,
-    //                 dir,
-    //                 "reconstruct("
-    //               + (reconFieldName != word::null ? reconFieldName : vf.name())
-    //               + ')'
-    //             )
-    //         );
-
-    //         SurfaceField<Type>& sf = tsf.ref();
-
-    //         sf.rename(vf.name() + '_' + dir.name());
-
-    //         return tsf;
-    //     }
-
-    //     void fluxPredictor();
-
-    //     void clearTemporaryFields();
-
-
+    
 public:
 
     // Public Data
@@ -145,8 +130,7 @@ public:
 
  
     //- Runtime type information
-    TypeName("shockThermo");
-
+        TypeName("shockThermo");
 
     // Constructors
 
@@ -156,9 +140,8 @@ public:
         //- Disallow default bitwise copy construction
         shockThermo(const shockThermo&) = delete;
 
-
     //- Destructor
-    virtual ~shockThermo();
+        virtual ~shockThermo();
 
 
     // Member Functions

@@ -96,49 +96,9 @@ void Foam::solvers::shockThermo::preSolve()
 {
     refCast<fluidMulticomponentThermo>(shockFluid::thermo_);
 
-    {
-        const surfaceScalarField amaxSf
-        (
-            max(mag(aphiv_pos()), mag(aphiv_neg()))
-        );
+    shockFluid::preSolve();
 
-        if (transient())
-        {
-            correctCoNum(amaxSf);
-        }
-        else if (LTS)
-        {
-            setRDeltaT(amaxSf);
-        }
-    }
-
-    fvModels().preUpdateMesh();
-
-    if (mesh.topoChanging() || mesh.stitcher().stitches())
-    {
-        pos.clear();
-        neg.clear();
-
-        clearTemporaryFields();
-    }
-
-    // Update the mesh for topology change, mesh to mesh mapping
-    mesh_.update();
 }
-
-
-// void Foam::solvers::shockThermo::postCorrector()
-// {
-//     if (!inviscid && pimple.correctTransport())
-//     {
-//         momentumTransport->correct();
-//         thermophysicalTransport->correct();
-//     }
-// }
-
-
-// void Foam::solvers::shockThermo::postSolve()
-// {}
 
 
 // ************************************************************************* //

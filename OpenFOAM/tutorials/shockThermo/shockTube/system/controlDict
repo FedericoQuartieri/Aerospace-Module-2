@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Version:  12
+    \\  /    A nd           | Version:  13
      \\/     M anipulation  |
 \*---------------------------------------------------------------------------*/
 FoamFile
@@ -14,9 +14,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     foamRun;
-
-solver          shockFluid;
+solver          shockThermo;
 
 startFrom       startTime;
 
@@ -24,13 +22,13 @@ startTime       0;
 
 stopAt          endTime;
 
-endTime         0.1;
+endTime         0.007;
 
-deltaT          5e-5;
+deltaT          5e-6;
 
 writeControl    adjustableRunTime;
 
-writeInterval   0.01;
+writeInterval   0.001;
 
 cycleWrite      0;
 

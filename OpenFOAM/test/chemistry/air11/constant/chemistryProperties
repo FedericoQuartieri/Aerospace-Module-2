@@ -17,7 +17,6 @@ FoamFile
 chemistryType
 {
     solver      ode;
-    method      Park2T;
 }
 
 chemistry       on;

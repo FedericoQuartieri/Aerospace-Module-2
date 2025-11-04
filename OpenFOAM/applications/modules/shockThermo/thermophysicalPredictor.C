@@ -32,6 +32,8 @@ License
 
 void Foam::solvers::shockThermo::thermophysicalPredictor()
 {
+
+    // add support to multi-specie chemistry
     tmp<fv::convectionScheme<scalar>> mvConvection
     (
         fv::convectionScheme<scalar>::New
@@ -76,17 +78,23 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
     }
 
     thermo_.normaliseY();
-   
+
     if (thermo_.he().name() != "e")
     {
-        FatalErrorInFunction() 
-            << "sensible energy e is required as primary variable" 
+        FatalErrorInFunction()
+            << "sensible energy e is required as primary variable"
             << exit(FatalError);
     }
 
-    shockFluid::thermophysicalPredictor();
 
-/*
+    //- ------------------------------------------------------------------------
+
+    // solve the equation of energy.
+
+    // IMPORTANT: I cannot used the function call
+    // shockFluid::thermophysicalPredictor() because it triggers the
+    // inconsistency among thermo classes.
+
     volScalarField& e = thermo_.he();
 
     const surfaceScalarField e_pos(interpolate(e, pos, thermo.T().name()));
@@ -134,10 +142,6 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
     fvConstraints().constrain(e);
 
     thermo_.correct();
-
-*/
-
-    //thermo_.correct();
 
 }
 

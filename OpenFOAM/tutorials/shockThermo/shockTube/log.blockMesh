@@ -5,14 +5,14 @@
     \\  /    A nd           | Version:  13
      \\/     M anipulation  |
 \*---------------------------------------------------------------------------*/
-Build  : 13-2946b4ed016f
+Build  : 13-cde978a97c93
 Exec   : blockMesh
-Date   : Oct 22 2025
-Time   : 10:14:16
-Host   : "lenovo"
-PID    : 95160
+Date   : Nov 04 2025
+Time   : 09:17:00
+Host   : "federico-MacBookAir"
+PID    : 49607
 I/O    : uncollated
-Case   : /home/fede/Documents/teaching/HPCinAerospace/aeroHPC/OpenFOAM/tutorials/shockThermo/shockTube
+Case   : /home/federico/Desktop/Shared/Projects/Aerospace-Module-2/OpenFOAM/tutorials/shockThermo/shockTube
 nProcs : 1
 sigFpe : Enabling floating point exception trapping (FOAM_SIGFPE).
 fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
@@ -25,7 +25,7 @@ Reading "blockMeshDict"
 
 Creating block mesh from
     "system/blockMeshDict"
-Creating block edges
+No non-linear block edges defined
 No non-planar block faces defined
 Creating topology blocks
 Creating topology patches
@@ -47,15 +47,17 @@ Creating patches
 Creating cells
 Creating points with scale 1
     Block 0 cell size :
-        i : 0.001 .. 0.001
-        j : 1
-        k : 1
+        i : 0.01
+        j : 2
+        k : 2
+
+No patch pairs to merge
 
 Writing polyMesh
 ----------------
 Mesh Information
 ----------------
-  boundingBox: (0 0 0) (1 1 1)
+  boundingBox: (-5 -1 -1) (5 1 1)
   nPoints: 4004
   nCells: 1000
   nFaces: 5001
@@ -64,7 +66,7 @@ Mesh Information
 Patches
 ----------------
   patch 0 (start: 999 size: 2) name: sides
-  patch 1 (start: 1001 size: 4000) name: emptywalls
+  patch 1 (start: 1001 size: 4000) name: empty
 
 End
 

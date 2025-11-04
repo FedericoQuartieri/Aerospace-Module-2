@@ -1,5 +1,4 @@
 EXE_INC = \
-    -I../shockFluid/lnInclude \
     -I$(FOAM_MODULES)/shockFluid/lnInclude \
     -I$(FOAM_MODULES)/fluidSolver/lnInclude \
     -I$(FOAM_MODULES)/isothermalFluid/lnInclude \

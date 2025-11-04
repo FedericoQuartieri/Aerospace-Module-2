@@ -27,9 +27,9 @@
 # Description
 #     Startup file for HyperPack Project
 #
-# Federico Piscaglia
-# Dept. of Aerospace Science and Technology (DAER)
-# Politecnico di Milano
+#     Federico Piscaglia
+#     Dept. of Aerospace Science and Technology (DAER)
+#     Politecnico di Milano
 #
 #------------------------------------------------------------------------------
 
@@ -57,7 +57,8 @@ unset bashrcFile
 # END OF (NORMAL) USER EDITABLE PART
 ################################################################################
 
-
+export POLIMI_SITE_LIBBIN=$FOAM_USER_LIBBIN
+export POLIMI_SITE_APPBIN=$FOAM_USER_APPBIN
 
 
 # ------------------------------------------------------------------------------
@@ -75,10 +76,16 @@ _foamSource $POLIMI_ETC/config.sh/aliases
 # -----------------------------------------------------------------------
 #- setup for advanced thermodynamics
 # network, version-dependent (suggested)
-etcFolder=$WM_PROJECT_INST_DIR/site/$WM_PROJECT_VERSION/etc/codeTemplates/dynamicCode;
+#etcFolder=$WM_PROJECT_INST_DIR/site/$WM_PROJECT_VERSION/etc/codeTemplates/dynamicCode;
+etcFolder=$HOME/.OpenFOAM/$WM_PROJECT_VERSION
+
 # cleanup 
-rm -rf $FOAM_SITE/*;
-cp -r $POLIMI_ETC/codeTemplates $FOAM_SITE;
+cp -r $POLIMI_ETC/codeTemplates $etcFolder;
+
+# etcFolder=$WM_PROJECT_INST_DIR/site/$WM_PROJECT_VERSION/etc/codeTemplates/dynamicCode;
+rm -rf $FOAM_USER_SITE/codeTemplates $FOAM_USER_SITE/caseDicts
+
+cp -r $POLIMI_ETC/codeTemplates $FOAM_USER_SITE;
 
 # -----------------------------------------------------------------------
 
@@ -93,6 +100,7 @@ _foamSource $POLIMI_ETC/config.sh/CoolProp
 
 # Gsl (canteraToFoam)
 _foamSource $POLIMI_ETC/config.sh/gsl
+
 
 # -----------------------------------------------------------------------
 
