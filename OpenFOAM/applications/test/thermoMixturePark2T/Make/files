@@ -1,3 +1,0 @@
-Test-thermoMixturePark2T.C
-
-EXE = $(FOAM_USER_APPBIN)/Test-thermoMixturePark2T

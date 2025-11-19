@@ -1,1 +1,0 @@
-../thermo/rrho/rrhoThermo.C

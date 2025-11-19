@@ -1,1 +1,0 @@
-../shockThermo.H
