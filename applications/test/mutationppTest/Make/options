@@ -1,0 +1,14 @@
+EXE_INC = \
+    -I$(MPP_DIRECTORY)/install/include/mutation++ \
+    -I$(MPP_EIGEN)/install/include/eigen3 \
+    -I$(MPP_DATA_DIRECTORY)/data/mechanisms \
+    -I$(MPP_DATA_DIRECTORY)/data/mixtures \
+    -I$(MPP_DATA_DIRECTORY)/data/thermo \
+    -I$(MPP_DATA_DIRECTORY)/data/transfer \
+    -I$(MPP_DATA_DIRECTORY)/data/transport \
+    -I$(POLIMI_SRC)/thermophysicalModels/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude
+
+EXE_LIBS = \
+    -lspecie \
+    -L$(MPP_DIRECTORY)/install/lib -lmutation++
