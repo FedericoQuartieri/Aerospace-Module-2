@@ -37,12 +37,54 @@ using namespace Mutation;
 
 int main(int argc, char *argv[])
 {
-    Mixture mix("air_5");
-    std::cout << "# of elements: " << mix.nElements() << '\n';
-    std::cout << "# of species: " << mix.nSpecies() << ' ';
-    std::cout << mix.nGas() << " (gas) " << mix.nCondensed() << " (condensed)\n";
-    std::cout << "# of reactions: " << mix.nReactions() << '\n';
-    std::cout << "# of temperatures: " << mix.nEnergyEqns() << '\n';
+    std::cout << std::fixed;
+    std::cout << std::setprecision(4);
+
+    Thermodynamics::Thermodynamics thermo("H2 O2 C4",
+                                          "RRHO",
+                                          "ChemNonEqTTv");
+
+    int n_species = thermo.nSpecies();
+
+    double T = 5000.0;
+    std::vector<double> cp(n_species);
+    thermo.speciesCpOverR(T, cp.data());
+
+    std::cout << "Per-specie Cp(T=" << T << "):" << std::endl;
+
+    for (int i = 0; i < n_species; ++i) {
+        std::cout << "  " << thermo.speciesName(i) << ": "
+                  << cp[i] << std::endl;
+    }
+
+    // Non-equilibrium temp Cps here
+
+    double Tt = 5200.0; // Translational
+    double Tr = 5000.0; // Rotational
+    double Tv = 4000.0; // Vibrational
+    double Te = 5500.0; // Electronic
+
+    std::vector<double> cp_t(n_species);
+    std::vector<double> cp_r(n_species);
+    std::vector<double> cp_v(n_species);
+    std::vector<double> cp_e(n_species);
+
+    // Note that Cp = Cp_t + Cp_r + Cp_v + Cp_e
+
+    // We set T_electron_translational = 0
+    thermo.speciesCpOverR(Tt, 0, Tr, Tv, Te,
+                          cp.data(), cp_t.data(), cp_r.data(),
+                          cp_v.data(), cp_e.data());
+
+    std::cout << std::endl << "Per-specie Cp(Tt=" << Tt
+              << ", Tr=" << Tr << ", Tv= " << Tv << ", Te="
+              << Te << "):" << std::endl;
+
+    for (int i = 0; i < thermo.nSpecies(); ++i) {
+        std::cout << "  " << thermo.speciesName(i) << ": "
+                  << cp[i] << " = " << cp_t[i] << " + " << cp_r[i]
+                  << " + " << cp_v[i] << " + " << cp_e[i] << std::endl;
+    }
 
     return 0;
 }
