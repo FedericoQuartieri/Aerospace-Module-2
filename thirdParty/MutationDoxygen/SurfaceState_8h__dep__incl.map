@@ -1,0 +1,10 @@
+<map id="SurfaceState.h" name="SurfaceState.h">
+<area shape="rect" id="node1" title="Declaration of SurfaceState class, responsible for keeping the surface thermodynamic state." alt="" coords="786,5,903,32"/>
+<area shape="rect" id="node2" href="$GasSurfaceInteraction_8cpp.html" title="Implements the main class of the GasSurfaceInteraction module." alt="" coords="5,87,199,114"/>
+<area shape="rect" id="node3" href="$GSIRateManagerPhenomenological_8cpp.html" title="Class which computes the chemical production rate for each species based on phenomenological models f..." alt="" coords="223,87,501,114"/>
+<area shape="rect" id="node4" href="$GSIReactionAblation_8cpp.html" title="Implements a surface reaction of ablation type." alt="" coords="525,87,708,114"/>
+<area shape="rect" id="node5" href="$SurfaceBalanceSolverMass_8cpp.html" title="Class which solves the mass balance for an interface." alt="" coords="732,87,957,114"/>
+<area shape="rect" id="node6" href="$SurfaceBalanceSolverMassEnergy_8cpp.html" title="Class which solves the mass balance and total energy for an interface." alt="" coords="981,80,1180,121"/>
+<area shape="rect" id="node7" href="$SurfaceRadiation_8cpp.html" title="Implementation of the SurfaceRadiation class." alt="" coords="1203,87,1363,114"/>
+<area shape="rect" id="node8" href="$SurfaceState_8cpp.html" title="Class which stores the state of the surface." alt="" coords="1388,87,1520,114"/>
+</map>

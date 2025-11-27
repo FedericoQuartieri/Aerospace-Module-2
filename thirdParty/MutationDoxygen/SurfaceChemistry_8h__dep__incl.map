@@ -1,0 +1,7 @@
+<map id="SurfaceChemistry.h" name="SurfaceChemistry.h">
+<area shape="rect" id="node1" title="Class which computes the chemical source terms for the chemical reactions occuring on the surface." alt="" coords="405,5,553,32"/>
+<area shape="rect" id="node2" href="$MassBlowingRateAblation_8cpp.html" title="Class which computes the mass blowing flux produced due to ablation reactions." alt="" coords="5,87,224,114"/>
+<area shape="rect" id="node3" href="$SurfaceBalanceSolverMass_8cpp.html" title="Class which solves the mass balance for an interface." alt="" coords="249,87,474,114"/>
+<area shape="rect" id="node4" href="$SurfaceBalanceSolverMassEnergy_8cpp.html" title="Class which solves the mass balance and total energy for an interface." alt="" coords="498,80,697,121"/>
+<area shape="rect" id="node5" href="$SurfaceChemistry_8cpp.html" title="Implementation of the SurfaceChemistry class." alt="" coords="721,87,884,114"/>
+</map>

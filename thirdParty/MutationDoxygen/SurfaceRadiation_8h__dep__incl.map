@@ -1,0 +1,5 @@
+<map id="SurfaceRadiation.h" name="SurfaceRadiation.h">
+<area shape="rect" id="node1" title="Declaration of SurfaceRadiation class." alt="" coords="133,5,279,32"/>
+<area shape="rect" id="node2" href="$SurfaceBalanceSolverMassEnergy_8cpp.html" title="Class which solves the mass balance and total energy for an interface." alt="" coords="5,80,204,121"/>
+<area shape="rect" id="node3" href="$SurfaceRadiation_8cpp.html" title="Implementation of the SurfaceRadiation class." alt="" coords="227,87,387,114"/>
+</map>

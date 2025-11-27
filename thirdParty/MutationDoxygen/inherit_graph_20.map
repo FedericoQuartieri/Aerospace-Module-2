@@ -1,0 +1,5 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classMutation_1_1Transport_1_1DiffusionMatrix.html" title="Abstract base class for all diffusion matrix algorithms which allows for self registration of concret..." alt="" coords="5,31,128,57"/>
+<area shape="rect" id="node2" href="$classMutation_1_1Transport_1_1ExcactDiffMat.html" title="Exact diffusion matrix implementation." alt="" coords="187,5,300,32"/>
+<area shape="rect" id="node3" href="$classMutation_1_1Transport_1_1RamshawDiffMat.html" title="Ramshaw diffusion matrix implementation." alt="" coords="176,56,311,83"/>
+</map>

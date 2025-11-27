@@ -1,0 +1,5 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classMutation_1_1Kinetics_1_1ReactionStoichBase.html" title="Abstract base class for all derived ReactionStoich types to enable polymorphism." alt="" coords="5,13,156,39"/>
+<area shape="rect" id="node2" href="$classMutation_1_1Kinetics_1_1ReactionStoich.html" title="Connects reactant and product stoichiometry types together so that Jacobian contributions made by a s..." alt="" coords="204,5,407,47"/>
+<area shape="rect" id="node3" href="$classMutation_1_1Kinetics_1_1ThirdbodyReactionStoich.html" title="Connects reactant and product stoichiometry types together for a thirdbody reaction so that Jacobian ..." alt="" coords="455,5,639,47"/>
+</map>

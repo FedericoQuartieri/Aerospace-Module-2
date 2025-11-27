@@ -37,7 +37,7 @@
 
 nProcs=2;
 
-[ -d $MPP_DIRECTORY ] && echo "✅ MutationPP already installed" && exit 0
+#[ -d $MPP_DIRECTORY ] && echo "✅ MutationPP already installed" && exit 0
 
 #- mutation++
 if [ ! -d "MPP_DIRECTORY" ];

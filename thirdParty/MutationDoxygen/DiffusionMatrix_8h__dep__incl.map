@@ -1,0 +1,6 @@
+<map id="DiffusionMatrix.h" name="DiffusionMatrix.h">
+<area shape="rect" id="node1" title="Provides DiffusionMatrix base class." alt="" coords="177,5,311,32"/>
+<area shape="rect" id="node2" href="$ExactDiffMat_8cpp.html" title=" " alt="" coords="5,80,139,107"/>
+<area shape="rect" id="node3" href="$RamshawDiffMat_8cpp.html" title="Implements RamshawDiffMat class." alt="" coords="163,80,325,107"/>
+<area shape="rect" id="node4" href="$Transport_8cpp.html" title="Implements Transport class." alt="" coords="349,80,459,107"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="GSIStoichiometryManager.h" name="GSIStoichiometryManager.h">
+<area shape="rect" id="node1" title="Declaration of GSIStoichiometryManager class." alt="" coords="179,5,382,32"/>
+<area shape="rect" id="node2" href="$GSIRateManagerPhenomenological_8cpp.html" title="Class which computes the chemical production rate for each species based on phenomenological models f..." alt="" coords="5,80,284,107"/>
+<area shape="rect" id="node3" href="$GSIStoichiometryManager_8cpp.html" title="Implementation of GSIStoichiometry class." alt="" coords="309,80,527,107"/>
+</map>

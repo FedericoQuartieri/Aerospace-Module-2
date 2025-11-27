@@ -1,0 +1,18 @@
+var classMutation_1_1Transport_1_1FromBstColInt =
+[
+    [ "FromBstColInt", "classMutation_1_1Transport_1_1FromBstColInt.html#aafe0c1c445c18fdb81f4fa8894857a01", null ],
+    [ "accuracy", "classMutation_1_1Transport_1_1FromBstColInt.html#a0452e137e8ed9c82bc1f1421848de618", null ],
+    [ "canTabulate", "classMutation_1_1Transport_1_1FromBstColInt.html#a9e1e3253400f66b79a870f5d31aedea9", null ],
+    [ "compute", "classMutation_1_1Transport_1_1FromBstColInt.html#aab3df12d9048346e838ae54625539e77", null ],
+    [ "getOtherParams", "classMutation_1_1Transport_1_1FromBstColInt.html#af91e8e58fbeee647c2bd4224f030ba8f", null ],
+    [ "loaded", "classMutation_1_1Transport_1_1FromBstColInt.html#a9db6efbd569e694169b5cd566a42a5e3", null ],
+    [ "loadSpeciesParameter", "classMutation_1_1Transport_1_1FromBstColInt.html#a4b9f6dff1f747b260427a6115b81c0bd", null ],
+    [ "operator!=", "classMutation_1_1Transport_1_1FromBstColInt.html#a1022c23595b0f92c9309a4f8f479cfc0", null ],
+    [ "operator==", "classMutation_1_1Transport_1_1FromBstColInt.html#a1622569dd2dd092744b22c03641cd8de", null ],
+    [ "reference", "classMutation_1_1Transport_1_1FromBstColInt.html#a9b6fb59e777d4dff4236d8acf05b988c", null ],
+    [ "setAccuracy", "classMutation_1_1Transport_1_1FromBstColInt.html#a4344e4ef8fa0272c8be37fcd069fd844", null ],
+    [ "setFactor", "classMutation_1_1Transport_1_1FromBstColInt.html#aa1a6d2ee1f6a69e7579b8279e3e68a22", null ],
+    [ "setReference", "classMutation_1_1Transport_1_1FromBstColInt.html#aa2d0371b8841bff25c65097adbf1cda2", null ],
+    [ "setUnits", "classMutation_1_1Transport_1_1FromBstColInt.html#a885331c519bd27b0fb82194dbacec8e9", null ],
+    [ "speciesAlias", "classMutation_1_1Transport_1_1FromBstColInt.html#a967f80d7cf2d467c63e511433216760b", null ]
+];

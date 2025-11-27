@@ -1,0 +1,5 @@
+<map id="GasFourierHeatFluxCalculator.h" name="GasFourierHeatFluxCalculator.h">
+<area shape="rect" id="node1" title="Declaration of GasFourierHeatFluxCalculator class." alt="" coords="135,5,363,32"/>
+<area shape="rect" id="node2" href="$GasFourierHeatFluxCalculator_8cpp.html" title="Class which computes the gas heat flux needed by the surface energy balances." alt="" coords="5,87,248,114"/>
+<area shape="rect" id="node3" href="$SurfaceBalanceSolverMassEnergy_8cpp.html" title="Class which solves the mass balance and total energy for an interface." alt="" coords="273,80,471,121"/>
+</map>

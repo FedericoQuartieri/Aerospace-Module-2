@@ -1,0 +1,7 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classMutation_1_1GasSurfaceInteraction_1_1GasSurfaceInteraction.html" title="Interface for the part of Mutation++ responsible for modeling Gas&#45;Surface interaction phenomena." alt="" coords="5,5,172,32"/>
+<area shape="rect" id="node2" href="$classMutation_1_1Mixture.html" title="Packages all of the Mutation++ functionality pertaining to a mixture into a single class." alt="" coords="220,81,292,108"/>
+<area shape="rect" id="node3" href="$classMutation_1_1Kinetics_1_1Kinetics.html" title="Manages the computation of chemical source terms for an entire reaction mechanism." alt="" coords="51,56,126,83"/>
+<area shape="rect" id="node4" href="$classMutation_1_1Thermodynamics_1_1Thermodynamics.html" title="Provides functions which are related to the thermodynamics of a mixture." alt="" coords="21,107,156,133"/>
+<area shape="rect" id="node5" href="$classMutation_1_1Transport_1_1Transport.html" title="Manages the computation of transport properties." alt="" coords="47,157,130,184"/>
+</map>

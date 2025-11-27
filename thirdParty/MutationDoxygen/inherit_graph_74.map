@@ -1,0 +1,7 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classMutation_1_1Numerics_1_1NewtonSolver.html" title=" " alt="" coords="5,5,203,61"/>
+<area shape="rect" id="node2" href="$classMutation_1_1GasSurfaceInteraction_1_1SurfaceBalanceSolverMass.html" title=" " alt="" coords="251,55,449,81"/>
+<area shape="rect" id="node3" href="$classMutation_1_1Numerics_1_1NewtonSolver.html" title=" " alt="" coords="5,136,203,192"/>
+<area shape="rect" id="node4" href="$classMutation_1_1GasSurfaceInteraction_1_1SurfaceBalanceSolverMassEnergy.html" title=" " alt="" coords="251,109,449,150"/>
+<area shape="rect" id="node5" href="$classMutation_1_1GasSurfaceInteraction_1_1Surface.html" title="This is the abstract class for the solution of the mass and energy balances at the wall." alt="" coords="69,85,139,112"/>
+</map>

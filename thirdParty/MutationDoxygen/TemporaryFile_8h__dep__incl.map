@@ -1,0 +1,52 @@
+<map id="TemporaryFile.h" name="TemporaryFile.h">
+<area shape="rect" id="node1" title=" " alt="" coords="4413,5,4540,32"/>
+<area shape="rect" id="node2" href="$TemporaryFile_8cpp.html" title=" " alt="" coords="2865,80,3006,107"/>
+<area shape="rect" id="node3" href="$Utilities_8h.html" title="Packages all of the Mutation++ utilities together to reduce complexity in other namespaces." alt="" coords="3030,80,3115,107"/>
+<area shape="rect" id="node46" href="$test__MillikanWhite_8cpp.html" title=" " alt="" coords="3725,333,3895,360"/>
+<area shape="rect" id="node50" href="$test__HarmonicOscillator_8cpp.html" title=" " alt="" coords="5851,80,6057,107"/>
+<area shape="rect" id="node4" href="$MixtureOptions_8cpp.html" title="Provides MixtureOptions class definition." alt="" coords="5627,162,5777,189"/>
+<area shape="rect" id="node5" href="$GasSurfaceInteraction_8cpp.html" title="Implements the main class of the GasSurfaceInteraction module." alt="" coords="368,251,561,278"/>
+<area shape="rect" id="node6" href="$GSIRateLawGammaT_8cpp.html" title="Class which computes the reaction rate constant for a surface reaction constant according to a gamma ..." alt="" coords="586,251,773,278"/>
+<area shape="rect" id="node7" href="$GSIRateLawSublimation_8cpp.html" title=" " alt="" coords="797,251,1002,278"/>
+<area shape="rect" id="node8" href="$GSIReactionAblation_8cpp.html" title="Implements a surface reaction of ablation type." alt="" coords="1027,251,1209,278"/>
+<area shape="rect" id="node9" href="$GSIReactionCatalysis_8cpp.html" title="Implements a surface reaction of catalysis type." alt="" coords="1233,251,1421,278"/>
+<area shape="rect" id="node10" href="$MassBlowingRateAblation_8cpp.html" title="Class which computes the mass blowing flux produced due to ablation reactions." alt="" coords="666,162,885,189"/>
+<area shape="rect" id="node11" href="$SolidPropertiesNull_8cpp.html" title="SolidProperties class when no solid properties are required to be stored." alt="" coords="909,162,1082,189"/>
+<area shape="rect" id="node12" href="$SolidPropertiesSteadyState_8cpp.html" title="SolidProperties class when solid properties are required for steady state pyrolysis and solid conduct..." alt="" coords="1106,162,1333,189"/>
+<area shape="rect" id="node13" href="$SurfaceBalanceSolverMass_8cpp.html" title="Class which solves the mass balance for an interface." alt="" coords="2120,251,2345,278"/>
+<area shape="rect" id="node14" href="$SurfaceBalanceSolverMassEnergy_8cpp.html" title="Class which solves the mass balance and total energy for an interface." alt="" coords="2393,244,2592,285"/>
+<area shape="rect" id="node15" href="$SurfaceChemistry_8cpp.html" title="Implementation of the SurfaceChemistry class." alt="" coords="2850,251,3013,278"/>
+<area shape="rect" id="node16" href="$SurfacePropertiesAblation_8cpp.html" title="SurfaceProperties class when an ablative surface is modeled based on a gamma model." alt="" coords="1578,162,1797,189"/>
+<area shape="rect" id="node17" href="$SurfacePropertiesNull_8cpp.html" title="SurfaceProperties class when no surface properties are required to be stored." alt="" coords="1821,162,2012,189"/>
+<area shape="rect" id="node18" href="$SurfaceRadiation_8cpp.html" title="Implementation of the SurfaceRadiation class." alt="" coords="2037,162,2197,189"/>
+<area shape="rect" id="node19" href="$SurfaceState_8cpp.html" title="Class which stores the state of the surface." alt="" coords="2221,162,2353,189"/>
+<area shape="rect" id="node20" href="$Kinetics_8cpp.html" title="Implementation of Kinetics class." alt="" coords="2378,162,2479,189"/>
+<area shape="rect" id="node21" href="$RateLaws_8h.html" title="Declaration of various RateLaw classes." alt="" coords="188,162,285,189"/>
+<area shape="rect" id="node26" href="$Interpolators_8cpp.html" title="Registers the concrete Interpolator types to support self registration." alt="" coords="2555,162,2687,189"/>
+<area shape="rect" id="node27" href="$HarmonicOscillator_8cpp.html" title=" " alt="" coords="2711,162,2885,189"/>
+<area shape="rect" id="node28" href="$MultiPhaseEquilSolver_8cpp.html" title="Implementation of the Multiphase equilibrium solver." alt="" coords="2909,162,3103,189"/>
+<area shape="rect" id="node29" href="$Nasa7DB_8cpp.html" title="Provides Nasa&#45;7 thermodynamic database." alt="" coords="3390,251,3499,278"/>
+<area shape="rect" id="node30" href="$Nasa7Polynomial_8cpp.html" title="Implementation of Nasa7Polynomial class." alt="" coords="3178,162,3341,189"/>
+<area shape="rect" id="node31" href="$Nasa9DB_8cpp.html" title="Provides Nasa&#45;9 thermodynamic database." alt="" coords="4510,251,4619,278"/>
+<area shape="rect" id="node32" href="$Nasa9Polynomial_8cpp.html" title="Implementation of Nasa9Polynomial class." alt="" coords="3415,162,3578,189"/>
+<area shape="rect" id="node33" href="$NasaDB_8h.html" title="Defines base class for NASA thermodynamic databases." alt="" coords="3603,162,3689,189"/>
+<area shape="rect" id="node34" href="$ParticleRRHO_8cpp.html" title="Implementation of the ParticleRRHO class." alt="" coords="3713,162,3848,189"/>
+<area shape="rect" id="node35" href="$RrhoDB_8cpp.html" title="Provides a Rigid&#45;Rotator Harmonic Oscillator thermodynamic database." alt="" coords="3873,162,3971,189"/>
+<area shape="rect" id="node36" href="$Species_8cpp.html" title="Implementation of the Species class." alt="" coords="3995,162,4094,189"/>
+<area shape="rect" id="node37" href="$SpeciesListDescriptor_8cpp.html" title="Implementation of the SpeciesListDescriptor class." alt="" coords="4119,162,4307,189"/>
+<area shape="rect" id="node38" href="$ThermoDB_8cpp.html" title="Implementation of the ThermoDB class." alt="" coords="4331,162,4449,189"/>
+<area shape="rect" id="node39" href="$Thermodynamics_8cpp.html" title="Implementation of the Thermodynamics class." alt="" coords="4474,162,4637,189"/>
+<area shape="rect" id="node40" href="$MillikanWhite_8cpp.html" title="Implementation of classes related to Millikan and White model." alt="" coords="4661,162,4799,189"/>
+<area shape="rect" id="node41" href="$CollisionDB_8cpp.html" title="Implementation of CollisionDB type." alt="" coords="4824,162,4948,189"/>
+<area shape="rect" id="node42" href="$ThermalConductivityChapmannEnskog_8cpp.html" title="Provides Chapmann&#45;Enskog thermal conductivity and thermal diffusion ratios using LDLT and Conjugate&#45;G..." alt="" coords="4972,155,5200,196"/>
+<area shape="rect" id="node43" href="$ThermalConductivityWilke_8cpp.html" title="Provides ThermalConductivityWilke class." alt="" coords="5225,162,5446,189"/>
+<area shape="rect" id="node44" href="$Transport_8h.html" title="Declaration of Transport class." alt="" coords="1408,162,1503,189"/>
+<area shape="rect" id="node49" href="$Units_8cpp.html" title="Implements the Units class." alt="" coords="5521,162,5603,189"/>
+<area shape="rect" id="node22" href="$mutation_09_09_8h.html" title="Includes many common header files in a convenient location." alt="" coords="837,333,951,360"/>
+<area shape="rect" id="node23" href="$RateLawGroup_8h.html" title="Defines the abstract class RateLawGroup which is used by the RateManager class to combine rate laws w..." alt="" coords="5,333,135,360"/>
+<area shape="rect" id="node24" href="$RateLaws_8cpp.html" title="Implementation of RateLaw classes." alt="" coords="181,251,293,278"/>
+<area shape="rect" id="node25" href="$Reaction_8h.html" title="Declaration of Reaction class." alt="" coords="66,251,157,278"/>
+<area shape="rect" id="node45" href="$Mixture_8h.html" title="Provides Mixture class declaration." alt="" coords="1764,251,1848,278"/>
+<area shape="rect" id="node47" href="$DiffusionVelocityCalculator_8cpp.html" title="Class which computes the diffusion velocities needed by the surface balances." alt="" coords="1873,251,2097,278"/>
+<area shape="rect" id="node48" href="$GasFourierHeatFluxCalculator_8cpp.html" title="Class which computes the gas heat flux needed by the surface energy balances." alt="" coords="1497,251,1739,278"/>
+</map>

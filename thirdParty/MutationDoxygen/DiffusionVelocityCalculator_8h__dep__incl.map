@@ -1,0 +1,6 @@
+<map id="DiffusionVelocityCalculator.h" name="DiffusionVelocityCalculator.h">
+<area shape="rect" id="node1" title="Declaration of DiffustionVelocityCalculator class." alt="" coords="261,5,470,32"/>
+<area shape="rect" id="node2" href="$DiffusionVelocityCalculator_8cpp.html" title="Class which computes the diffusion velocities needed by the surface balances." alt="" coords="5,87,229,114"/>
+<area shape="rect" id="node3" href="$SurfaceBalanceSolverMass_8cpp.html" title="Class which solves the mass balance for an interface." alt="" coords="253,87,478,114"/>
+<area shape="rect" id="node4" href="$SurfaceBalanceSolverMassEnergy_8cpp.html" title="Class which solves the mass balance and total energy for an interface." alt="" coords="502,80,701,121"/>
+</map>

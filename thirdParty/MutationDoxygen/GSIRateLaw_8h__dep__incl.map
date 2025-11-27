@@ -1,0 +1,9 @@
+<map id="GSIRateLaw.h" name="GSIRateLaw.h">
+<area shape="rect" id="node1" title="Declaration of abstract GSIRateLaw class." alt="" coords="637,5,747,32"/>
+<area shape="rect" id="node2" href="$GSIRateLawGammaConst_8cpp.html" title="Class which computes the reaction rate constant for a surface reaction constant according to a gamma ..." alt="" coords="5,80,221,107"/>
+<area shape="rect" id="node3" href="$GSIRateLawGammaT_8cpp.html" title="Class which computes the reaction rate constant for a surface reaction constant according to a gamma ..." alt="" coords="245,80,432,107"/>
+<area shape="rect" id="node4" href="$GSIRateLawSublimation_8cpp.html" title=" " alt="" coords="456,80,661,107"/>
+<area shape="rect" id="node5" href="$GSIRateManagerPhenomenological_8cpp.html" title="Class which computes the chemical production rate for each species based on phenomenological models f..." alt="" coords="686,80,965,107"/>
+<area shape="rect" id="node6" href="$GSIReactionAblation_8cpp.html" title="Implements a surface reaction of ablation type." alt="" coords="989,80,1171,107"/>
+<area shape="rect" id="node7" href="$GSIReactionCatalysis_8cpp.html" title="Implements a surface reaction of catalysis type." alt="" coords="1195,80,1383,107"/>
+</map>

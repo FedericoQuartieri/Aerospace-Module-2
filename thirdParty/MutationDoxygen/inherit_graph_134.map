@@ -1,0 +1,6 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classMutation_1_1Kinetics_1_1Stoich.html" title="Represents a single reaction&#39;s stoichiometry." alt="" coords="5,56,108,83"/>
+<area shape="rect" id="node2" href="$classMutation_1_1Kinetics_1_1Stoich1.html" title="Extends the general Stoich base class for a single reactant." alt="" coords="156,5,227,32"/>
+<area shape="rect" id="node3" href="$classMutation_1_1Kinetics_1_1Stoich2.html" title="Extends the general Stoich base class for two reactants." alt="" coords="156,56,227,83"/>
+<area shape="rect" id="node4" href="$classMutation_1_1Kinetics_1_1Stoich3.html" title="Extends the general Stoich base class for three reactants." alt="" coords="156,107,227,133"/>
+</map>

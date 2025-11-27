@@ -1,0 +1,52 @@
+<map id="AutoRegistration.h" name="AutoRegistration.h">
+<area shape="rect" id="node1" title="Provides classes which implement automatic registration of polymorphic types from a name which identi..." alt="" coords="2997,5,3139,32"/>
+<area shape="rect" id="node2" href="$GSIRateLawGammaConst_8cpp.html" title="Class which computes the reaction rate constant for a surface reaction constant according to a gamma ..." alt="" coords="2035,80,2251,107"/>
+<area shape="rect" id="node3" href="$GSIRateLawGammaT_8cpp.html" title="Class which computes the reaction rate constant for a surface reaction constant according to a gamma ..." alt="" coords="5,162,192,189"/>
+<area shape="rect" id="node4" href="$GSIRateLawSublimation_8cpp.html" title=" " alt="" coords="216,162,421,189"/>
+<area shape="rect" id="node5" href="$MassBlowingRateNull_8cpp.html" title="Class which set the mass blowing flux equal to zero when no ablation reactions are present." alt="" coords="2739,80,2930,107"/>
+<area shape="rect" id="node6" href="$SolidPropertiesNull_8cpp.html" title="SolidProperties class when no solid properties are required to be stored." alt="" coords="445,162,619,189"/>
+<area shape="rect" id="node7" href="$SolidPropertiesSteadyState_8cpp.html" title="SolidProperties class when solid properties are required for steady state pyrolysis and solid conduct..." alt="" coords="643,162,869,189"/>
+<area shape="rect" id="node8" href="$SurfacePropertiesAblation_8cpp.html" title="SurfaceProperties class when an ablative surface is modeled based on a gamma model." alt="" coords="893,162,1112,189"/>
+<area shape="rect" id="node9" href="$SurfacePropertiesNull_8cpp.html" title="SurfaceProperties class when no surface properties are required to be stored." alt="" coords="1137,162,1327,189"/>
+<area shape="rect" id="node10" href="$ChemNonEqTTvStateModel_8cpp.html" title=" " alt="" coords="2955,80,3181,107"/>
+<area shape="rect" id="node11" href="$RrhoDB_8cpp.html" title="Provides a Rigid&#45;Rotator Harmonic Oscillator thermodynamic database." alt="" coords="1352,162,1451,189"/>
+<area shape="rect" id="node12" href="$CapitelliIntegrals_8cpp.html" title="Provides various curve&#45;fits from the group of Capitelli." alt="" coords="3205,80,3365,107"/>
+<area shape="rect" id="node13" href="$CollisionIntegral_8cpp.html" title="Provides concrete CollisionIntegral types." alt="" coords="3389,80,3544,107"/>
+<area shape="rect" id="node14" href="$CollisionPair_8cpp.html" title="Implements the CollisionPair type." alt="" coords="3568,80,3696,107"/>
+<area shape="rect" id="node15" href="$CoulombIntegrals_8cpp.html" title="Provides Coulomb collision integral types." alt="" coords="3721,80,3885,107"/>
+<area shape="rect" id="node16" href="$ExactDiffMat_8cpp.html" title=" " alt="" coords="3909,80,4043,107"/>
+<area shape="rect" id="node17" href="$LangevinIntegrals_8cpp.html" title="Provides Langevin collision integral types." alt="" coords="4067,80,4232,107"/>
+<area shape="rect" id="node18" href="$RamshawDiffMat_8cpp.html" title="Implements RamshawDiffMat class." alt="" coords="4257,80,4418,107"/>
+<area shape="rect" id="node19" href="$ViscosityChapmannEnskog_8cpp.html" title="Provides Chapmann&#45;Enskog viscosity algorithms using LDLT and Conjugate&#45;Gradient linear system solvers..." alt="" coords="4443,80,4667,107"/>
+<area shape="rect" id="node20" href="$ViscosityGuptaYos_8cpp.html" title="Provides ViscosityGuptaYos class." alt="" coords="4691,80,4859,107"/>
+<area shape="rect" id="node21" href="$ViscosityWilke_8cpp.html" title="Provides ViscosityWilke class." alt="" coords="4883,80,5027,107"/>
+<area shape="rect" id="node22" href="$Utilities_8h.html" title="Packages all of the Mutation++ utilities together to reduce complexity in other namespaces." alt="" coords="2629,80,2715,107"/>
+<area shape="rect" id="node23" href="$MixtureOptions_8cpp.html" title="Provides MixtureOptions class definition." alt="" coords="2704,162,2853,189"/>
+<area shape="rect" id="node24" href="$GasSurfaceInteraction_8cpp.html" title="Implements the main class of the GasSurfaceInteraction module." alt="" coords="2878,162,3071,189"/>
+<area shape="rect" id="node25" href="$GSIReactionAblation_8cpp.html" title="Implements a surface reaction of ablation type." alt="" coords="3095,162,3278,189"/>
+<area shape="rect" id="node26" href="$GSIReactionCatalysis_8cpp.html" title="Implements a surface reaction of catalysis type." alt="" coords="3302,162,3490,189"/>
+<area shape="rect" id="node27" href="$MassBlowingRateAblation_8cpp.html" title="Class which computes the mass blowing flux produced due to ablation reactions." alt="" coords="3515,162,3733,189"/>
+<area shape="rect" id="node28" href="$SurfaceBalanceSolverMass_8cpp.html" title="Class which solves the mass balance for an interface." alt="" coords="3758,162,3983,189"/>
+<area shape="rect" id="node29" href="$SurfaceBalanceSolverMassEnergy_8cpp.html" title="Class which solves the mass balance and total energy for an interface." alt="" coords="4007,155,4206,196"/>
+<area shape="rect" id="node30" href="$SurfaceChemistry_8cpp.html" title="Implementation of the SurfaceChemistry class." alt="" coords="4231,162,4393,189"/>
+<area shape="rect" id="node31" href="$SurfaceRadiation_8cpp.html" title="Implementation of the SurfaceRadiation class." alt="" coords="4417,162,4577,189"/>
+<area shape="rect" id="node32" href="$SurfaceState_8cpp.html" title="Class which stores the state of the surface." alt="" coords="4602,162,4734,189"/>
+<area shape="rect" id="node33" href="$Kinetics_8cpp.html" title="Implementation of Kinetics class." alt="" coords="4759,162,4860,189"/>
+<area shape="rect" id="node34" href="$RateLaws_8h.html" title="Declaration of various RateLaw classes." alt="" coords="4885,162,4982,189"/>
+<area shape="rect" id="node35" href="$Interpolators_8cpp.html" title="Registers the concrete Interpolator types to support self registration." alt="" coords="5006,162,5138,189"/>
+<area shape="rect" id="node36" href="$HarmonicOscillator_8cpp.html" title=" " alt="" coords="5163,162,5336,189"/>
+<area shape="rect" id="node37" href="$MultiPhaseEquilSolver_8cpp.html" title="Implementation of the Multiphase equilibrium solver." alt="" coords="5361,162,5554,189"/>
+<area shape="rect" id="node38" href="$Nasa7DB_8cpp.html" title="Provides Nasa&#45;7 thermodynamic database." alt="" coords="5552,244,5661,271"/>
+<area shape="rect" id="node39" href="$Nasa7Polynomial_8cpp.html" title="Implementation of Nasa7Polynomial class." alt="" coords="5792,162,5955,189"/>
+<area shape="rect" id="node40" href="$Nasa9DB_8cpp.html" title="Provides Nasa&#45;9 thermodynamic database." alt="" coords="5692,244,5801,271"/>
+<area shape="rect" id="node41" href="$Nasa9Polynomial_8cpp.html" title="Implementation of Nasa9Polynomial class." alt="" coords="5979,162,6141,189"/>
+<area shape="rect" id="node42" href="$NasaDB_8h.html" title="Defines base class for NASA thermodynamic databases." alt="" coords="5630,162,5717,189"/>
+<area shape="rect" id="node43" href="$ParticleRRHO_8cpp.html" title="Implementation of the ParticleRRHO class." alt="" coords="6166,162,6301,189"/>
+<area shape="rect" id="node44" href="$Species_8cpp.html" title="Implementation of the Species class." alt="" coords="1475,162,1573,189"/>
+<area shape="rect" id="node45" href="$SpeciesListDescriptor_8cpp.html" title="Implementation of the SpeciesListDescriptor class." alt="" coords="1598,162,1786,189"/>
+<area shape="rect" id="node46" href="$ThermoDB_8cpp.html" title="Implementation of the ThermoDB class." alt="" coords="1810,162,1929,189"/>
+<area shape="rect" id="node47" href="$Thermodynamics_8cpp.html" title="Implementation of the Thermodynamics class." alt="" coords="1953,162,2116,189"/>
+<area shape="rect" id="node48" href="$MillikanWhite_8cpp.html" title="Implementation of classes related to Millikan and White model." alt="" coords="2140,162,2279,189"/>
+<area shape="rect" id="node49" href="$CollisionDB_8cpp.html" title="Implementation of CollisionDB type." alt="" coords="2303,162,2427,189"/>
+<area shape="rect" id="node50" href="$ThermalConductivityChapmannEnskog_8cpp.html" title="Provides Chapmann&#45;Enskog thermal conductivity and thermal diffusion ratios using LDLT and Conjugate&#45;G..." alt="" coords="2451,155,2679,196"/>
+</map>

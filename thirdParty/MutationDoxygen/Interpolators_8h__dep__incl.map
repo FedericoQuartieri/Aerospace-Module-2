@@ -1,0 +1,5 @@
+<map id="Interpolators.h" name="Interpolators.h">
+<area shape="rect" id="node1" title="Provides Interpolator base class and derived interpolator types." alt="" coords="97,5,214,32"/>
+<area shape="rect" id="node2" href="$Interpolators_8cpp.html" title="Registers the concrete Interpolator types to support self registration." alt="" coords="5,80,137,107"/>
+<area shape="rect" id="node3" href="$CollisionIntegral_8cpp.html" title="Provides concrete CollisionIntegral types." alt="" coords="162,80,317,107"/>
+</map>

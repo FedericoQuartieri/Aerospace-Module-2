@@ -1,0 +1,8 @@
+<map id="SolidProperties.h" name="SolidProperties.h">
+<area shape="rect" id="node1" title="Purely virtual class containing the solid properties." alt="" coords="468,5,600,32"/>
+<area shape="rect" id="node2" href="$GasSurfaceInteraction_8cpp.html" title="Implements the main class of the GasSurfaceInteraction module." alt="" coords="5,87,199,114"/>
+<area shape="rect" id="node3" href="$SolidPropertiesNull_8cpp.html" title="SolidProperties class when no solid properties are required to be stored." alt="" coords="223,87,397,114"/>
+<area shape="rect" id="node4" href="$SolidPropertiesSteadyState_8cpp.html" title="SolidProperties class when solid properties are required for steady state pyrolysis and solid conduct..." alt="" coords="421,87,647,114"/>
+<area shape="rect" id="node5" href="$SurfaceBalanceSolverMassEnergy_8cpp.html" title="Class which solves the mass balance and total energy for an interface." alt="" coords="672,80,871,121"/>
+<area shape="rect" id="node6" href="$SurfaceState_8cpp.html" title="Class which stores the state of the surface." alt="" coords="895,87,1027,114"/>
+</map>

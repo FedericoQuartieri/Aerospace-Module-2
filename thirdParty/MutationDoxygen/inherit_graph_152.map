@@ -1,0 +1,4 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classMutation_1_1Utilities_1_1IO_1_1XmlElement.html" title="Represents an XML element node which can contain (name,value) pair attributes as well as either eleme..." alt="" coords="5,5,108,32"/>
+<area shape="rect" id="node2" href="$classMutation_1_1Utilities_1_1IO_1_1XmlEndElement.html" title="Special XmlElement which represents end of children list." alt="" coords="156,5,283,32"/>
+</map>
