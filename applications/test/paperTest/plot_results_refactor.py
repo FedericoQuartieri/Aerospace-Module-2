@@ -1,5 +1,6 @@
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
 
 # Constants
@@ -8,16 +9,17 @@ Mw_N = 14.0067e-3  # kg/mol
 Mw_N2 = 28.0134e-3 # kg/mol
 n0 = 5.0e22        # Initial number density for normalization
 
-# Read Data
-try:
-    data = pd.read_csv('results_refactor.csv')
-except ImportError:
-    print("Pandas not found, using numpy")
-    data_np = np.genfromtxt('results_refactor.csv', delimiter=',', names=True)
-    data = pd.DataFrame(data_np)
+# Read Data using numpy
+print("Loading hy2Foam data...")
+data_np = np.genfromtxt('results.csv', delimiter=',', names=True)
 
-# Rename 'time[s]' to 'Time' for consistency with original script's plotting logic
-data.rename(columns={'time[s]': 'Time'}, inplace=True)
+# Create dict-like access  
+data = {}
+data['Time'] = data_np['time']
+data['T_tr[K]'] = data_np['T_tr']
+data['T_vib[K]'] = data_np['T_vib']
+data['rho_N[kg/m3]'] = data_np['rho_N']
+data['rho_N2[kg/m3]'] = data_np['rho_N2']
 
 # Calculate Number Densities (m^-3)
 # n = (rho / Mw) * NA
@@ -28,20 +30,50 @@ data['n_N2'] = (data['rho_N2[kg/m3]'] / Mw_N2) * NA
 data['n_N_norm'] = data['n_N'] / n0
 data['n_N2_norm'] = data['n_N2'] / n0
 
-# --- Plot 1: Temperatures ---
-plt.figure(figsize=(10, 6))
-plt.semilogx(data['Time'], data['T_tr[K]'], label='T_tr (hy2Foam)', color='black', linewidth=2)
-plt.semilogx(data['Time'], data['T_vib[K]'], label='T_vib (hy2Foam)', color='black', linestyle='--', linewidth=2)
+# Read reference data from Engauge (handle European decimal format with quotes)
+print("Loading reference data...")
+import csv
+ref_data_raw = []
+with open('Engauge_results_module2.csv', 'r') as f:
+    reader = csv.reader(f)
+    next(reader)  # Skip header
+    for row in reader:
+        # First column has European format with comma as decimal separator
+        time_str = row[0].replace(',', '.')
+        time = float(time_str)
+        t_tr = float(row[1])
+        t_vib = float(row[2])
+        ref_data_raw.append([time, t_tr, t_vib])
 
-plt.title('Reacting N2-N Heat Bath: Temperatures (Park Model)')
-plt.xlabel('Time (s)')
-plt.ylabel('Temperature (K)')
-plt.grid(True, which="both", ls="-", alpha=0.4)
-plt.legend()
-plt.xlim(0, 1e-5)
-plt.ylim(4000, 10000)
-plt.savefig('temperature_plot_refactor.png')
+ref_data = np.array(ref_data_raw)
+ref_time = ref_data[:, 0]
+ref_T_tr = ref_data[:, 1]
+ref_T_vib = ref_data[:, 2]
+print(f"  Loaded {len(ref_time)} reference data points")
+print(f"  Time range: [{ref_time.min():.3e}, {ref_time.max():.3e}] s")
+print(f"  T_tr range: [{ref_T_tr.min():.1f}, {ref_T_tr.max():.1f}] K")
+
+# --- Plot 1: Temperatures ---
+plt.figure(figsize=(12, 7))
+
+# Add reference data FIRST (so it appears behind)
+plt.semilogx(ref_time, ref_T_tr, label='T_tr (Reference)', color='red', linewidth=3, linestyle='-', marker='o', markersize=4, markevery=2)
+plt.semilogx(ref_time, ref_T_vib, label='T_vib (Reference)', color='blue', linewidth=3, linestyle='--', marker='s', markersize=4, markevery=2)
+
+# Then hy2Foam data
+plt.semilogx(data['Time'], data['T_tr[K]'], label='T_tr (hy2Foam)', color='black', linewidth=2.5, alpha=0.8)
+plt.semilogx(data['Time'], data['T_vib[K]'], label='T_vib (hy2Foam)', color='darkgreen', linestyle='--', linewidth=2.5, alpha=0.8)
+
+plt.title('Reacting N2-N Heat Bath: Temperatures (Park Model)', fontsize=14, fontweight='bold')
+plt.xlabel('Time (s)', fontsize=12)
+plt.ylabel('Temperature (K)', fontsize=12)
+plt.grid(True, which="both", ls="-", alpha=0.3)
+plt.legend(loc='best', fontsize=11)
+plt.tight_layout()
+plt.savefig('temperature_plot_refactor.png', dpi=200, bbox_inches='tight')
 print("Saved temperature_plot_refactor.png")
+print(f"  hy2Foam data range: T_tr=[{data['T_tr[K]'].min():.1f}, {data['T_tr[K]'].max():.1f}] K, time=[{data['Time'].min():.2e}, {data['Time'].max():.2e}] s")
+print(f"  Reference data range: T_tr=[{ref_T_tr.min():.1f}, {ref_T_tr.max():.1f}] K, time=[{ref_time.min():.2e}, {ref_time.max():.2e}] s")
 
 # --- Plot 2: Normalized Number Densities ---
 plt.figure(figsize=(10, 6))
