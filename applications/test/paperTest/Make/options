@@ -10,7 +10,7 @@ c++WARN += -Wno-old-style-cast \
 EXE_INC = \
     -std=c++17 \
     -I$(MPP_DIRECTORY)/install/include/mutation++ \
-    -I$(MPP_EIGEN)/install/include/eigen3 \
+    -I$(MPP_DIRECTORY)/install/include/eigen3 \
     -I$(MPP_DATA_DIRECTORY)/data/mechanisms \
     -I$(MPP_DATA_DIRECTORY)/data/mixtures \
     -I$(MPP_DATA_DIRECTORY)/data/thermo \

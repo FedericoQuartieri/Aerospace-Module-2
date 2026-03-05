@@ -172,14 +172,15 @@ int main(int argc, char *argv[])
     std::vector<double> temps = {T_tr_init, T_vib_init};
     mix.setState(rho_i.data(), temps.data(), 1);  // vars=1: (rho_i, {T, Tv})
     
-    // Get the energies as computed by Mutation++ for consistency
-    std::vector<double> energies(2);
-    mix.getEnergiesMass(energies.data());
-    
+    // Get mixture energies (J/kg) according to the selected state model
+    const std::size_t nE = static_cast<std::size_t>(mix.nEnergyEqns());
+    std::vector<double> energies(nE, 0.0);
+    mix.mixtureEnergies(energies.data());
+
     // Convert to volumetric energies (J/m³)
     scalar rho_total_val = rho_i[iN] + rho_i[iN2];
-    rhoE = energies[0] * rho_total_val;   // Total internal energy
-    rhoEv = energies[1] * rho_total_val;  // Vibrational energy
+    rhoE = energies[0] * rho_total_val;
+    rhoEv = (nE > 1 ? energies[1] : 0.0) * rho_total_val;
     
     Info<< "After setState: rhoE=" << rhoE << " J/m3, rhoEv=" << rhoEv << " J/m3, Total=" << (rhoE+rhoEv) << " J/m3" << endl;
     Info<< "Init State: P=" << mix.P() << " Pa, T=" << mix.T() << " K, Tv=" << mix.Tv() << " K" << endl;

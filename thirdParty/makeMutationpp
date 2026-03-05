@@ -32,7 +32,7 @@
 #     Federico Piscaglia
 #     Dept. of Aerospace Science and Technology (DAER)
 #     Politecnico di Milano
-#     
+#
 #------------------------------------------------------------------------------
 
 nProcs=2;
@@ -40,7 +40,7 @@ nProcs=2;
 #[ -d $MPP_DIRECTORY ] && echo "✅ MutationPP already installed" && exit 0
 
 #- mutation++
-if [ ! -d "MPP_DIRECTORY" ];
+if [ ! -d "$MPP_DIRECTORY" ];
 then
     echo "Mutationpp folder is missing. Please clone the git repo:"
     echo "git clone https://github.com/mutationpp/Mutationpp Mutationpp";
@@ -54,12 +54,7 @@ mkdir -p $MPP_DIRECTORY/build
 cd $MPP_DIRECTORY/build
 
 cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTING=ON \
+      -DFETCHCONTENT_TRY_FIND_PACKAGE_MODE=NEVER \
       -DCMAKE_INSTALL_PREFIX:PATH=$(realpath ../install) ..
 
 make -j $nProcs install
-
-#- install Eigen
-mkdir -p $MPP_EIGEN/build
-mkdir -p $MPP_EIGEN/install
-cd $MPP_EIGEN/build
-cmake .. -DCMAKE_INSTALL_PREFIX=$MPP_EIGEN/install && make install
