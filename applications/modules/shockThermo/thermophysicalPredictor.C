@@ -32,6 +32,37 @@ License
 
 void Foam::solvers::shockThermo::thermophysicalPredictor()
 {
+    const bool hasTve = mesh.foundObject<volScalarField>("Tve");
+
+    bool solveTveRelax = false;
+    bool coupleEnergyRelax = false;
+    scalar tauVT = scalar(1e-4);
+    scalar minTve = scalar(1);
+    scalar maxTve = scalar(GREAT);
+    scalar cvVeOverCvTr = scalar(1);
+
+    const dictionary& thermoProperties = thermo_.properties();
+    if (hasTve && thermoProperties.found("highEnthalpyRelaxation"))
+    {
+        const dictionary& relaxDict =
+            thermoProperties.subDict("highEnthalpyRelaxation");
+
+        solveTveRelax = relaxDict.lookupOrDefault<Switch>("solveTve", false);
+        coupleEnergyRelax =
+            relaxDict.lookupOrDefault<Switch>("coupleEnergy", false);
+        tauVT = relaxDict.lookupOrDefault<scalar>("tauVT", tauVT);
+        minTve = relaxDict.lookupOrDefault<scalar>("minTemperature", minTve);
+        maxTve = relaxDict.lookupOrDefault<scalar>("maxTemperature", maxTve);
+        cvVeOverCvTr =
+            relaxDict.lookupOrDefault<scalar>("cvVeOverCvTr", cvVeOverCvTr);
+    }
+
+    const dimensionedScalar tauVTDim
+    (
+        "tauVT",
+        dimTime,
+        max(tauVT, scalar(SMALL))
+    );
 
     // add support to multi-specie chemistry
     tmp<fv::convectionScheme<scalar>> mvConvection
@@ -118,13 +149,37 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
 
 
     //- for high enthalpy flows, e = e_rt + e_ve.
-    
+
+    volScalarField eRelaxSource
+    (
+        IOobject
+        (
+            "eRelaxSource",
+            mesh.time().name(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh,
+        dimensionedScalar(dimEnergy/dimVolume/dimTime, Zero)
+    );
+
+    if (hasTve && solveTveRelax && coupleEnergyRelax)
+    {
+        const volScalarField& Tve = mesh.lookupObject<volScalarField>("Tve");
+
+        // Positive source here is removed from e-equation RHS below.
+        eRelaxSource =
+            rho*max(cvVeOverCvTr, scalar(0))*thermo_.Cv()*(thermo_.T() - Tve)
+           /tauVTDim;
+    }
+
     fvScalarMatrix EEqn
     (
         fvm::ddt(rho, e) + fvc::div(phiEp)
       + fvc::ddt(rho, K)
      ==
-        fvModels().source(rho, e)
+        fvModels().source(rho, e) - eRelaxSource
     );
 
     if (!inviscid)
@@ -147,6 +202,37 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
     fvConstraints().constrain(e);
 
     thermo_.correct();
+
+    if (hasTve)
+    {
+        if (solveTveRelax)
+        {
+            volScalarField& Tve = mesh.lookupObjectRef<volScalarField>("Tve");
+
+            fvScalarMatrix TveEqn
+            (
+                fvm::ddt(rho, Tve)
+              + mvConvection->fvmDiv(phi, Tve)
+             ==
+                rho*(thermo_.T() - Tve)/tauVTDim
+              + fvModels().source(rho, Tve)
+            );
+
+            TveEqn.relax();
+
+            fvConstraints().constrain(TveEqn);
+
+            TveEqn.solve("Tve");
+
+            fvConstraints().constrain(Tve);
+
+            Tve.max(minTve);
+            Tve.min(maxTve);
+            Tve.correctBoundaryConditions();
+
+            thermo_.correct();
+        }
+    }
 
 }
 

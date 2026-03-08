@@ -9,5 +9,6 @@ cp -r 0.bak 0
 runApplication blockMesh
 runApplication setFields
 runApplication foamRun
+./makeResultsCsv.sh
 
 #------------------------------------------------------------------------------

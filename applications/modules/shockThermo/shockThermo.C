@@ -87,6 +87,11 @@ Y(Y_)
         fields.add(Y[i]);
     }
     fields.add(thermo.he());
+
+    if (mesh.foundObject<volScalarField>("Tve"))
+    {
+        fields.add(mesh.lookupObject<volScalarField>("Tve"));
+    }
 }
 
 

@@ -1,4 +1,7 @@
 EXE_INC = \
+    -std=c++17 \
+    -I$(MPP_DIRECTORY)/install/include/mutation++ \
+    -I$(MPP_DIRECTORY)/install/include/eigen3 \
     -I$(POLIMI_SRC)/thermophysicalModels/specie/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/multicomponentThermo/lnInclude \
     -I$(LIB_SRC)/physicalProperties/lnInclude \
@@ -10,4 +13,5 @@ LIB_LIBS = \
     -lfluidThermophysicalModels \
     -lspecie \
     -lfiniteVolume \
-    -lmulticomponentThermophysicalModels
+    -lmulticomponentThermophysicalModels \
+    -L$(MPP_DIRECTORY)/install/lib -lmutation++

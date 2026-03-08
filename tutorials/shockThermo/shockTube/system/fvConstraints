@@ -15,6 +15,6 @@ FoamFile
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 //#includeConstraint limitLowPressure(min=1e4)
-#includeConstraint limitTemperature(min=299, max=3500)
+#includeConstraint limitTemperature(min=299, max=20000)
 
 // ************************************************************************* //

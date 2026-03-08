@@ -134,8 +134,6 @@ class highEnthalpyMulticomponentThermo::composite
 
 private:
 
-        volScalarField Tve_;
-
 public:
 
     // Constructors
@@ -159,18 +157,6 @@ public:
                 mixture.specieNames(),
                 mesh,
                 phaseName
-            ),
-            Tve_
-            (
-                IOobject
-                (
-                    "Tve",
-                    mesh.time().name(),
-                    mesh,
-                    IOobject::MUST_READ,
-                    IOobject::AUTO_WRITE
-                ),
-                mesh
             )
         {
 

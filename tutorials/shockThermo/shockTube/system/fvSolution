@@ -37,6 +37,13 @@ solvers
         relTol          0;
     }
 
+    "Tve.*"
+    {
+        $U;
+        tolerance       1e-10;
+        relTol          0;
+    }
+
     "Yi.*"
     {
         solver          PBiCG;

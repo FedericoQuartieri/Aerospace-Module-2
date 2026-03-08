@@ -25,6 +25,26 @@ thermoType
     specie          specie;
 }
 
+highEnthalpyMutation
+{
+    mixture                 air_11;
+    stateModel              ChemNonEqTTv;
+    thermodynamicDatabase   RRHO;
+    minTemperature          298.15;
+    minPressure             1;
+    forceThermalEquilibrium no;
+}
+
+highEnthalpyRelaxation
+{
+    solveTve        yes;
+    coupleEnergy    yes;
+    cvVeOverCvTr    4.0;
+    tauVT           1.2e-5;
+    minTemperature  298.15;
+    maxTemperature  20000;
+}
+
 defaultSpecie N2;
 
 #include "speciesThermo.janaf"
