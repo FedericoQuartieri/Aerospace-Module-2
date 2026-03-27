@@ -1,3 +1,0 @@
-nonReacting/paperTest.C
-
-EXE = $(FOAM_USER_APPBIN)/paperTest
