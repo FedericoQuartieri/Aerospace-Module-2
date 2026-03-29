@@ -1,3 +1,0 @@
-Test-NN2-VT.C
-
-EXE = $(FOAM_USER_APPBIN)/Test-NN2-VT

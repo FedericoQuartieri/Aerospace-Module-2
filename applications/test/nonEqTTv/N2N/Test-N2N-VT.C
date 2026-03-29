@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     //
     // Mutationmpp can compute Q_VT and Cvs for us :)
 
-    OFstream out("results.csv");
+    OFstream out("output/results-N2N.csv");
     out << "t,T_tr,T_ve" << endl;
     out << "0," << mix.T() << "," << mix.Tv() << endl;
 
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
        }
     }
 
-    Info << "Output saved to results.csv" << endl;
+    Info << "Output saved to output/results-N2N.csv" << endl;
 
     return 0;
 }

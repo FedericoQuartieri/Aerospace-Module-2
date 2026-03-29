@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Load data (skip header if present)
-data = np.loadtxt("results.csv", delimiter=",", skiprows=1)
+data = np.loadtxt(sys.argv[1], delimiter=",", skiprows=1)
 
 # Columns
 t = data[:, 0]

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+cd ${0%/*} || exit 1
+
+export MPP_DATA_DIRECTORY=mutation-data
+
+Test-N2
+Test-N2N-VT
+
