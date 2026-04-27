@@ -15,10 +15,23 @@ using namespace Foam;
 int main(int argc, char *argv[])
 {
     // WARNING: Set MPP_DATA_DIRECTORY env to ./local_data
-    // to ignore electron energy source terms!
+    // local_data/thermo/species.xml defines custom energy levels
+    // for the species, as opposed to Mutation default ones
     //
-    // local_data/thermo/species.xml defines only ground-state
-    // energy levels, as opposed to Mutation default ones
+    // NOTE: The electronic data (energy levels) shown in the appendix
+    // of the paper are not able to reproduce exactly their results
+    // for the electronic case (Fig. 4, with or without E_el), while
+    // Mutation default ones can.
+    //
+    // For the non-electronic case (Fig. 3), the closest we can get to their
+    // result is to remove all energy levels and set the vibrational
+    // temperature to 3371.0, like shown in their appendix. Lowering the
+    // vibrational temperature can lead to the same exact result, but
+    // there's definitely something weird happening with these constants.
+
+    // NOTE: Electron energy (related to the number of free
+    // electrons in the mixture) is not modeled, nor present
+    // for N, N2-N and N2-O2
 
     // Initializing a 5-species air mixture
     Mutation::MixtureOptions opts("air_5");
@@ -36,7 +49,7 @@ int main(int argc, char *argv[])
     // Pressure of the mixture in Pascal
     const double P = Mutation::ONEATM;
      // Trans-rotational temperature
-    double T_tr = 10000.0;
+    double T_tr = 30000.0; // 10000.0 for non-electronic case
     // Vibro-electronic temperature
     double T_ve = 1000.0;
 
