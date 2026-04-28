@@ -20,6 +20,7 @@ T_ve = T_ve[mask]
 plt.figure()
 
 plt.axhline(T_tr[-1], color="red", linestyle="--")
+plt.text(t[-1] * 1.1, T_tr[-1] * 1.02, f"{T_tr[-1]:.2f}", ha="right")
 
 plt.plot(t, T_tr, label="T_tr")
 plt.plot(t, T_ve, label="T_ve")

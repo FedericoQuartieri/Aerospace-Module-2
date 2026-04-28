@@ -4,3 +4,4 @@ cd ${0%/*} || exit 1
 
 wmake N2
 wmake N2N
+wmake N2O2

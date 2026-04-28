@@ -15,10 +15,10 @@ using namespace Foam;
 int main(int argc, char *argv[])
 {
     // WARNING: Set MPP_DATA_DIRECTORY env to ./local_data
-    // to ignore electron energy source terms!
-    //
     // local_data/thermo/species.xml defines only ground-state
     // energy levels, as opposed to Mutation default ones
+
+    // TODO: Test convergence temps with updated species.xml
 
     // Initializing a 5-species air mixture
     Mutation::MixtureOptions opts("air_5");
