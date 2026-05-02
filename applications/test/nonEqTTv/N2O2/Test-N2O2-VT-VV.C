@@ -20,6 +20,12 @@ double hToE(double h, double T, double M)
     return h * (Mutation::RU * T / M); // Rm here
 }
 
+// Returns the reduced molar mass in kg/mol (eq. 14)
+double reducedMw(double M1, double M2)
+{
+    return (M1 * M2) / (M1 + M2);
+}
+
 // Calculates vibrational relaxation time of the i-th specie
 // of a mixture (Millikan-White + Park correction, eqs. 9-17 from the paper)
 double computeTauVT(const Mutation::Mixture& mix,
@@ -36,8 +42,7 @@ double computeTauVT(const Mutation::Mixture& mix,
     for (int s = 0; s < mix.nSpecies(); ++s)
     {
         const double M_s = mix.speciesMw(s);
-        // Reduced molar mass in g/mol
-        const double M_is = (M_i * M_s) / (M_i + M_s) * 1000.0;
+        const double M_is = reducedMw(M_i, M_s) * 1000; // g/mol here
 
         // Millikan-White contribution
         double A = 1.16e-3 * std::sqrt(M_is) * std::pow(theta_v, 4.0 / 3.0);
@@ -67,7 +72,7 @@ int main(int argc, char *argv[])
     // We're using the RRHO two-temperature model
     opts.setStateModel("ChemNonEqTTv");
     opts.setThermodynamicDatabase("RRHO");
-     // Disable chemical reactions, consider only V-T and V-V exchanges
+    // Disable chemical reactions, consider only V-T and V-V exchanges
     opts.setMechanism("none");
     Mutation::Mixture mix(opts);
 
@@ -111,7 +116,7 @@ int main(int argc, char *argv[])
     double t = 0.0;
     int step = 0;
 
-    OFstream out("output/results-N2O2-VT.csv");
+    OFstream out("output/results-N2O2-VT-VV.csv");
     out << "t,T_tr,T_ve_N2,T_ve_O2" << endl;
     out << "0," << mix.T() << "," << mix.Tv() << "," << mix.Tv() << endl;
 
@@ -130,14 +135,19 @@ int main(int argc, char *argv[])
                            NULL, NULL, NULL, h_v.data(), h_el.data(), NULL);
         double e_N2_eq = hToE(h_v[N2_idx] + h_el[N2_idx], T_tr, M_N2);
         double e_O2_eq = hToE(h_v[O2_idx] + h_el[O2_idx], T_tr, M_O2);
+        // Target energies e_m,v(T_tr) (at equilibrium)
+        double e_v_N2_eq = hToE(h_v[N2_idx], T_tr, M_N2);
+        double e_v_O2_eq = hToE(h_v[O2_idx], T_tr, M_O2);
 
-        // Compute current energies e_m,ve(T_m,ve)
+        // Compute current energies e_m,ve(T_m,ve) and e_m,v(T_m,ve)
         mix.speciesHOverRT(T_tr, T_tr, T_tr, T_ve_N2, T_ve_N2,
                            NULL, NULL, NULL, h_v.data(), h_el.data(), NULL);
         double e_N2 = hToE(h_v[N2_idx] + h_el[N2_idx], T_tr, M_N2);
+        double e_v_N2 = hToE(h_v[N2_idx], T_tr, M_N2);
         mix.speciesHOverRT(T_tr, T_tr, T_tr, T_ve_O2, T_ve_O2,
                            NULL, NULL, NULL, h_v.data(), h_el.data(), NULL);
         double e_O2 = hToE(h_v[O2_idx] + h_el[O2_idx], T_tr, M_O2);
+        double e_v_O2 = hToE(h_v[O2_idx], T_tr, M_O2);
 
         // NOTE: For VV, e_v is used, so perhaps you should
         // compute e_v and e_el separately
@@ -147,28 +157,29 @@ int main(int argc, char *argv[])
         double n_tot = mix.numberDensity();
         double tau_N2 = computeTauVT(mix, N2_idx, p, T_tr, n_tot, theta_v_N2);
         double tau_O2 = computeTauVT(mix, O2_idx, p, T_tr, n_tot, theta_v_O2);
-        // Compute source terms Q_m,VT
+        // Compute source terms Q_m,VT (eq. 8 from paper)
         double Q_N2_VT = rho_per_specie[N2_idx] * (e_N2_eq - e_N2) / tau_N2;
         double Q_O2_VT = rho_per_specie[O2_idx] * (e_O2_eq - e_O2) / tau_O2;
 
-        /*
-        // VV Source Term
-        // note that e_v is needed here, not e_ve
-        double M_red = (mix.speciesMw(iN2) * mix.speciesMw(iO2)) /
-                       (mix.speciesMw(iN2) + mix.speciesMw(iO2));
-        double K_vv = Mutation::NA * 4.0e-19 * 0.01 * 
-            std::sqrt(8.0 * Mutation::RU * T_tr / (Mutation::PI * M_red));
-
-        // Detailed balance term: e_eq_N2 * e_curr_O2 / e_eq_O2
-        double Q_N2_VV = K_vv * (rho_per_specie[iO2]/mix.speciesMw(iO2)) *
-                         rho_per_specie[iN2] *
-                         (e_eq_N2 * e_curr_O2 / std::max(e_eq_O2, 1e-10) - e_curr_N2);
+        double M_N2_O2 = reducedMw(M_N2, M_O2);
+        // Exchange proability set by the paper
+        const double P_N2_O2 = 0.01;
+        // Collisional cross-section of N2-O2
+        // WARNING: Not sure about this, but it seems to work.
+        const double sigma_N2_O2 = 4.0e-19;
+        // Compute source terms Q_m,VV (eq. 18 from paper)
+        double Q_N2_VV = Mutation::NA * sigma_N2_O2 * P_N2_O2 * 
+                         std::sqrt(8.0 * Mutation::RU * T_tr /
+                                   (Mutation::PI * M_N2_O2)) *
+                         rho_per_specie[O2_idx] / M_O2 *
+                         rho_per_specie[N2_idx] *
+                         (e_v_N2_eq * e_v_O2 / e_v_O2_eq - e_v_N2);
+        // To ensure energy conservation
         double Q_O2_VV = -Q_N2_VV;
-        */
 
-        // Currently ignoring VV exchange
-        double Q_N2_VV = 0;
-        double Q_O2_VV = 0;
+        // To ignore V-V exchange
+        //Q_N2_VV = 0;
+        //Q_O2_VV = 0;
 
         // Compute cv_m,ve and cv_tr from dimensionless cvs
         std::vector<double> cv_dim_N2(ns), cv_dim_O2(ns);
@@ -186,11 +197,13 @@ int main(int argc, char *argv[])
                            rho_per_specie[O2_idx] *
                            (2.5 * Mutation::RU / M_O2);
 
-        T_tr -= (Q_N2_VT + Q_O2_VT) * dt / rho_cv_tr;
         T_ve_N2 += (Q_N2_VT + Q_N2_VV) * dt /
                    (rho_per_specie[N2_idx] * cv_ve_N2);
-        T_ve_O2 += (Q_O2_VT + Q_O2_VV) * dt / 
+        T_ve_O2 += (Q_O2_VT + Q_O2_VV) * dt /
                    (rho_per_specie[O2_idx] * cv_ve_O2);
+        // Source term for E_tr is -sum_m(E_ve,m),
+        // note that Q_N2_VV = -Q_O2_VV
+        T_tr -= (Q_N2_VT + Q_O2_VT) * dt / rho_cv_tr;
 
         // Refresh mix state for next p and n_tot lookups
         // T_ve shouldn't influence them, so any value should be fine
@@ -204,7 +217,7 @@ int main(int argc, char *argv[])
         t += dt;
     }
 
-    Info << "Output saved to output/results-N2O2-VT.csv" << endl;
+    Info << "Output saved to output/results-N2O2-VT-VV.csv" << endl;
 
     return 0;
 }
