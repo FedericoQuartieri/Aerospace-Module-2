@@ -1,0 +1,10 @@
+#!/bin/sh
+
+cd ${0%/*} || exit 1
+
+# Remove generated artifacts only (mesh, results, logs); keep 0/ and setup
+foamListTimes -rm 2>/dev/null
+rm -rf constant/polyMesh postProcessing
+rm -f log.blockMesh log.foamRun reference.csv heatbath-comparison.png
+
+#------------------------------------------------------------------------------

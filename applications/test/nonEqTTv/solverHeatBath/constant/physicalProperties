@@ -16,30 +16,33 @@ FoamFile
 
 thermoType
 {
-    type            highEnthalpyThermo; 
+    type            highEnthalpyThermo;
     mixture         coefficientWilkeMulticomponentMixture;
-    transport       sutherland; // gupta
+    transport       sutherland;
     thermo          rrho;
     energy          sensibleInternalEnergy;
     equationOfState perfectGas;
     specie          specie;
 }
 
+// Same Mutation++ configuration as the standalone nonEqTTv tests:
+// 5-species air, two-temperature RRHO, no chemistry (V-T exchange only).
+// Run with MPP_DATA_DIRECTORY pointing to nonEqTTv/mutation-data.
 highEnthalpyMutation
 {
-    mixture                 air_11;
+    mixture                 air_5;
     stateModel              ChemNonEqTTv;
     thermodynamicDatabase   RRHO;
     mechanism               none;
-    minTemperature          298.15;
+    minTemperature          200;
     maxTemperature          50000;
     minPressure             1;
     forceThermalEquilibrium no;
 }
 
-// V-T relaxation: tauVT and the source terms are now computed per-cell from
-// Mutation++ (Millikan-White + Park through the transfer database); the
-// solver solves a conservative equation for the vibro-electronic energy eve.
+// V-T relaxation: tauVT and the source terms are computed per-cell from
+// Mutation++; the solver solves a conservative equation for the
+// vibro-electronic energy eve.
 highEnthalpyRelaxation
 {
     solveEve        yes;
