@@ -6,6 +6,8 @@
 #include "mathematicalConstants.H"
 #include "OFstream.H"
 
+#include <cstdlib>
+
 #ifdef Log
 #undef Log
 #endif
@@ -52,6 +54,13 @@ int main(int argc, char *argv[])
     double T_tr = 30000.0; // 10000.0 for non-electronic case
     // Vibro-electronic temperature
     double T_ve = 1000.0;
+
+    // Optional overrides: Test-N2 <T_tr> <T_ve>
+    if (argc > 2)
+    {
+        T_tr = std::atof(argv[1]);
+        T_ve = std::atof(argv[2]);
+    }
 
     const std::vector<double> P_Ttr_Tve = { Mutation::ONEATM, T_tr, T_ve };
     mix.setState(Y_per_specie.data(), P_Ttr_Tve.data(), 2);

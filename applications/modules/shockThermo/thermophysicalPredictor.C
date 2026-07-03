@@ -25,6 +25,7 @@ License
 
 #include "shockThermo.H"
 #include "fvmDdt.H"
+#include "fvmSup.H"
 #include "fvcDiv.H"
 #include "fvcDdt.H"
 
@@ -32,37 +33,33 @@ License
 
 void Foam::solvers::shockThermo::thermophysicalPredictor()
 {
-    const bool hasTve = mesh.foundObject<volScalarField>("Tve");
+    // The two-temperature model is active when the highEnthalpyThermo
+    // registered its fields: the conserved vibro-electronic energy "eve" and
+    // the Landau-Teller linearisation ("eveEq", "tauVT") computed from
+    // Mutation++ in thermo.correct().
+    const bool hasEve =
+        mesh.foundObject<volScalarField>("eve")
+     && mesh.foundObject<volScalarField>("eveEq")
+     && mesh.foundObject<volScalarField>("tauVT")
+     && mesh.foundObject<volScalarField>("cvTrRatio");
 
-    bool solveTveRelax = false;
-    bool coupleEnergyRelax = false;
-    scalar tauVT = scalar(1e-4);
-    scalar minTve = scalar(1);
-    scalar maxTve = scalar(GREAT);
-    scalar cvVeOverCvTr = scalar(1);
+    bool solveEve = false;
+    bool coupleEnergy = false;
 
     const dictionary& thermoProperties = thermo_.properties();
-    if (hasTve && thermoProperties.found("highEnthalpyRelaxation"))
+    if (hasEve && thermoProperties.found("highEnthalpyRelaxation"))
     {
         const dictionary& relaxDict =
             thermoProperties.subDict("highEnthalpyRelaxation");
 
-        solveTveRelax = relaxDict.lookupOrDefault<Switch>("solveTve", false);
-        coupleEnergyRelax =
+        solveEve = relaxDict.lookupOrDefault<Switch>
+        (
+            "solveEve",
+            relaxDict.lookupOrDefault<Switch>("solveTve", false)
+        );
+        coupleEnergy =
             relaxDict.lookupOrDefault<Switch>("coupleEnergy", false);
-        tauVT = relaxDict.lookupOrDefault<scalar>("tauVT", tauVT);
-        minTve = relaxDict.lookupOrDefault<scalar>("minTemperature", minTve);
-        maxTve = relaxDict.lookupOrDefault<scalar>("maxTemperature", maxTve);
-        cvVeOverCvTr =
-            relaxDict.lookupOrDefault<scalar>("cvVeOverCvTr", cvVeOverCvTr);
     }
-
-    const dimensionedScalar tauVTDim
-    (
-        "tauVT",
-        dimTime,
-        max(tauVT, scalar(SMALL))
-    );
 
     // add support to multi-specie chemistry
     tmp<fv::convectionScheme<scalar>> mvConvection
@@ -127,7 +124,7 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
     // between thermo classes. The thermo.correct() function must be the one
     // defined in the derived class; shockFluid::thermophysicalPredictor() is
     // pasted here below.
-    
+
     volScalarField& e = thermo_.he();
 
     const surfaceScalarField e_pos(interpolate(e, pos, thermo.T().name()));
@@ -150,6 +147,10 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
 
     //- for high enthalpy flows, e = e_rt + e_ve.
 
+    // V-T energy sink in the solved energy equation: the energy transferred
+    // to the vibro-electronic pool, Q_VT = rho*(eveEq - eve)/tauVT, scaled by
+    // cvTrRatio = Cv_base/cv_tr so that the base-thermo T inversion produces
+    // dT/dt = -Q_VT/(rho*cv_tr) as prescribed by the two-temperature model.
     volScalarField eRelaxSource
     (
         IOobject
@@ -164,14 +165,18 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
         dimensionedScalar(dimEnergy/dimVolume/dimTime, Zero)
     );
 
-    if (hasTve && solveTveRelax && coupleEnergyRelax)
+    if (hasEve && solveEve && coupleEnergy)
     {
-        const volScalarField& Tve = mesh.lookupObject<volScalarField>("Tve");
+        const volScalarField& eve =
+            mesh.lookupObject<volScalarField>("eve");
+        const volScalarField& eveEq =
+            mesh.lookupObject<volScalarField>("eveEq");
+        const volScalarField& tauVT =
+            mesh.lookupObject<volScalarField>("tauVT");
+        const volScalarField& cvTrRatio =
+            mesh.lookupObject<volScalarField>("cvTrRatio");
 
-        // Positive source here is removed from e-equation RHS below.
-        eRelaxSource =
-            rho*max(cvVeOverCvTr, scalar(0))*thermo_.Cv()*(thermo_.T() - Tve)
-           /tauVTDim;
+        eRelaxSource = cvTrRatio*rho*(eveEq - eve)/tauVT;
     }
 
     fvScalarMatrix EEqn
@@ -201,39 +206,44 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
 
     fvConstraints().constrain(e);
 
+    // Updates T from the solved energy and refreshes eveEq/tauVT/cvTrRatio
+    // (and Tve from eve) through the highEnthalpyThermo bridge
     thermo_.correct();
 
-    if (hasTve)
+    if (hasEve && solveEve)
     {
-        if (solveTveRelax)
-        {
-            volScalarField& Tve = mesh.lookupObjectRef<volScalarField>("Tve");
+        volScalarField& eve = mesh.lookupObjectRef<volScalarField>("eve");
+        const volScalarField& eveEq =
+            mesh.lookupObject<volScalarField>("eveEq");
+        const volScalarField& tauVT =
+            mesh.lookupObject<volScalarField>("tauVT");
 
-            fvScalarMatrix TveEqn
-            (
-                fvm::ddt(rho, Tve)
-              + mvConvection->fvmDiv(phi, Tve)
-             ==
-                rho*(thermo_.T() - Tve)/tauVTDim
-              + fvModels().source(rho, Tve)
-            );
+        // Conservative vibro-electronic energy equation with semi-implicit
+        // Landau-Teller relaxation towards eveEq = e_ve(Ttr)
+        fvScalarMatrix EveEqn
+        (
+            fvm::ddt(rho, eve)
+          + mvConvection->fvmDiv(phi, eve)
+         ==
+            rho*eveEq/tauVT
+          - fvm::Sp(rho/tauVT, eve)
+          + fvModels().source(rho, eve)
+        );
 
-            TveEqn.relax();
+        EveEqn.relax();
 
-            fvConstraints().constrain(TveEqn);
+        fvConstraints().constrain(EveEqn);
 
-            TveEqn.solve("Tve");
+        EveEqn.solve("eve");
 
-            fvConstraints().constrain(Tve);
+        fvConstraints().constrain(eve);
 
-            Tve.max(minTve);
-            Tve.min(maxTve);
-            Tve.correctBoundaryConditions();
+        eve.max(dimensionedScalar(eve.dimensions(), Zero));
+        eve.correctBoundaryConditions();
 
-            thermo_.correct();
-        }
+        // Derive Tve from the updated eve and refresh the properties
+        thermo_.correct();
     }
-
 }
 
 
