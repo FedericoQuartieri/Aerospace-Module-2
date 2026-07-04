@@ -1,0 +1,24 @@
+#!/bin/sh
+
+cd ${0%/*} || exit 1
+
+# Reacting N2-N heat bath: non-electronic Mutation++ data (paper Sec. 3.4)
+export MPP_DATA_DIRECTORY="$(cd .. && pwd)/mutation-data-noel"
+
+# 1. Reference: standalone reacting heat bath, Mutation++ end-to-end path
+#    (same physics the solver bridge uses: Park exponent 0.5)
+(
+    cd .. || exit 1
+    Test-N2N-reacting 30000 1000 mpp || exit 1
+    cp output/results-N2N-reacting-30000-1000-mpp-park05.csv \
+       solverHeatBathReacting/reference.csv
+) || exit 1
+
+# 2. Solver heat bath (single cell, zero velocity, chemistry on)
+blockMesh > log.blockMesh 2>&1 || { cat log.blockMesh; exit 1; }
+foamRun > log.foamRun 2>&1 || { tail -30 log.foamRun; exit 1; }
+
+# 3. Compare temperature and composition histories
+python3 compare-heatbath-reacting.py
+
+#------------------------------------------------------------------------------

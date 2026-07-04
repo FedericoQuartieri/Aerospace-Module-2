@@ -25,6 +25,21 @@ namespace Foam
 
 /*---------------------------------------------------------------------------*\
             Class HighEnthalpyMulticomponentThermo Declaration
+
+    Two-temperature thermodynamics bridged to Mutation++.
+
+    CONSERVATIVE FORMULATION (milestone 3): the solved sensible energy "e"
+    uses the Mutation++ datum e = e_tr(T) + e_ve(Tve) (formation enthalpies
+    excluded, exactly as in the 0D reacting tests).  Temperatures are decoded
+    from the conserved variables:
+        Tve  from  eve                 (Newton on e_ve)
+        T    from  e - eve = e_tr(T)   (Newton on e_tr; linear for RRHO)
+    V-T exchange moves energy between the tr and ve pools inside "e", so no
+    relaxation term appears in the total energy equation; chemistry adds
+        Qdot = -sum_i hf_i * wdot_i        to the e equation, and
+        Qcv  =  sum_i e_ve,i * wdot_i      to the eve equation (Candler).
+    The V-T relaxation time is recast from Mutation++'s
+    energyTransferSource() after subtracting the chemistry-vibration part.
 \*---------------------------------------------------------------------------*/
 
 template<class Thermo>
@@ -49,14 +64,21 @@ private:
     volScalarField eveEq_;
 
     //- Effective V-T relaxation time [s] such that
-    //  Q_VT = rho*(eveEq - eve)/tauVT matches Mutation++'s source term
+    //  Q_VT = rho*(eveEq - eve)/tauVT matches Mutation++'s pure V-T source
     volScalarField tauVT_;
 
-    //- Ratio between the base-thermo mixture Cv (which links the solved
-    //  energy to T through the polynomial inversion) and the trans-rotational
-    //  Cv from Mutation++. Scales the V-T sink in the total energy equation
-    //  so that dT/dt = -Q_VT/(rho*cv_tr) as in the two-temperature model.
-    volScalarField cvTrRatio_;
+    //- Chemistry heat release for the sensible energy equation [W/m^3]:
+    //  Qdot = -sum_i hf_i*wdot_i (formation enthalpies excluded from "e")
+    volScalarField::Internal Qdot_;
+
+    //- Chemistry-vibration coupling for the eve equation [W/m^3]:
+    //  Qcv = sum_i (e_v,i + e_el,i)(Tve)*wdot_i (non-preferential Candler,
+    //  mirrors Mutation++'s OmegaCV + OmegaCElec)
+    volScalarField::Internal Qcv_;
+
+    //- Net mass production rate per FOAM specie [kg/m^3/s], registered as
+    //  "mutR_<specie>" for use as source in the specie transport equations
+    PtrList<volScalarField::Internal> RY_;
 
     //- Optional Mutation++ bridge. If not available, fallback to base thermo.
     std::unique_ptr<Mutation::Mixture> mutationMixturePtr_;
@@ -81,6 +103,9 @@ private:
     int nMutationEnergyEqns_;
     std::vector<double> mutationMw_;
 
+    //- Formation enthalpy per unit mass of each Mutation++ specie [J/kg]
+    std::vector<double> mutationHfMass_;
+
     //- Work buffers (avoid per-cell allocations)
     mutable std::vector<double> mutW1_;
     mutable std::vector<double> mutW2_;
@@ -88,13 +113,14 @@ private:
     mutable std::vector<double> mutW4_;
     mutable std::vector<double> mutY_;
     mutable std::vector<double> mutQ_;
-    mutable std::vector<double> mutCv_;
+    mutable std::vector<double> mutWdot_;
 
     //- Load Mutation++ options and build species mapping
     void initialiseMutation();
 
-    //- Initialise eve from the current (T, Tve, Y) fields
-    void initialiseEve();
+    //- Initialise eve and re-initialise the solved energy "e" on the
+    //  Mutation++ datum e = e_tr(T) + e_ve(Tve) from the (T, Tve, Y) fields
+    void initialiseEnergies();
 
     //- Fill mutY_ with normalised Mutation-ordered mass fractions taken
     //  from an accessor yFoam(speciei). Returns false if no mass is mapped.
@@ -109,6 +135,14 @@ private:
     //  composition currently stored in mutY_. Pure function (no setState).
     inline scalar mixtureCvVe(const scalar T, const scalar Tv) const;
 
+    //- Mixture trans-rotational sensible energy [J/kg] at Ttr for the
+    //  composition currently stored in mutY_. Pure function (no setState).
+    inline scalar mixtureEtr(const scalar T) const;
+
+    //- Mixture trans-rotational specific heat [J/kg/K] at Ttr for the
+    //  composition currently stored in mutY_. Pure function (no setState).
+    inline scalar mixtureCvTr(const scalar T) const;
+
     //- Invert Tve from a target eve [J/kg] with Newton iterations for the
     //  composition currently stored in mutY_
     inline scalar TveFromEve
@@ -116,6 +150,14 @@ private:
         const scalar T,
         const scalar eveTarget,
         const scalar TvGuess
+    ) const;
+
+    //- Invert T from a target trans-rotational energy [J/kg] with Newton
+    //  iterations for the composition currently stored in mutY_
+    inline scalar TFromEtr
+    (
+        const scalar etrTarget,
+        const scalar TGuess
     ) const;
 
     //- Update thermo/transport properties from Mutation++ for one state point
@@ -132,17 +174,20 @@ private:
         scalar& kappa
     );
 
-    //- Compute Landau-Teller linearisation (eveEq, tauVT) and the
-    //  trans-rotational Cv at the state currently set in the mixture.
-    //  Must be called right after a successful updateFromMutation().
-    inline void relaxationAtCurrentState
+    //- Compute the relaxation linearisation (eveEq, tauVT) and the chemistry
+    //  sources (wdot in mutWdot_, Qcv, Qdot) at the state currently set in
+    //  the mixture. Must be called right after a successful
+    //  updateFromMutation(). tauVT is recast from the pure V-T part of
+    //  energyTransferSource (total minus Candler CV+CElec).
+    inline void sourcesAtCurrentState
     (
         const scalar T,
         const scalar Tv,
         scalar& eveNow,
         scalar& eveEqv,
         scalar& tau,
-        scalar& cvTr
+        scalar& qcv,
+        scalar& qdot
     ) const;
 
 public:
@@ -210,20 +255,33 @@ public:
             dimensionedScalar(dimTime, scalar(tauInf_)),
             zeroGradientFvPatchScalarField::typeName
         ),
-        cvTrRatio_
+        Qdot_
         (
             IOobject
             (
-                this->phasePropertyName("cvTrRatio"),
+                this->phasePropertyName("mutQdot"),
                 mesh.time().name(),
                 mesh,
                 IOobject::NO_READ,
                 IOobject::NO_WRITE
             ),
             mesh,
-            dimensionedScalar(dimless, 1),
-            zeroGradientFvPatchScalarField::typeName
+            dimensionedScalar(dimEnergy/dimVolume/dimTime, Zero)
         ),
+        Qcv_
+        (
+            IOobject
+            (
+                this->phasePropertyName("mutQcv"),
+                mesh.time().name(),
+                mesh,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            mesh,
+            dimensionedScalar(dimEnergy/dimVolume/dimTime, Zero)
+        ),
+        RY_(),
         mutationMixturePtr_(nullptr),
         foamToMutationSpecie_(),
         mutationMixtureName_("air_11"),
@@ -262,8 +320,32 @@ public:
             }
         }
 
+        // One production-rate field per FOAM specie, named "mutR_<specie>"
+        const speciesTable& species = this->species();
+        RY_.setSize(species.size());
+        forAll(species, speciei)
+        {
+            RY_.set
+            (
+                speciei,
+                new volScalarField::Internal
+                (
+                    IOobject
+                    (
+                        this->phasePropertyName("mutR_" + species[speciei]),
+                        mesh.time().name(),
+                        mesh,
+                        IOobject::NO_READ,
+                        IOobject::NO_WRITE
+                    ),
+                    mesh,
+                    dimensionedScalar(dimMass/dimVolume/dimTime, Zero)
+                )
+            );
+        }
+
         initialiseMutation();
-        initialiseEve();
+        initialiseEnergies();
     }
 
     virtual ~HighEnthalpyMulticomponentThermo() = default;
@@ -295,28 +377,31 @@ public:
     // Member Functions
     virtual void correct() override
     {
-        // First execute the default OpenFOAM update to preserve robustness.
-        FluidMulticomponentThermo<Thermo>::correct();
-
         if (!mutationAvailable_ || !mutationMixturePtr_)
         {
+            // No bridge: plain OpenFOAM update
+            FluidMulticomponentThermo<Thermo>::correct();
             return;
         }
 
-        // Snapshot of the base-thermo mixture Cv before the bridge overwrites
-        // it below: it links the solved energy to T through the polynomial
-        // inversion and is needed for the cvTrRatio source scaling.
-        const volScalarField cvPoly("cvPoly", this->Cv_);
+        // NOTE: the base correct() is intentionally NOT called here: the
+        // solved energy uses the Mutation++ datum (see initialiseEnergies),
+        // so the base polynomial inversion of T from "e" would be
+        // inconsistent. All fields the base update would touch are set
+        // below from the conservative decode.
 
         const PtrList<volScalarField>& Y = this->Y();
 
         const scalarField& pCells = this->p_.primitiveField();
+        const scalarField& eCells = this->he().primitiveField();
         scalarField& TCells = this->T_.primitiveFieldRef();
         scalarField& TveCells = Tve_.primitiveFieldRef();
         const scalarField& eveCells = eve_.primitiveField();
         scalarField& eveEqCells = eveEq_.primitiveFieldRef();
         scalarField& tauCells = tauVT_.primitiveFieldRef();
-        scalarField& ratioCells = cvTrRatio_.primitiveFieldRef();
+        // DimensionedField publicly derives from Field: direct indexing
+        scalarField& QdotCells = Qdot_;
+        scalarField& QcvCells = Qcv_;
         scalarField& CpCells = this->Cp_.primitiveFieldRef();
         scalarField& CvCells = this->Cv_.primitiveFieldRef();
         scalarField& psiCells = this->psi_.primitiveFieldRef();
@@ -334,17 +419,26 @@ public:
 
             mutationMassFractions(yFoam);
 
-            scalar T = max(TCells[celli], mutationMinT_);
-
-            // Derive Tve from the conserved eve field
+            // --- conservative decode: Tve from eve, T from e - eve ---
             scalar Tv = mutationForceThermalEquilibrium_
-                ? T
+                ? max(TCells[celli], mutationMinT_)
                 : TveFromEve
                   (
-                      T,
+                      max(TCells[celli], mutationMinT_),
                       eveCells[celli],
                       max(TveCells[celli], mutationMinT_)
                   );
+
+            scalar T = TFromEtr
+            (
+                eCells[celli] - eveCells[celli],
+                max(TCells[celli], mutationMinT_)
+            );
+
+            if (mutationForceThermalEquilibrium_)
+            {
+                Tv = T;
+            }
 
             scalar Cp = CpCells[celli];
             scalar Cv = CvCells[celli];
@@ -368,11 +462,6 @@ public:
                 )
             )
             {
-                if (mutationForceThermalEquilibrium_)
-                {
-                    Tv = T;
-                }
-
                 TCells[celli] = T;
                 TveCells[celli] = Tv;
                 CpCells[celli] = Cp;
@@ -381,31 +470,46 @@ public:
                 muCells[celli] = mu;
                 kappaCells[celli] = kappa;
 
-                scalar eveNow, eveEqv, tau, cvTr;
-                relaxationAtCurrentState(T, Tv, eveNow, eveEqv, tau, cvTr);
+                scalar eveNow, eveEqv, tau, qcv, qdot;
+                sourcesAtCurrentState(T, Tv, eveNow, eveEqv, tau, qcv, qdot);
 
                 eveEqCells[celli] = eveEqv;
                 tauCells[celli] = tau;
-                ratioCells[celli] =
-                    cvTr > SMALL ? max(cvPoly[celli]/cvTr, scalar(1)) : 1;
+                QcvCells[celli] = qcv;
+                QdotCells[celli] = qdot;
+
+                forAll(RY_, speciei)
+                {
+                    const label mutationSpeciei =
+                        foamToMutationSpecie_[speciei];
+                    RY_[speciei][celli] =
+                        mutationSpeciei >= 0 ? mutWdot_[mutationSpeciei] : 0;
+                }
             }
             else
             {
-                // Disable relaxation where the bridge failed
+                // Disable relaxation and chemistry where the bridge failed
                 eveEqCells[celli] = eveCells[celli];
                 tauCells[celli] = tauInf_;
-                ratioCells[celli] = 1;
+                QcvCells[celli] = 0;
+                QdotCells[celli] = 0;
+
+                forAll(RY_, speciei)
+                {
+                    RY_[speciei][celli] = 0;
+                }
+
                 hadFailure = true;
             }
         }
 
         const volScalarField::Boundary& pBf = this->p_.boundaryField();
+        const volScalarField::Boundary& eBf = this->he().boundaryField();
         volScalarField::Boundary& TBf = this->T_.boundaryFieldRef();
         volScalarField::Boundary& TveBf = Tve_.boundaryFieldRef();
         const volScalarField::Boundary& eveBf = eve_.boundaryField();
         volScalarField::Boundary& eveEqBf = eveEq_.boundaryFieldRef();
         volScalarField::Boundary& tauBf = tauVT_.boundaryFieldRef();
-        volScalarField::Boundary& ratioBf = cvTrRatio_.boundaryFieldRef();
         volScalarField::Boundary& CpBf = this->Cp_.boundaryFieldRef();
         volScalarField::Boundary& CvBf = this->Cv_.boundaryFieldRef();
         volScalarField::Boundary& psiBf = this->psi_.boundaryFieldRef();
@@ -415,12 +519,12 @@ public:
         forAll(TBf, patchi)
         {
             const fvPatchScalarField& pp = pBf[patchi];
+            const fvPatchScalarField& pE = eBf[patchi];
             fvPatchScalarField& pT = TBf[patchi];
             fvPatchScalarField& pTv = TveBf[patchi];
             const fvPatchScalarField& pEve = eveBf[patchi];
             fvPatchScalarField& pEveEq = eveEqBf[patchi];
             fvPatchScalarField& pTau = tauBf[patchi];
-            fvPatchScalarField& pRatio = ratioBf[patchi];
             fvPatchScalarField& pCp = CpBf[patchi];
             fvPatchScalarField& pCv = CvBf[patchi];
             fvPatchScalarField& pPsi = psiBf[patchi];
@@ -436,16 +540,25 @@ public:
 
                 mutationMassFractions(yFoam);
 
-                scalar T = max(pT[facei], mutationMinT_);
-
                 scalar Tv = mutationForceThermalEquilibrium_
-                    ? T
+                    ? max(pT[facei], mutationMinT_)
                     : TveFromEve
                       (
-                          T,
+                          max(pT[facei], mutationMinT_),
                           pEve[facei],
                           max(pTv[facei], mutationMinT_)
                       );
+
+                scalar T = TFromEtr
+                (
+                    pE[facei] - pEve[facei],
+                    max(pT[facei], mutationMinT_)
+                );
+
+                if (mutationForceThermalEquilibrium_)
+                {
+                    Tv = T;
+                }
 
                 scalar Cp = pCp[facei];
                 scalar Cv = pCv[facei];
@@ -469,11 +582,6 @@ public:
                     )
                 )
                 {
-                    if (mutationForceThermalEquilibrium_)
-                    {
-                        Tv = T;
-                    }
-
                     pT[facei] = T;
                     pTv[facei] = Tv;
                     pCp[facei] = Cp;
@@ -482,21 +590,19 @@ public:
                     pMu[facei] = mu;
                     pKappa[facei] = kappa;
 
-                    scalar eveNow, eveEqv, tau, cvTr;
-                    relaxationAtCurrentState(T, Tv, eveNow, eveEqv, tau, cvTr);
+                    scalar eveNow, eveEqv, tau, qcv, qdot;
+                    sourcesAtCurrentState
+                    (
+                        T, Tv, eveNow, eveEqv, tau, qcv, qdot
+                    );
 
                     pEveEq[facei] = eveEqv;
                     pTau[facei] = tau;
-                    pRatio[facei] =
-                        cvTr > SMALL
-                      ? max(cvPoly.boundaryField()[patchi][facei]/cvTr, scalar(1))
-                      : 1;
                 }
                 else
                 {
                     pEveEq[facei] = pEve[facei];
                     pTau[facei] = tauInf_;
-                    pRatio[facei] = 1;
                     hadFailure = true;
                 }
             }
@@ -506,7 +612,7 @@ public:
         {
             WarningInFunction
                 << "Mutation++ update failed for at least one location. "
-                << "Base thermo values were kept for failed entries."
+                << "Previous values were kept for failed entries."
                 << endl;
         }
     }
@@ -589,7 +695,27 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initialiseMutation()
         mutW4_.resize(nMutationSpecies_);
         mutY_.resize(nMutationSpecies_);
         mutQ_.resize(std::max(nMutationEnergyEqns_, 1));
-        mutCv_.resize(nMutationSpecies_*nMutationEnergyEqns_);
+        mutWdot_.resize(nMutationSpecies_);
+
+        // Formation enthalpies per unit mass [J/kg]: hf/RT is returned
+        // normalised by the passed temperature, so hf = (hf/RT)*RU*T is
+        // temperature-independent. Evaluated once here.
+        {
+            const double Tref = 298.15;
+            mutationMixturePtr_->speciesHOverRT
+            (
+                Tref, Tref, Tref, Tref, Tref,
+                nullptr, nullptr, nullptr, nullptr, nullptr,
+                mutW1_.data()
+            );
+
+            mutationHfMass_.resize(nMutationSpecies_);
+            for (int i = 0; i < nMutationSpecies_; ++i)
+            {
+                mutationHfMass_[i] =
+                    mutW1_[i]*Mutation::RU*Tref/mutationMw_[i];
+            }
+        }
 
         const speciesTable& species = this->species();
         foamToMutationSpecie_.setSize(species.size(), -1);
@@ -635,7 +761,7 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initialiseMutation()
 
 
 template<class Thermo>
-void HighEnthalpyMulticomponentThermo<Thermo>::initialiseEve()
+void HighEnthalpyMulticomponentThermo<Thermo>::initialiseEnergies()
 {
     if (!mutationAvailable_ || !mutationMixturePtr_)
     {
@@ -647,6 +773,7 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initialiseEve()
     const scalarField& TCells = this->T_.primitiveField();
     const scalarField& TveCells = Tve_.primitiveField();
     scalarField& eveCells = eve_.primitiveFieldRef();
+    scalarField& eCells = this->he().primitiveFieldRef();
 
     forAll(eveCells, celli)
     {
@@ -657,14 +784,17 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initialiseEve()
 
         mutationMassFractions(yFoam);
 
-        eveCells[celli] = mixtureEve
-        (
-            max(TCells[celli], mutationMinT_),
-            max(TveCells[celli], mutationMinT_)
-        );
+        const scalar T = max(TCells[celli], mutationMinT_);
+        const scalar Tv = max(TveCells[celli], mutationMinT_);
+
+        eveCells[celli] = mixtureEve(T, Tv);
+
+        // Solved energy on the Mutation++ datum: e = e_tr(T) + e_ve(Tve)
+        eCells[celli] = mixtureEtr(T) + eveCells[celli];
     }
 
     volScalarField::Boundary& eveBf = eve_.boundaryFieldRef();
+    volScalarField::Boundary& eBf = this->he().boundaryFieldRef();
     const volScalarField::Boundary& TBf = this->T_.boundaryField();
     const volScalarField::Boundary& TveBf = Tve_.boundaryField();
 
@@ -679,11 +809,11 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initialiseEve()
 
             mutationMassFractions(yFoam);
 
-            eveBf[patchi][facei] = mixtureEve
-            (
-                max(TBf[patchi][facei], mutationMinT_),
-                max(TveBf[patchi][facei], mutationMinT_)
-            );
+            const scalar T = max(TBf[patchi][facei], mutationMinT_);
+            const scalar Tv = max(TveBf[patchi][facei], mutationMinT_);
+
+            eveBf[patchi][facei] = mixtureEve(T, Tv);
+            eBf[patchi][facei] = mixtureEtr(T) + eveBf[patchi][facei];
         }
     }
 
@@ -699,7 +829,14 @@ inline bool HighEnthalpyMulticomponentThermo<Thermo>::mutationMassFractions
     const YAccessor& yFoam
 ) const
 {
-    std::fill(mutY_.begin(), mutY_.end(), 0.0);
+    // Floor on every Mutation++ specie: exactly-zero mole fractions make
+    // Mutation++'s OmegaVT produce infinities (tau_park = 1/(n*X*...) for
+    // each vibrator of the mixture). Those are benign in IEEE arithmetic
+    // (zero net contribution) but trip OpenFOAM's floating point trapping.
+    // A 1e-30 floor is physically indistinguishable from zero.
+    constexpr double yFloor = 1e-30;
+
+    std::fill(mutY_.begin(), mutY_.end(), yFloor);
 
     const label nFoamSpecies = foamToMutationSpecie_.size();
 
@@ -720,6 +857,8 @@ inline bool HighEnthalpyMulticomponentThermo<Thermo>::mutationMassFractions
         mutY_[0] = 1.0;
         return false;
     }
+
+    ySum += nMutationSpecies_*yFloor;
 
     for (int i = 0; i < nMutationSpecies_; ++i)
     {
@@ -788,6 +927,65 @@ inline Foam::scalar HighEnthalpyMulticomponentThermo<Thermo>::mixtureCvVe
 
 
 template<class Thermo>
+inline Foam::scalar HighEnthalpyMulticomponentThermo<Thermo>::mixtureEtr
+(
+    const scalar T
+) const
+{
+    // ht and hr only depend on the trans-rotational temperature; the -1
+    // converts enthalpy to internal energy (h = e + RT per mole)
+    mutationMixturePtr_->speciesHOverRT
+    (
+        T, T, T, T, T,
+        nullptr,
+        mutW1_.data(),
+        mutW2_.data(),
+        nullptr,
+        nullptr,
+        nullptr
+    );
+
+    double e = 0.0;
+    for (int i = 0; i < nMutationSpecies_; ++i)
+    {
+        e +=
+            mutY_[i]*(mutW1_[i] + mutW2_[i] - 1.0)
+           *Mutation::RU*T/mutationMw_[i];
+    }
+
+    return e;
+}
+
+
+template<class Thermo>
+inline Foam::scalar HighEnthalpyMulticomponentThermo<Thermo>::mixtureCvTr
+(
+    const scalar T
+) const
+{
+    mutationMixturePtr_->speciesCpOverR
+    (
+        T, T, T, T, T,
+        nullptr,
+        mutW1_.data(),
+        mutW2_.data(),
+        nullptr,
+        nullptr
+    );
+
+    double cv = 0.0;
+    for (int i = 0; i < nMutationSpecies_; ++i)
+    {
+        cv +=
+            mutY_[i]*(mutW1_[i] + mutW2_[i] - 1.0)
+           *Mutation::RU/mutationMw_[i];
+    }
+
+    return cv;
+}
+
+
+template<class Thermo>
 inline Foam::scalar HighEnthalpyMulticomponentThermo<Thermo>::TveFromEve
 (
     const scalar T,
@@ -816,6 +1014,37 @@ inline Foam::scalar HighEnthalpyMulticomponentThermo<Thermo>::TveFromEve
     }
 
     return Tv;
+}
+
+
+template<class Thermo>
+inline Foam::scalar HighEnthalpyMulticomponentThermo<Thermo>::TFromEtr
+(
+    const scalar etrTarget,
+    const scalar TGuess
+) const
+{
+    scalar T = min(max(TGuess, mutationMinT_), mutationMaxT_);
+
+    // e_tr is linear in T for RRHO: this converges in very few iterations
+    for (int iter = 0; iter < 50; ++iter)
+    {
+        const scalar f = mixtureEtr(T) - etrTarget;
+        const scalar cvTr = max(mixtureCvTr(T), scalar(1e-8));
+
+        scalar dT = -f/cvTr;
+
+        dT = min(max(dT, -0.5*T), 0.5*T);
+
+        T = min(max(T + dT, mutationMinT_), mutationMaxT_);
+
+        if (mag(dT) < 1e-4)
+        {
+            break;
+        }
+    }
+
+    return T;
 }
 
 
@@ -871,48 +1100,72 @@ inline bool HighEnthalpyMulticomponentThermo<Thermo>::updateFromMutation
 
 
 template<class Thermo>
-inline void HighEnthalpyMulticomponentThermo<Thermo>::relaxationAtCurrentState
+inline void HighEnthalpyMulticomponentThermo<Thermo>::sourcesAtCurrentState
 (
     const scalar T,
     const scalar Tv,
     scalar& eveNow,
     scalar& eveEqv,
     scalar& tau,
-    scalar& cvTr
+    scalar& qcv,
+    scalar& qdot
 ) const
 {
     eveNow = mixtureEve(T, Tv);
     eveEqv = mixtureEve(T, T);
 
-    // Trans-rotational Cv of the mixture [J/kg/K] (first block of getCvsMass)
-    mutationMixturePtr_->getCvsMass(mutCv_.data());
-
-    cvTr = 0.0;
-    for (int i = 0; i < nMutationSpecies_; ++i)
-    {
-        cvTr += mutY_[i]*mutCv_[i];
-    }
-
-    // Mutation++ V-T (and other ve-pool) energy transfer source [W/m^3];
-    // recast into the Landau-Teller form Q = rho*(eveEq - eve)/tau
     tau = tauInf_;
+    qcv = 0;
+    qdot = 0;
 
     try
     {
+        // Net mass production rates [kg/m^3/s] at the current state
+        mutationMixturePtr_->netProductionRates(mutWdot_.data());
+
+        // Candler chemistry-vibration (+ chemistry-electronic) coupling and
+        // reaction heat release, mirroring OmegaCV/OmegaCElec exactly:
+        // e_ve,i(Tv) = (hv_i + hel_i)/RT * RU*T / Mw_i  [J/kg]
+        mutationMixturePtr_->speciesHOverRT
+        (
+            nullptr,
+            nullptr,
+            nullptr,
+            mutW1_.data(),
+            mutW2_.data(),
+            nullptr
+        );
+
+        const double Tstate = mutationMixturePtr_->T();
+
+        for (int i = 0; i < nMutationSpecies_; ++i)
+        {
+            const double eVei =
+                (mutW1_[i] + mutW2_[i])*Mutation::RU*Tstate/mutationMw_[i];
+
+            qcv += eVei*mutWdot_[i];
+            qdot -= mutationHfMass_[i]*mutWdot_[i];
+        }
+
+        // Total ve-pool source = pure V-T + CV + CElec; recast only the pure
+        // V-T part into the Landau-Teller form Q = rho*(eveEq - eve)/tau
         mutationMixturePtr_->energyTransferSource(mutQ_.data());
 
-        const double Q = mutQ_[0];
+        const double Qvt = mutQ_[0] - qcv;
         const double dE = eveEqv - eveNow;
         const double rho = mutationMixturePtr_->density();
 
-        if (mag(Q) > SMALL && dE*Q > 0)
+        if (mag(Qvt) > SMALL && dE*Qvt > 0)
         {
-            tau = min(max(rho*dE/Q, scalar(1e-12)), scalar(tauInf_));
+            tau = min(max(rho*dE/Qvt, scalar(1e-12)), scalar(tauInf_));
         }
     }
     catch (...)
     {
         tau = tauInf_;
+        qcv = 0;
+        qdot = 0;
+        std::fill(mutWdot_.begin(), mutWdot_.end(), 0.0);
     }
 }
 

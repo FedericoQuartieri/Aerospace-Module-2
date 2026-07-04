@@ -43,7 +43,6 @@ highEnthalpyMutation
 highEnthalpyRelaxation
 {
     solveEve        yes;
-    coupleEnergy    yes;
 }
 
 defaultSpecie N2;

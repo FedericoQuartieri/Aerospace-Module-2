@@ -26,14 +26,14 @@ thermoType
 }
 
 // Same Mutation++ configuration as the standalone nonEqTTv tests:
-// 5-species air, two-temperature RRHO, no chemistry (V-T exchange only).
-// Run with MPP_DATA_DIRECTORY pointing to nonEqTTv/mutation-data.
+// 5-species air, two-temperature RRHO, irreversible N2+N2=>2N+N2 (Park).
+// Run with MPP_DATA_DIRECTORY pointing to nonEqTTv/mutation-data-noel.
 highEnthalpyMutation
 {
     mixture                 air_5;
     stateModel              ChemNonEqTTv;
     thermodynamicDatabase   RRHO;
-    mechanism               none;
+    mechanism               N2_diss_park;
     minTemperature          200;
     maxTemperature          50000;
     minPressure             1;

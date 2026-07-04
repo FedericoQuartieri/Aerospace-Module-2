@@ -34,17 +34,30 @@ License
 void Foam::solvers::shockThermo::thermophysicalPredictor()
 {
     // The two-temperature model is active when the highEnthalpyThermo
-    // registered its fields: the conserved vibro-electronic energy "eve" and
-    // the Landau-Teller linearisation ("eveEq", "tauVT") computed from
+    // registered its fields: the conserved vibro-electronic energy "eve",
+    // the Landau-Teller linearisation ("eveEq", "tauVT") and the chemistry
+    // sources ("mutQdot", "mutQcv", "mutR_<specie>") computed from
     // Mutation++ in thermo.correct().
+    //
+    // CONSERVATIVE FORMULATION: the solved sensible energy "e" lives on the
+    // Mutation++ datum e = e_tr(T) + e_ve(Tve). V-T exchange redistributes
+    // energy between the two pools inside "e", so no relaxation term appears
+    // in the total energy equation: the effect on T enters through the
+    // decode T(e - eve) done by the thermo. Chemistry sources:
+    //   e equation:    Qdot = -sum_i hf_i*wdot_i  (sensible datum)
+    //   eve equation:  Qcv  =  sum_i e_ve,i*wdot_i (Candler, non-pref.)
+    //   Yi equations:  mutR_<specie> = wdot_i from Mutation++ kinetics
+    //                  (evaluated at the Park controlling temperature)
     const bool hasEve =
         mesh.foundObject<volScalarField>("eve")
      && mesh.foundObject<volScalarField>("eveEq")
-     && mesh.foundObject<volScalarField>("tauVT")
-     && mesh.foundObject<volScalarField>("cvTrRatio");
+     && mesh.foundObject<volScalarField>("tauVT");
+
+    const bool hasMutChemistry =
+        mesh.foundObject<volScalarField::Internal>("mutQdot")
+     && mesh.foundObject<volScalarField::Internal>("mutQcv");
 
     bool solveEve = false;
-    bool coupleEnergy = false;
 
     const dictionary& thermoProperties = thermo_.properties();
     if (hasEve && thermoProperties.found("highEnthalpyRelaxation"))
@@ -57,8 +70,6 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
             "solveEve",
             relaxDict.lookupOrDefault<Switch>("solveTve", false)
         );
-        coupleEnergy =
-            relaxDict.lookupOrDefault<Switch>("coupleEnergy", false);
     }
 
     // add support to multi-specie chemistry
@@ -87,9 +98,21 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
               + mvConvection->fvmDiv(phi, Yi)
               + thermophysicalTransport->divj(Yi)
              ==
-                reaction->R(Yi)
-              + fvModels().source(rho, Yi)
+                fvModels().source(rho, Yi)
             );
+
+            // Mass production from Mutation++ two-temperature kinetics when
+            // available; otherwise the OpenFOAM combustion model
+            const word mutRName("mutR_" + Yi.name());
+            if (mesh.foundObject<volScalarField::Internal>(mutRName))
+            {
+                YiEqn -=
+                    mesh.lookupObject<volScalarField::Internal>(mutRName);
+            }
+            else
+            {
+                YiEqn -= reaction->R(Yi);
+            }
 
             YiEqn.relax();
 
@@ -144,48 +167,19 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
         phiEp += mesh.phi()*(a_pos()*p_pos() + a_neg()*p_neg());
     }
 
-
-    //- for high enthalpy flows, e = e_rt + e_ve.
-
-    // V-T energy sink in the solved energy equation: the energy transferred
-    // to the vibro-electronic pool, Q_VT = rho*(eveEq - eve)/tauVT, scaled by
-    // cvTrRatio = Cv_base/cv_tr so that the base-thermo T inversion produces
-    // dT/dt = -Q_VT/(rho*cv_tr) as prescribed by the two-temperature model.
-    volScalarField eRelaxSource
-    (
-        IOobject
-        (
-            "eRelaxSource",
-            mesh.time().name(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimensionedScalar(dimEnergy/dimVolume/dimTime, Zero)
-    );
-
-    if (hasEve && solveEve && coupleEnergy)
-    {
-        const volScalarField& eve =
-            mesh.lookupObject<volScalarField>("eve");
-        const volScalarField& eveEq =
-            mesh.lookupObject<volScalarField>("eveEq");
-        const volScalarField& tauVT =
-            mesh.lookupObject<volScalarField>("tauVT");
-        const volScalarField& cvTrRatio =
-            mesh.lookupObject<volScalarField>("cvTrRatio");
-
-        eRelaxSource = cvTrRatio*rho*(eveEq - eve)/tauVT;
-    }
-
     fvScalarMatrix EEqn
     (
         fvm::ddt(rho, e) + fvc::div(phiEp)
       + fvc::ddt(rho, K)
      ==
-        fvModels().source(rho, e) - eRelaxSource
+        fvModels().source(rho, e)
     );
+
+    // Chemistry heat release on the sensible-energy datum
+    if (hasMutChemistry)
+    {
+        EEqn -= mesh.lookupObject<volScalarField::Internal>("mutQdot");
+    }
 
     if (!inviscid)
     {
@@ -206,8 +200,8 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
 
     fvConstraints().constrain(e);
 
-    // Updates T from the solved energy and refreshes eveEq/tauVT/cvTrRatio
-    // (and Tve from eve) through the highEnthalpyThermo bridge
+    // Decodes (T, Tve) from the solved (e, eve) and refreshes the
+    // relaxation/chemistry source fields through the highEnthalpyThermo
     thermo_.correct();
 
     if (hasEve && solveEve)
@@ -218,8 +212,9 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
         const volScalarField& tauVT =
             mesh.lookupObject<volScalarField>("tauVT");
 
-        // Conservative vibro-electronic energy equation with semi-implicit
-        // Landau-Teller relaxation towards eveEq = e_ve(Ttr)
+        // Conservative vibro-electronic energy equation: semi-implicit
+        // Landau-Teller relaxation towards eveEq = e_ve(Ttr) plus the
+        // chemistry-vibration coupling
         fvScalarMatrix EveEqn
         (
             fvm::ddt(rho, eve)
@@ -229,6 +224,11 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
           - fvm::Sp(rho/tauVT, eve)
           + fvModels().source(rho, eve)
         );
+
+        if (hasMutChemistry)
+        {
+            EveEqn -= mesh.lookupObject<volScalarField::Internal>("mutQcv");
+        }
 
         EveEqn.relax();
 

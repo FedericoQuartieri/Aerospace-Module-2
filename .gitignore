@@ -26,5 +26,16 @@ applications/test/nonEqTTv/solverHeatBath/postProcessing/
 applications/test/nonEqTTv/solverHeatBath/processor*/
 applications/test/nonEqTTv/solverHeatBath/log.*
 
+# solverHeatBathReacting test — same layout; reference.csv is a copy of the
+# canonical output/results-N2N-reacting-*.csv (already committed)
+applications/test/nonEqTTv/solverHeatBathReacting/[1-9]*/
+applications/test/nonEqTTv/solverHeatBathReacting/0.[0-9]*/
+applications/test/nonEqTTv/solverHeatBathReacting/constant/polyMesh/
+applications/test/nonEqTTv/solverHeatBathReacting/dynamicCode/
+applications/test/nonEqTTv/solverHeatBathReacting/postProcessing/
+applications/test/nonEqTTv/solverHeatBathReacting/processor*/
+applications/test/nonEqTTv/solverHeatBathReacting/log.*
+applications/test/nonEqTTv/solverHeatBathReacting/reference.csv
+
 # Test-N2 transient output (canonical results committed with descriptive names)
 applications/test/nonEqTTv/output/results-N2.csv

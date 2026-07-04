@@ -7,6 +7,6 @@ cd ${0%/*} || exit 1
 # highEnthalpyThermo header changes (the SHA1 only covers the template).
 foamListTimes -rm 2>/dev/null
 rm -rf constant/polyMesh postProcessing dynamicCode
-rm -f log.blockMesh log.foamRun reference.csv heatbath-comparison.png
+rm -f log.blockMesh log.foamRun reference.csv heatbath-reacting-comparison.png
 
 #------------------------------------------------------------------------------
