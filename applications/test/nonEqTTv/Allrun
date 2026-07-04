@@ -8,3 +8,15 @@ Test-N2
 Test-N2N-VT
 Test-N2O2-VT-VV
 
+# Reacting N2-N heat bath (paper Figs. 7 and 8), non-electronic data.
+# mpp = Mutation++ kinetics end-to-end (Park exponent 0.5, hard-coded);
+# manual 0.7 = paper exponent; manual 0.5 = cross-check against mpp.
+MPP_DATA_DIRECTORY=mutation-data-noel Test-N2N-reacting 30000 1000 mpp
+MPP_DATA_DIRECTORY=mutation-data-noel Test-N2N-reacting 30000 1000 manual 0.7
+MPP_DATA_DIRECTORY=mutation-data-noel Test-N2N-reacting 30000 1000 manual 0.5
+MPP_DATA_DIRECTORY=mutation-data-noel Test-N2N-reacting 30000 30000 mpp
+MPP_DATA_DIRECTORY=mutation-data-noel Test-N2N-reacting 30000 30000 manual 0.7
+
+python3 plot-temps-reacting.py 30000 1000
+python3 plot-temps-reacting.py 30000 30000
+

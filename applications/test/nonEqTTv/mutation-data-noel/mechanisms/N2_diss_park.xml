@@ -1,0 +1,28 @@
+<!--
+Single-reaction mechanism for the reacting N2-N heat bath of
+Casseau et al., Aerospace 2016, 3, 34 - Section 3.4, Figs. 7 and 8.
+
+Irreversible ("=>") molecule-molecule dissociation only, as stated in
+the paper: "The chemical reaction considered is the irreversible
+molecule-molecule dissociation of nitrogen N2 + N2 -> 2N + N2".
+
+Rate: Park 1993 (Table 2 of the paper), A = 7.0e21 cm^3/(mol s),
+consistent with air5_Park.xml where N2+M has A = 3.0e22 and
+M(N2) = 0.2333 -> 3.0e22 * 0.2333 = 7.0e21.
+
+NOTE: the vendored Mutation++ evaluates the forward rate of
+DISSOCIATION_M reactions at Tf = sqrt(T*Tv) (Park exponent 0.5,
+hard-coded in kinetics/RateManager.cpp). The paper uses
+Tf = T^0.7 * Tv^0.3. The companion test Test-N2N-reacting provides a
+"manual" mode to integrate with the paper exponent for comparison.
+-->
+<mechanism name="N2_diss_park">
+
+    <arrhenius_units A="mol,cm,s,K" E="kcal,mol,K" />
+
+    <!-- Park, 1993 -->
+    <reaction formula="N2+N2=>2N+N2">
+        <arrhenius A="7.0E+21" n="-1.6" T="113200.0" />
+    </reaction>
+
+</mechanism>

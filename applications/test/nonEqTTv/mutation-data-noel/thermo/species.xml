@@ -1,0 +1,85 @@
+<!--
+NON-ELECTRONIC variant of ../mutation-data/thermo/species.xml.
+
+All species keep only their ground electronic level, so e_el = 0 at any
+temperature: this matches the "without electronic energy" configuration
+of Casseau et al., Aerospace 2016, 3, 34 (used for Fig. 3 and for the
+comparisons against dsmcFoam, which has no electronic mode - Sec. 3.4).
+
+Vibrational temperatures follow Table A1 of the paper appendix
+(N2: 3371 K, O2: 2256 K, NO: 2719 K).
+
+This file exists so that non-electronic runs are reproducible without
+hand-editing the main species.xml (which is kept in the electronic
+configuration used by Fig. 4).  Select it with
+    MPP_DATA_DIRECTORY=mutation-data-noel
+-->
+<specieslist>
+    <!-- Nitrogen -->
+    <species name="N">
+        <stoichiometry> N: 1 </stoichiometry>
+        <thermodynamics type="RRHO">
+            <electronic_levels units="1/cm">
+                <level degeneracy="4" energy="0.0" />
+            </electronic_levels>
+            <formation_enthalpy T="298 K" P="1 atm" units="J/mol"> 472440 </formation_enthalpy>
+        </thermodynamics>
+    </species>
+
+    <!-- Oxygen -->
+    <species name="O">
+        <stoichiometry> O: 1 </stoichiometry>
+        <thermodynamics type="RRHO">
+            <electronic_levels units="1/cm">
+                <level degeneracy="9" energy="0.0" />
+            </electronic_levels>
+            <formation_enthalpy T="298 K" P="1 atm" units="J/mol"> 249229 </formation_enthalpy>
+        </thermodynamics>
+    </species>
+
+    <!-- Nitric Oxide -->
+    <species name="NO">
+        <stoichiometry> N: 1, O: 1 </stoichiometry>
+        <thermodynamics type="RRHO">
+            <linear> yes </linear>
+            <rotational_temperature units="K"> 2.464 </rotational_temperature>
+            <steric_factor> 1 </steric_factor>
+            <vibrational_temperatures units="K"> 2719.0 </vibrational_temperatures>
+            <electronic_levels units="1/cm">
+                <level degeneracy="4" energy="0.0" />
+            </electronic_levels>
+            <formation_enthalpy T="298 K" P="1 atm" units="J/mol"> 91089 </formation_enthalpy>
+        </thermodynamics>
+    </species>
+
+    <!-- Nitrogen diatomic -->
+    <species name="N2">
+        <stoichiometry> N: 2 </stoichiometry>
+        <thermodynamics type="RRHO">
+            <linear> yes </linear>
+            <rotational_temperature units="K"> 2.886 </rotational_temperature>
+            <steric_factor> 2 </steric_factor>
+            <!-- Paper appendix Table A1 (non-electronic case, Fig. 3) -->
+            <vibrational_temperatures units="K"> 3371.0 </vibrational_temperatures>
+            <electronic_levels units="1/cm">
+                <level degeneracy="1" energy="0.0" />
+            </electronic_levels>
+            <formation_enthalpy T="298 K" P="1 atm" units="J/mol"> 0.0 </formation_enthalpy>
+        </thermodynamics>
+    </species>
+
+    <!-- Oxygen diatomic -->
+    <species name="O2">
+        <stoichiometry> O: 2 </stoichiometry>
+        <thermodynamics type="RRHO">
+            <linear> yes </linear>
+            <rotational_temperature units="K"> 2.086 </rotational_temperature>
+            <steric_factor> 2 </steric_factor>
+            <vibrational_temperatures units="K"> 2256.0 </vibrational_temperatures>
+            <electronic_levels units="1/cm">
+                <level degeneracy="3" energy="0.0" />
+            </electronic_levels>
+            <formation_enthalpy T="298 K" P="1 atm" units="J/mol"> 0.0 </formation_enthalpy>
+        </thermodynamics>
+    </species>
+</specieslist>
