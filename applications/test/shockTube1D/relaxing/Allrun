@@ -4,13 +4,34 @@ cd ${0%/*} || exit 1
 
 export MPP_DATA_DIRECTORY="$(cd ../../nonEqTTv && pwd)/mutation-data-noel"
 
+# Optional parallel run: ./Allrun -parallel [nProcs]
+parallel=false
+nProcs=4
+if [ "${1:-}" = "-parallel" ]; then
+    parallel=true
+    [ -n "${2:-}" ] && nProcs=$2
+fi
+
 # 1. CFD run — fresh initial fields (setFields modifies 0/ in place)
-rm -rf 0
+rm -rf 0 processor*
 cp -r 0.bak 0
 
 blockMesh > log.blockMesh 2>&1 || { cat log.blockMesh; exit 1; }
 setFields > log.setFields 2>&1 || { cat log.setFields; exit 1; }
-foamRun > log.foamRun 2>&1 || { tail -30 log.foamRun; exit 1; }
+
+if [ "$parallel" = true ]; then
+    foamDictionary -entry numberOfSubdomains -set "$nProcs" \
+        system/decomposeParDict > /dev/null 2>&1
+    foamDictionary -entry simpleCoeffs/n -set "($nProcs 1 1)" \
+        system/decomposeParDict > /dev/null 2>&1
+    decomposePar > log.decomposePar 2>&1 || { cat log.decomposePar; exit 1; }
+    mpirun -np "$nProcs" foamRun -parallel > log.foamRun 2>&1 \
+        || { tail -30 log.foamRun; exit 1; }
+    reconstructPar > log.reconstructPar 2>&1 \
+        || { cat log.reconstructPar; exit 1; }
+else
+    foamRun > log.foamRun 2>&1 || { tail -30 log.foamRun; exit 1; }
+fi
 
 # 2. Measure the shock speed from the last two snapshots
 us=$(python3 compare-relaxation.py --speed) || exit 1

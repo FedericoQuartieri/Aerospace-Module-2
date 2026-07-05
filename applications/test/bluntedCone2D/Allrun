@@ -1,0 +1,40 @@
+#!/bin/sh
+
+cd ${0%/*} || exit 1
+
+# Mach 11.3 blunted cone (paper Part Two, Sec. 3.1). Usage:
+#   ./Allrun                      serial, coarse mesh
+#   ./Allrun -parallel [nProcs]   parallel, coarse mesh
+#   ./Allrun -fine [nProcs]       parallel, paper-grade mesh (cluster)
+
+export MPP_DATA_DIRECTORY="$(cd ../nonEqTTv && pwd)/mutation-data-noel"
+
+mesh=coarse
+parallel=false
+nProcs=4
+case "${1:-}" in
+    -parallel) parallel=true; [ -n "${2:-}" ] && nProcs=$2 ;;
+    -fine)     parallel=true; mesh=fine; [ -n "${2:-}" ] && nProcs=$2 ;;
+esac
+
+rm -rf 0 processor*
+cp -r 0.bak 0
+
+python3 makeBlockMeshDict.py "$mesh" || exit 1
+blockMesh > log.blockMesh 2>&1 || { cat log.blockMesh; exit 1; }
+
+if [ "$parallel" = true ]; then
+    foamDictionary -entry numberOfSubdomains -set "$nProcs" \
+        system/decomposeParDict > /dev/null 2>&1
+    decomposePar > log.decomposePar 2>&1 || { cat log.decomposePar; exit 1; }
+    mpirun -np "$nProcs" foamRun -parallel > log.foamRun 2>&1 \
+        || { tail -30 log.foamRun; exit 1; }
+    reconstructPar > log.reconstructPar 2>&1 \
+        || { cat log.reconstructPar; exit 1; }
+else
+    foamRun > log.foamRun 2>&1 || { tail -30 log.foamRun; exit 1; }
+fi
+
+python3 postProcess-cone.py
+
+#------------------------------------------------------------------------------

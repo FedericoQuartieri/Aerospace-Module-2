@@ -374,6 +374,83 @@ public:
         return eve_;
     }
 
+    //- Bring the remaining he() overloads (field accessors, (p,T) forms)
+    //  into scope: the overrides below would otherwise hide them
+    using FluidMulticomponentThermo<Thermo>::he;
+
+    //- Enthalpy/Internal energy for patch [J/kg] on the Mutation++ datum
+    //  e = e_tr(T) + eve. Energy boundary conditions (fixedEnergy,
+    //  mixedEnergy, ...) evaluate the energy from the temperature BC via
+    //  this call: without the override they would use the base-thermo
+    //  polynomial datum (~3e5 J/kg off for N2), breaking fixed-temperature
+    //  walls under the conservative decode T(e - eve).
+    virtual tmp<scalarField> he
+    (
+        const scalarField& T,
+        const label patchi
+    ) const override
+    {
+        if (!mutationAvailable_ || !mutationMixturePtr_)
+        {
+            return FluidMulticomponentThermo<Thermo>::he(T, patchi);
+        }
+
+        const PtrList<volScalarField>& Y = this->Y();
+        const fvPatchScalarField& pEve = eve_.boundaryField()[patchi];
+
+        tmp<scalarField> the(new scalarField(T.size()));
+        scalarField& heP = the.ref();
+
+        forAll(heP, facei)
+        {
+            const auto yFoam = [&](const label speciei)
+            {
+                return Y[speciei].boundaryField()[patchi][facei];
+            };
+
+            mutationMassFractions(yFoam);
+
+            heP[facei] =
+                mixtureEtr(max(T[facei], mutationMinT_)) + pEve[facei];
+        }
+
+        return the;
+    }
+
+    //- Enthalpy/Internal energy for cell-set [J/kg] on the Mutation++ datum
+    virtual tmp<scalarField> he
+    (
+        const scalarField& T,
+        const labelList& cells
+    ) const override
+    {
+        if (!mutationAvailable_ || !mutationMixturePtr_)
+        {
+            return FluidMulticomponentThermo<Thermo>::he(T, cells);
+        }
+
+        const PtrList<volScalarField>& Y = this->Y();
+
+        tmp<scalarField> the(new scalarField(T.size()));
+        scalarField& heC = the.ref();
+
+        forAll(heC, i)
+        {
+            const label celli = cells[i];
+
+            const auto yFoam = [&](const label speciei)
+            {
+                return Y[speciei][celli];
+            };
+
+            mutationMassFractions(yFoam);
+
+            heC[i] = mixtureEtr(max(T[i], mutationMinT_)) + eve_[celli];
+        }
+
+        return the;
+    }
+
     // Member Functions
     virtual void correct() override
     {

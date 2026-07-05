@@ -52,3 +52,21 @@ applications/test/shockTube1D/*/processor*/
 applications/test/shockTube1D/*/log.*
 applications/test/shockTube1D/*/output/
 applications/test/shockTube1D/relaxing/reference.csv
+
+# wallSlab1D (isothermal-wall unit test) and bluntedCone2D (M5) — same layout
+applications/test/wallSlab1D/0/
+applications/test/wallSlab1D/[1-9]*/
+applications/test/wallSlab1D/0.[0-9]*/
+applications/test/wallSlab1D/constant/polyMesh/
+applications/test/wallSlab1D/dynamicCode/
+applications/test/wallSlab1D/postProcessing/
+applications/test/wallSlab1D/log.*
+applications/test/bluntedCone2D/0/
+applications/test/bluntedCone2D/[1-9]*/
+applications/test/bluntedCone2D/0.[0-9]*/
+applications/test/bluntedCone2D/constant/polyMesh/
+applications/test/bluntedCone2D/dynamicCode/
+applications/test/bluntedCone2D/postProcessing/
+applications/test/bluntedCone2D/processor*/
+applications/test/bluntedCone2D/log.*
+applications/test/bluntedCone2D/system/blockMeshDict

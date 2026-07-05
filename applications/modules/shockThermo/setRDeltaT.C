@@ -44,9 +44,12 @@ void Foam::solvers::shockThermo::setRDeltaT(const surfaceScalarField& amaxSf)
         // Maximum flow Courant number
         const scalar maxCo(pimpleDict.lookup<scalar>("maxCo"));
 
-        // Set the reciprocal time-step from the local Courant number
+        // Set the reciprocal time-step from the local Courant number.
+        // amaxSf is already a volumetric wave-speed flux [m^3/s] (as in the
+        // parent shockFluid): no rho here, unlike the mass-flux based
+        // variant used by multicomponentFluid.
         rDeltaT.internalFieldRef() =
-            fvc::surfaceSum(amaxSf)/((2*maxCo)*mesh.V()*rho());
+            fvc::surfaceSum(amaxSf)/((2*maxCo)*mesh.V());
 
         // Clip to user-defined maximum and minimum time-steps
         scalar minRDeltaT = gMin(rDeltaT.primitiveField());
