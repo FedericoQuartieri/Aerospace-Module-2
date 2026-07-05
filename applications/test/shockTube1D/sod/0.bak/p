@@ -8,54 +8,27 @@
 FoamFile
 {
     format      ascii;
-    class       dictionary;
-    object      blockMeshDict;
+    class       volScalarField;
+    object      p;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-convertToMeters 1;
+dimensions      [1 -1 -2 0 0 0 0];
 
-vertices
-(
-    (-5 -0.05 -0.05)
-    ( 5 -0.05 -0.05)
-    ( 5  0.05 -0.05)
-    (-5  0.05 -0.05)
-    (-5 -0.05  0.05)
-    ( 5 -0.05  0.05)
-    ( 5  0.05  0.05)
-    (-5  0.05  0.05)
-);
+// 1 atm, as in the standalone Test-N2 heat bath
+internalField   uniform 100000;
 
-blocks
-(
-    // 1D shock tube demo: 200 cells along x
-    hex (0 1 2 3 4 5 6 7) (200 1 1) simpleGrading (1 1 1)
-);
-
-boundary
-(
+boundaryField
+{
     sides
     {
-        type patch;
-        faces
-        (
-            (0 4 7 3)
-            (1 2 6 5)
-        );
+        type            zeroGradient;
     }
 
     empty
     {
-        type empty;
-        faces
-        (
-            (0 1 5 4)
-            (3 7 6 2)
-            (0 3 2 1)
-            (4 5 6 7)
-        );
+        type            empty;
     }
-);
+}
 
 // ************************************************************************* //

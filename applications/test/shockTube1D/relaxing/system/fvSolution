@@ -10,36 +10,55 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "system";
-    object      setFieldsDict;
+    object      fvSolution;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// Sod shock tube in pure N2 (frozen, cold: gamma = 1.4).
-// Left (driver): p = 1e5 Pa, T = 348.432 K -> rho = 0.9670 kg/m^3
-// Right (driven): p = 1e4 Pa, T = 278.746 K -> rho = 0.1209 kg/m^3
-
-defaultValues
+solvers
 {
-    U       (0 0 0);
-    T       348.432;
-    Tve     348.432;
-    p       100000;
-}
-
-zones
-{
-    rightSide
+    "(rho|rhoU|rhoE).*"
     {
-        type        box;
-        box         (0 -1 -1) (10 1 1);
-
-        values
-        {
-            T       278.746;
-            Tve     278.746;
-            p       10000;
-        }
+        solver          diagonal;
     }
+
+    "U.*"
+    {
+        solver          smoothSolver;
+        smoother        GaussSeidel;
+        nSweeps         2;
+        tolerance       1e-09;
+        relTol          0.01;
+    }
+
+    "e.*"
+    {
+        $U;
+        tolerance       1e-10;
+        relTol          0;
+    }
+
+    "(Tve|eve).*"
+    {
+        $U;
+        tolerance       1e-10;
+        relTol          0;
+    }
+
+    "Yi.*"
+    {
+        solver          PBiCG;
+        preconditioner  DILU;
+        tolerance       1e-8;
+        relTol          0.1;
+    }
+   
 }
+
+
+PIMPLE
+{
+    nOuterCorrectors 2;
+}
+
 
 // ************************************************************************* //

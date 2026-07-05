@@ -14,16 +14,16 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// Sod shock tube in pure N2 (frozen, cold: gamma = 1.4).
-// Left (driver): p = 1e5 Pa, T = 348.432 K -> rho = 0.9670 kg/m^3
-// Right (driven): p = 1e4 Pa, T = 278.746 K -> rho = 0.1209 kg/m^3
+// High-enthalpy driver: strong shock (Ms ~ 8) with VT relaxation zone.
+// Left (driver): p = 5e6 Pa, T = 3000 K
+// Right (driven): p = 1000 Pa, T = 300 K
 
 defaultValues
 {
     U       (0 0 0);
-    T       348.432;
-    Tve     348.432;
-    p       100000;
+    T       3000;
+    Tve     3000;
+    p       5e6;
 }
 
 zones
@@ -35,9 +35,9 @@ zones
 
         values
         {
-            T       278.746;
-            Tve     278.746;
-            p       10000;
+            T       300;
+            Tve     300;
+            p       1000;
         }
     }
 }

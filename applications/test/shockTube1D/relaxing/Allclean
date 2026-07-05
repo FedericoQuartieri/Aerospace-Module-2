@@ -1,0 +1,14 @@
+#!/bin/sh
+
+cd ${0%/*} || exit 1
+
+# Remove generated artifacts only (mesh, results, logs); 0/ is a working
+# copy of 0.bak/. dynamicCode must go too: OpenFOAM does not rebuild it
+# when the highEnthalpyThermo header changes (SHA1 only covers the template).
+foamListTimes -rm 2>/dev/null
+rm -rf 0 constant/polyMesh postProcessing dynamicCode
+rm -f log.blockMesh log.setFields log.foamRun
+rm -f relaxation-comparison.png reference.csv
+rm -rf output
+
+#------------------------------------------------------------------------------
