@@ -40,7 +40,7 @@ Geometria del paper (§3.1): naso sferico Rn=6.35 mm + cono 25°, estensione str
 
 Condizioni (Tabella 1 del paper): U∞=2764.5 m/s, p∞=21.9139 Pa, T∞=Tve∞=144.4 K, N₂ puro non-reagente. Parete: `maxwellSlipU` + `smoluchowskiJumpT` (accomodazione 1.0, Tw=297.2 K), Tve a parete `zeroGradient` (coerente con l'assenza di diffusione del pool ve nella EveEqn — limite noto, irrilevante qui: la vibrazione resta quasi congelata). Regime stazionario via **LTS** (`localEuler`).
 
-### Risultati coarse (4 core locali, 10k iterazioni ≈ 50 min)
+### Risultati coarse, a convergenza (vedi §6 per la storia della convergenza)
 
 | Grandezza | Valore | Riferimento |
 |---|---|---|
@@ -48,19 +48,27 @@ Condizioni (Tabella 1 del paper): U∞=2764.5 m/s, p∞=21.9139 Pa, T∞=Tve∞=
 | Standoff dello shock | 1.01 mm (0.159 Rn) | correlazioni strong-shock 0.1–0.15 Rn ✓ (smearing coarse) |
 | Tve massima | ~460 K | "vibrational mode barely excited" (paper §3.1) ✓ |
 | ρ a parete | ~20×ρ∞ | strato limite freddo, fisico ✓ |
-| Cp di ristagno | 1.30 → (in convergenza) | Rayleigh pitot 1.83 — richiede più iterazioni/mesh fine |
+| Cp di ristagno | **1.30 (convergente, non transitorio)** | Rayleigh pitot 1.83 — **29% sotto, da capire con mesh fine (§6)** |
 
 Nota metodologica: lo standoff va misurato sulla **temperatura** (half-rise), non sul gradiente di densità — il picco di ρ nello strato limite a parete fredda domina il gradiente e falsa la misura.
 
 ## 5. Pacchetto cluster (`bluntedCone2D/cluster/`)
 
-- `job-cone-fine.sh`: template SLURM 28 core (da adattare a partition/moduli del cluster di Federico)
-- `README.md`: setup una tantum (build Mutation++ da `thirdParty/` — **gitignorata, va copiata a mano** —, catena Allwmake), stima tempi (~1 h per 10k iterazioni su 28 core; il paper: 2.8 h su 24), nota sul dynamicCode (serve g++ almeno sul nodo di lancio), cosa riportare indietro.
+- `job-cone-fine.sh`: template PBS/Torque (`qsub`) 28 core, adattato al cluster di Federico (non SLURM)
+- `README.md`: setup una tantum (build Mutation++ da `thirdParty/` — **gitignorata, va copiata a mano** —, catena Allwmake), stima tempi, nota sul dynamicCode (serve g++ almeno sul nodo di lancio), cosa riportare indietro.
 - I 4 job disponibili si prestano a varianti in parallelo (mesh/maxCo/accomodazione).
 
-## 6. Stato e prossimi passi
+## 6. Run coarse portato a convergenza: risultato onesto
 
-- Pipeline 2D **dimostrata end-to-end** in locale (mesh generata → run parallelo LTS → postProcess con metriche fisiche corrette).
-- Run coarse in **continuazione a convergenza** (Cp di ristagno atteso →1.8).
-- **Da fare da Federico**: run fine (`./Allrun -fine 28`) sul cluster; poi digitalizzazione dei riferimenti del paper (Fig 2: linea di ristagno Wang&Boyd/MONACO, Cp/Cf/St con esperimenti CUBRC run 31) per il confronto quantitativo — pattern Engauge già usato per la Fig 5.
+Il run è stato completato fino a `endTime` (pseudo-tempo 3×10⁻³, interrotto una volta da uno spegnimento imprevisto e ripreso senza perdita — l'ultimo checkpoint scritto era integro su tutti i rank). **Verificato che la soluzione è davvero stazionaria**, non solo terminata per timeout: i campi T e p differiscono meno dello 0.5% tra pseudo-tempo 10⁻³ e 3×10⁻³, coerente con i residui che oscillano in un ciclio limite (~5×10⁻⁶) senza scendere ulteriormente.
+
+**Il Cp di ristagno converge a 1.304 — non a ~1.8.** Non è un run incompleto: è il risultato vero di questa mesh coarse, e resta **~29% sotto** la stima Rayleigh-Pitot ideale (1.833). Questo va segnalato onestamente, non minimizzato. La causa più probabile è la qualità di mesh: `checkMesh` riporta non-ortogonalità massima **34.6°** (media 16.1°), su una griglia solo 40×60 con stiramento radiale 30:1 — abbastanza da degradare sensibilmente la ricostruzione dei flussi vicino al naso curvo, e lo schema Kurganov (dissipativo) su risoluzione circonferenziale grossa può ulteriormente smerare il recupero di pressione post-shock. Il resto della fisica (T di picco 25.6×T∞ vs 25.8 teorico, standoff 0.159 Rn, Tve quasi congelata) resta in ottimo accordo — è **specificamente** la pressione di parete, la grandezza più sensibile alla risoluzione locale del naso, a essere fuori.
+
+**Conseguenza pratica**: il run fine sul cluster (200×200 in più, non-ortogonalità attesa molto minore, prima cella 2 µm) non è solo "più preciso" — è il test che stabilisce se questo è davvero un problema di mesh (il Cp dovrebbe salire verso ~1.8 infittendo) o qualcosa di più profondo nel bridge/schema. Se il Cp fine restasse basso, andrebbe indagato il termine di pressione nel solver o lo schema di ricostruzione vicino a pareti curve non ortogonali.
+
+## 7. Stato e prossimi passi
+
+- Pipeline 2D **dimostrata end-to-end** in locale (mesh generata → run parallelo LTS → postProcess con metriche fisiche corrette), inclusa la resilienza a un'interruzione (checkpoint LTS, ripresa senza perdita).
+- Run coarse **concluso**: fisica di shock/temperatura validata qualitativamente; Cp di parete **sotto stima del 29%**, imputato a mesh coarse/non-ortogonalità — da confermare/smentire con la mesh fine.
+- **Da fare da Federico**: run fine (`./Allrun -fine 28`) sul cluster via `qsub`; controllare **per primo** se il Cp di ristagno sale verso 1.8 (test diagnostico prioritario, non solo un affinamento); poi digitalizzazione dei riferimenti del paper (Fig 2: linea di ristagno Wang&Boyd/MONACO, Cp/Cf/St con esperimenti CUBRC run 31) per il confronto quantitativo — pattern Engauge già usato per la Fig 5.
 - Rimandati noti: diffusione del pool ve nella EveEqn (κ_ve separata, eq. 7-8 Part Two), cilindro Mach 20 reagente (secondo caso del paper), Fig 9/CVDV/Tve multiple.
