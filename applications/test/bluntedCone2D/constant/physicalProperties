@@ -34,7 +34,7 @@ highEnthalpyMutation
     stateModel              ChemNonEqTTv;
     thermodynamicDatabase   RRHO;
     mechanism               none;
-    minTemperature          200;
+    minTemperature          50;
     maxTemperature          50000;
     minPressure             1;
     forceThermalEquilibrium no;

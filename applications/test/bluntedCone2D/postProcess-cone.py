@@ -80,25 +80,48 @@ Ts = T[line][order]
 Tvs = Tve[line][order]
 rhos = rho[line][order]
 
+# --- GUARD-RAIL: free-stream effettivo vs nominale -------------------------
+# Lezione imparata a caro prezzo: il bridge Mutation++ puo' alterare
+# silenziosamente il free-stream (es. il clamp minTemperature=200 K
+# riscaldava T_inf da 144.4 a 200 K -> M 9.59 invece di 11.3, e il
+# "29% di errore sul Cp" era interamente questo artefatto, non il
+# solver). Qui si misura il free-stream DAVVERO simulato e ogni
+# confronto teorico usa quello; se differisce dal nominale si urla.
+up = (x < -2.0*RN)
+T_eff = float(np.mean(T[up]))
+p_eff = float(np.mean(p[up]))
+rho_eff = p_eff/(R_N2*T_eff)
+M_eff = U_INF/np.sqrt(1.4*R_N2*T_eff)
+q_eff = 0.5*rho_eff*U_INF**2
+
+print(f"t = {tdir} s ({len(times)} snapshots)")
+print(f"free-stream EFFETTIVO: T={T_eff:.1f} K (nominale {T_INF}), "
+      f"p={p_eff:.2f} Pa, M={M_eff:.2f} (nominale 11.3)")
+if abs(T_eff - T_INF) > 2.0:
+    print(f"*** ATTENZIONE: T_inf simulata differisce dal nominale di "
+          f"{T_eff - T_INF:+.1f} K - controllare i clamp del bridge "
+          f"(minTemperature) e le BC. I confronti sotto usano il "
+          f"free-stream effettivo. ***")
+
 # shock standoff from the TEMPERATURE half-rise: the density gradient is
 # useless here (the cold-wall boundary layer density spike dominates it)
 Tpk = Ts.max()
-i_sh = np.argmax(Ts > 0.5*(Tpk + T_INF))
+i_sh = np.argmax(Ts > 0.5*(Tpk + T_eff))
 standoff = -RN - xs[i_sh]
-print(f"t = {tdir} s ({len(times)} snapshots)")
 print(f"stagnation-line cells: {line.sum()}")
 print(f"shock standoff (axis) = {standoff*1e3:.2f} mm "
       f"({standoff/RN:.3f} Rn; strong-shock correlations ~0.1-0.15 Rn)")
 
-# stagnation Cp vs modified-Newtonian
+# stagnation Cp vs Rayleigh pitot, both at the EFFECTIVE free-stream
 i_w = np.argmax(xs)  # cell closest to the wall
-cp_stag = (p[line][order][i_w] - P_INF)/(0.5*RHO_INF*U_INF**2)
-M_inf = U_INF/np.sqrt(1.4*R_N2*T_INF)
-cp_mn = 2.0/(1.4*M_inf**2)*(
-    ((1.4 + 1)**2*M_inf**2/(4*1.4*M_inf**2 - 2*(1.4 - 1)))**(1.4/(1.4 - 1))
-    *((1 - 1.4 + 2*1.4*M_inf**2)/(1.4 + 1)) - 1
+cp_stag = (p[line][order][i_w] - p_eff)/q_eff
+M2 = M_eff**2
+cp_mn = 2.0/(1.4*M2)*(
+    ((1.4 + 1)**2*M2/(4*1.4*M2 - 2*(1.4 - 1)))**(1.4/(1.4 - 1))
+    *((1 - 1.4 + 2*1.4*M2)/(1.4 + 1)) - 1
 )
-print(f"stagnation Cp = {cp_stag:.3f}  (Rayleigh pitot ideal: {cp_mn:.3f})")
+print(f"stagnation Cp = {cp_stag:.3f}  "
+      f"(Rayleigh pitot ideal at M={M_eff:.2f}: {cp_mn:.3f})")
 
 plt.figure(figsize=(7, 5))
 plt.plot(xs*1e3, Ts/T_INF, "r-", label="T / T_inf")
@@ -123,7 +146,7 @@ dCone = (y - (x + RN*np.cos(np.pi/2 - DELTA))*np.tan(DELTA)
 onCone = (x >= -RN*np.cos(np.pi/2 - DELTA)) & (dCone > 0) & (dCone < 1e-3)
 surf = onNose | onCone
 xw = x[surf]
-cpw = (p[surf] - P_INF)/(0.5*RHO_INF*U_INF**2)
+cpw = (p[surf] - p_eff)/q_eff
 order = np.argsort(xw)
 
 plt.figure(figsize=(7, 5))
