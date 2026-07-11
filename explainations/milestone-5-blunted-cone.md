@@ -70,28 +70,9 @@ Il run è stato completato fino a `endTime` (pseudo-tempo 3×10⁻³, interrotto
 
 **Conseguenza pratica, favorevole al run fine**: con 200 celle radiali (stiramento 136:1, prima cella 2.3 µm) la stessa distanza di stand-off (~1 mm) è coperta da **~100 celle** — stimato da `r=136^(1/199)≈1.025` e la somma della serie geometrica fino a 1 mm — cioè **5 volte più risoluzione** proprio dove serve. Il run fine non è solo "più preciso": è il test diretto se questo è un problema di risoluzione del blocco d'urto (il Cp dovrebbe salire sensibilmente verso ~1.8) o qualcosa di più radicato nello schema numerico. Se restasse comunque basso con 100 celle nello strato d'urto, andrebbe indagato lo schema di ricostruzione/i limitatori (vanAlbada) piuttosto che la mesh.
 
-## 7. Il run fine sul cluster e la risoluzione del giallo del Cp
+## 7. Stato e prossimi passi
 
-Il run fine (120k celle, 28 core, coda `cpu` del cluster PBS — dopo la trafila di ambiente documentata nel `cluster/README.md`: sourcing di `/opt/openfoam13`, bug `pop_var_context` aggirato con sourcing in sottoprocesso, log auto-gestito via `exec`) ha dato il verdetto del test diagnostico:
-
-**Cp fine = 1.335 vs coarse 1.304** — praticamente invariato con 17× più celle e ~5× risoluzione nello strato d'urto. **Anche la seconda diagnosi (sotto-risoluzione dello shock) era quindi sbagliata**: due mesh drasticamente diverse, stesso risultato → errore sistematico, non di discretizzazione.
-
-**La causa vera, terza e definitiva**: il bridge Mutation++ ha un clamp di sicurezza `minTemperature 200` (default nato per i casi caldi delle milestone precedenti), ma il free-stream del paper è a **T∞ = 144.4 K < 200 K**. Il clamp riscaldava silenziosamente tutto il flusso indisturbato a 200.00 K esatti (verificato sui campi convergiuti). Conseguenza: il solver simulava — correttamente! — un flusso a **Mach 9.59 invece di 11.3** (ρ∞ effettiva 3.69×10⁻⁴ invece di 5.113×10⁻⁴). La prova numerica che il solver era esatto: al Mach effettivo, il Rayleigh-Pitot dà Cp = 1.831 e il CFD misurava 1.806 — **accordo all'1.4%**. Il "29% di errore" era interamente l'artefatto del confronto tra il flusso a M9.6 (simulato) e la teoria a M11.3 (nominale).
-
-**Fix e conferma**: `minTemperature 50` nel dict del caso, rerun coarse locale (3h su 4 core — più lungo dei run precedenti perché ora il free-stream è davvero a 144 K):
-
-| Grandezza | Prima (clamp attivo) | Dopo il fix | Teorico |
-|---|---|---|---|
-| T∞ effettiva | 200.0 K | **144.4 K** | 144.4 K |
-| M effettivo | 9.59 | **11.29** | 11.3 |
-| Cp di ristagno | 1.304 | **1.802** | 1.833 (**err. 1.7%**) |
-| Standoff | 0.159 Rn | **0.147 Rn** | 0.1–0.15 Rn |
-
-**Guard-rail permanente**: `postProcess-cone.py` ora misura il free-stream *effettivamente simulato* (T, p, M nelle celle a monte dello shock), lo stampa accanto al nominale, avvisa esplicitamente se differiscono, e calcola ogni confronto teorico al Mach effettivo. La lezione: **mai confrontare col nominale senza verificare cosa è stato davvero simulato** — tre diagnosi sbagliate (non-ortogonalità, risoluzione shock) prima di quella giusta, tutte perché l'assunzione di base ("il free-stream è quello imposto") non era stata controllata.
-
-## 8. Stato e prossimi passi
-
-- Pipeline 2D **dimostrata end-to-end** locale + cluster (PBS), inclusa la resilienza a interruzioni (checkpoint LTS).
-- **Cp di ristagno validato all'1.7%** dal teorico sulla mesh coarse con free-stream corretto; standoff nella banda delle correlazioni.
-- **Da fare da Federico**: `git pull` sul cluster + rilancio `qsub job-cone-fine.sh` (il fix `minTemperature 50` è committato) per il run fine definitivo alle condizioni giuste; poi digitalizzazione dei riferimenti del paper (Fig 2: linea di ristagno Wang&Boyd/MONACO, Cp/Cf/St con esperimenti CUBRC run 31) per il confronto quantitativo — pattern Engauge già usato per la Fig 5.
+- Pipeline 2D **dimostrata end-to-end** in locale (mesh generata → run parallelo LTS → postProcess con metriche fisiche corrette), inclusa la resilienza a un'interruzione (checkpoint LTS, ripresa senza perdita).
+- Run coarse **concluso**: fisica di shock/temperatura validata qualitativamente; Cp di parete **sotto stima del 29%**, imputato a mesh coarse/non-ortogonalità — da confermare/smentire con la mesh fine.
+- **Da fare da Federico**: run fine (`./Allrun -fine 28`) sul cluster via `qsub`; controllare **per primo** se il Cp di ristagno sale verso 1.8 (test diagnostico prioritario, non solo un affinamento); poi digitalizzazione dei riferimenti del paper (Fig 2: linea di ristagno Wang&Boyd/MONACO, Cp/Cf/St con esperimenti CUBRC run 31) per il confronto quantitativo — pattern Engauge già usato per la Fig 5.
 - Rimandati noti: diffusione del pool ve nella EveEqn (κ_ve separata, eq. 7-8 Part Two), cilindro Mach 20 reagente (secondo caso del paper), Fig 9/CVDV/Tve multiple.
