@@ -1,7 +1,7 @@
 # Milestone 6 — Campagna cluster e risoluzione del giallo del Cp
 
 **Data:** 9-10 luglio 2026
-**Branch:** `milestone-6-cluster-validation` (i commit della trafila cluster vivono in coda al branch `milestone-5-blunted-cone` per continuità storica — erano già stati pullati sul cluster e riscrivere la storia avrebbe creato divergenze; la separazione concettuale è da qui in avanti e in questo documento)
+**Branch:** `milestone-6-cluster-validation`, che si innesta sulla coda di `milestone-5-blunted-cone`. Storia ripulita con un rebase interattivo: gli **8 commit** della trafila di debug del cluster (compreso un vicolo cieco — lo spostamento di `set -e`, poi superato) sono stati **fusi in un unico commit** `5dd942a` *"cluster: PBS job setup for the Mach 11.3 cone"*, che questo documento spiega nel §1. Restano separati, perché sono cose diverse: `05e418d` (il fix vero al clamp `minTemperature`, §3-4) e i commit M5 precedenti.
 **Obiettivo:** portare il caso del cono sul cluster PBS di Federico (4 job × 28 core), eseguire il run fine che la M5 aveva definito come *test diagnostico* per il Cp di ristagno basso, e chiudere il giallo.
 
 ---
