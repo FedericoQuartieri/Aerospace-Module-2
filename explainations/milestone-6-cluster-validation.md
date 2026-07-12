@@ -55,9 +55,25 @@ Fix: `minTemperature 50` nel `physicalProperties` del caso (il valore è configu
 
 **La lezione di metodo, in una riga**: mai confrontare col nominale senza verificare cosa è stato davvero simulato. Tre diagnosi consecutive sbagliate — tutte tecnicamente sofisticate (non-ortogonalità, dissipazione dello schema) — perché l'assunzione più banale ("il free-stream è quello imposto") non era mai stata controllata. Il segnale c'era già nel primissimo dump cella-per-cella (T upstream = 200.5 K, visibile a occhio), ma nessuno lo stava guardando.
 
-## 6. Stato e prossimi passi (scope M6)
+## 6. Il run fine definitivo: validazione a grado-paper
 
-- **Fatto**: cluster operativo end-to-end (setup + job + log), run fine diagnostico, causa del Cp trovata e corretta, coarse validato all'1.7% dal teorico, guard-rail nel postProcess.
-- **Prossimo passo immediato**: run fine definitivo sul cluster alle condizioni corrette — `git pull` + `qsub job-cone-fine.sh`; nel log verificare la riga `free-stream EFFETTIVO: T=144.4 K ... M=11.29` e attendersi Cp ≈ 1.80–1.83.
-- **Poi**: digitalizzazione dei riferimenti del paper (Fig 2: linea di ristagno Wang&Boyd/MONACO, Cp/Cf/St con esperimenti CUBRC run 31) per il confronto quantitativo completo — pattern Engauge già usato per la Fig 5.
+Eseguito sul cluster (11 lug 2026, coda `cpu`, 28 core, mesh 120k celle con prima cella 2.3 µm) dal branch M6 con il fix `minTemperature 50`. Il guard-rail conferma per primo che stavolta il flusso simulato è quello giusto:
+
+```
+free-stream EFFETTIVO: T=144.4 K (nominale 144.4), p=21.91 Pa, M=11.29 (nominale 11.3)
+```
+
+| Grandezza | Coarse (fix) | **Fine (fix)** | Teorico |
+|---|---|---|---|
+| Cp di ristagno | 1.802 | **1.843** | 1.833 (**errore 0.5%**) |
+| Standoff | 0.147 Rn | **0.150 Rn** | 0.1–0.15 Rn |
+
+La progressione completa del Cp racconta l'intera vicenda: **1.30 (clamp attivo, −29%) → 1.802 (coarse col fix, −1.7%) → 1.843 (fine col fix, +0.5%)**. Il leggero eccesso rispetto al Rayleigh-Pitot ideale è fisicamente atteso: la formula assume γ=1.4 esatto, ma a ~3700 K post-shock la vibrazione dell'N₂ inizia a eccitarsi (γ effettivo appena sotto 1.4) → compressione al ristagno leggermente maggiore. La differenza coarse→fine (~2%) è la normale convergenza di griglia sulla cattura dello shock.
+
+**La pressione di parete al punto di ristagno è validata a grado-paper.**
+
+## 7. Stato e prossimi passi (scope M6)
+
+- **Fatto**: cluster operativo end-to-end (setup + job + log), run fine diagnostico, causa del Cp trovata e corretta, guard-rail nel postProcess, **run fine definitivo validato (Cp entro lo 0.5% dal teorico, standoff in banda)**.
+- **Prossimo passo**: digitalizzazione dei riferimenti del paper (Fig 2: linea di ristagno Wang&Boyd/MONACO, Cp/Cf/St con esperimenti CUBRC run 31) per il confronto quantitativo completo sui profili — pattern Engauge già usato per la Fig 5. Il confronto più significativo è lo **Stanton number** (flusso termico a parete), la grandezza per cui il fix del datum a parete (M5) era il prerequisito.
 - **Più avanti nello scope M6 o successivo**: cilindro Mach 20 reagente (secondo caso del paper Part Two); rimandati noti invariati (diffusione del pool ve nella EveEqn, Fig 9, CVDV-QK, Tve multiple).
