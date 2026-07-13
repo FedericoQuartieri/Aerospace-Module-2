@@ -92,8 +92,22 @@ L'accuratezza è limitata solo dalla calibrazione degli assi. Le trappole trovat
 
 Sulla linea di ristagno (Fig 2a) il profilo T/T∞ segue la hy2Foam (picco ~25.9 vs 25.8) e la Tve ricalca i punti Michigan; lo shock DSMC è più diffuso, com'è fisicamente atteso a Kn~0.002. Figure: `fig2-comparison.png`, `fig2-stagnation-comparison.png` nel caso.
 
-## 9. Stato e prossimi passi (scope M6)
+## 9. Il confronto fine: Cp chiuso, e il gap Cf/St smascherato
 
-- **Fatto**: cluster operativo end-to-end, causa del Cp trovata e corretta, guard-rail nel postProcess, **run fine definitivo validato (Cp entro lo 0.5%)**, riferimenti Fig 2 digitalizzati per via vettoriale, primo confronto quantitativo coarse (Cp 2%, St 10.6%, Cf 15.9%).
-- **Prossimo passo**: rifare il confronto Fig 2 sui campi del **run fine** (prima cella 2.3 µm, comparabile al paper) — sul cluster: `foamPostProcess -solver shockThermo -func wallHeatFlux -time <t>`, idem `wallShearStress`, poi `python3 compare-fig2.py`. Lì Cf e St devono chiudersi; è il confronto per cui il fix del datum a parete (M5) era il prerequisito.
-- **Più avanti nello scope M6 o successivo**: cilindro Mach 20 reagente (secondo caso del paper Part Two); rimandati noti invariati (diffusione del pool ve nella EveEqn, Fig 9, CVDV-QK, Tve multiple).
+Confronto rifatto sui campi del run fine (cluster, `job-post-fine.sh`, prima cella 2.3 µm — comparabile ai 2–10 µm del paper):
+
+| Grandezza | Coarse (24.5 µm) | **Fine (2.3 µm)** | Lettura |
+|---|---|---|---|
+| Cp | 2.0% / 3.7% | **0.7% / 1.7%** | convergenza di griglia confermata, sovrapposto a paper ed esperimenti |
+| Cf | 15.9% | **16.3%** | **invariato con 10× di risoluzione a parete** |
+| St | 10.6% | **11.6%** | invariato; nel plateau sta *tra* le CFD del paper e gli esperimenti CUBRC (che sono ~15% sotto le CFD) |
+
+L'invarianza di Cf/St rispetto alla prima cella scagiona definitivamente la mesh: è un errore di **modello di trasporto**. Il caso usa `transport sutherland` con coefficienti fittati sull'intervallo caldo (1000–5000 K: entro ±10% dalla Blottner usata da hy2Foam, eccellente a 5000 K), ma un fit a 2 parametri non può coprire 144–6000 K: a **297 K — la temperatura di parete, dove si valutano τ_w = μ∂u/∂y e q_w = κ∂T/∂y — la Sutherland dà μ il 21% più basso della Blottner** (e −47% a T∞=144 K). Il deficit del 16%/12% su Cf/St è tutto lì; il Cp non dipende da μ e infatti converge perfettamente.
+
+Morale gemella di quella del clamp: anche stavolta la grandezza sbagliata era "di contorno" (prima il floor di temperatura, ora il fit di viscosità), non la fisica two-temperature. Fix possibile: trasporto Blottner per specie + Eucken per κ (la miscela Wilke c'è già: `coefficientWilkeMulticomponentMixture`) — è il modello del paper. Figure fine: `fig2-comparison-fine.png`, `fig2-stagnation-comparison-fine.png`.
+
+## 10. Stato e prossimi passi (scope M6)
+
+- **Fatto**: cluster operativo end-to-end, causa del Cp trovata e corretta, guard-rail nel postProcess, run fine validato (Cp ristagno 0.5%), riferimenti Fig 2 digitalizzati per via vettoriale, **confronto Fig 2 completo coarse+fine: Cp chiuso (0.7%), gap Cf/St diagnosticato (fit Sutherland a parete, non mesh)**.
+- **Possibile passo successivo**: trasporto Blottner+Eucken per specie (chiuderebbe Cf/St a grado-paper); oppure passare direttamente al cilindro Mach 20 reagente (secondo caso del paper Part Two) e rimandare il trasporto.
+- Rimandati noti invariati: diffusione del pool ve nella EveEqn (κ_ve), Fig 9, CVDV-QK, Tve multiple.
