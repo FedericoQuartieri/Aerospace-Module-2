@@ -57,6 +57,7 @@ transport
     logPolynomial
     polynomial
     sutherland
+    blottner
     tabulated
     WLF
     Andrade

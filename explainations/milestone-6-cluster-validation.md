@@ -106,8 +106,27 @@ L'invarianza di Cf/St rispetto alla prima cella scagiona definitivamente la mesh
 
 Morale gemella di quella del clamp: anche stavolta la grandezza sbagliata era "di contorno" (prima il floor di temperatura, ora il fit di viscosità), non la fisica two-temperature. Fix possibile: trasporto Blottner per specie + Eucken per κ (la miscela Wilke c'è già: `coefficientWilkeMulticomponentMixture`) — è il modello del paper. Figure fine: `fig2-comparison-fine.png`, `fig2-stagnation-comparison-fine.png`.
 
-## 10. Stato e prossimi passi (scope M6)
+## 10. Il trasporto Blottner: il gap si chiude
 
-- **Fatto**: cluster operativo end-to-end, causa del Cp trovata e corretta, guard-rail nel postProcess, run fine validato (Cp ristagno 0.5%), riferimenti Fig 2 digitalizzati per via vettoriale, **confronto Fig 2 completo coarse+fine: Cp chiuso (0.7%), gap Cf/St diagnosticato (fit Sutherland a parete, non mesh)**.
-- **Possibile passo successivo**: trasporto Blottner+Eucken per specie (chiuderebbe Cf/St a grado-paper); oppure passare direttamente al cilindro Mach 20 reagente (secondo caso del paper Part Two) e rimandare il trasporto.
+Implementato `blottnerTransport` in `src/thermophysicalModels/specie/transport/blottner/` — il modello di viscosità del paper (hy2Foam/LeMANS):
+
+    mu = 0.1*exp((A*lnT + B)*lnT + C)      [Blottner 1971]
+    kappa = mu*Cv*(1.32 + 1.77*R/Cv)       [Eucken modificata, come sutherland]
+
+La classe ricalca `sutherlandTransport` (stessa API: `mu(p,T)`, `kappa(p,T)`, operatori di miscela pesati in massa). **Non serve registrarla in nessuna type table statica**: il thermo del caso è compilato al volo via dynamicCode — il template stock istanzia `${transport}Transport<...>` per nome, quindi basta (a) l'header nell'include path (lnInclude della specie POLIMI, già davanti a quello stock) e (b) il nome `blottner` nella whitelist `etc/codeTemplates/dynamicCode/fluidMulticomponentThermo` (stesso meccanismo con cui era stato aggiunto `rrho`). Gotcha noto: la whitelist è **cacheata** in `~/.OpenFOAM/13` — la copia avviene al source di `etc/bashrc`, che i job cluster fanno già a ogni run.
+
+Coefficienti Blottner (tab. Gupta 1990) aggiunti alle 5 specie attive in `speciesThermo.janaf` (chiavi `A`/`B`/`C` accanto ad `As`/`Ts`, che restano per tornare indietro) e `transport blottner` nel `physicalProperties` del cono. Risultato sul **coarse** (stessa mesh, stesso tutto, solo μ(T) diverso):
+
+| Grandezza | Sutherland | **Blottner** | Verifica incrociata |
+|---|---|---|---|
+| Cp | 2.0% / 3.7% | **2.0% / 3.7%** | invariato al centesimo, e Cp ristagno 1.802 identico: il trasporto non tocca la pressione — se il thermo fosse sbagliato si vedrebbe qui |
+| Cf | 15.9% | **7.3%** | plateau 0.041→0.048 (+17% netto da +27% di μ a parete: lo strato limite si ispessisce e ∂u/∂y cala, risposta fisica corretta) |
+| St | 10.6% | **1.8%** | chiuso |
+
+Il residuo Cf ~7% sulla coarse ha due candidati: la prima cella (24.5 µm vs 2.3 µm del fine — ora che il modello è giusto la risoluzione può tornare a contare) e lo spessore della linea tratteggiata digitalizzata. Verdetto al rerun fine sul cluster.
+
+## 11. Stato e prossimi passi (scope M6)
+
+- **Fatto**: cluster operativo end-to-end, causa del Cp trovata e corretta, guard-rail nel postProcess, run fine validato (Cp ristagno 0.5%), riferimenti Fig 2 digitalizzati per via vettoriale, confronto Fig 2 coarse+fine, gap Cf/St diagnosticato (fit Sutherland a parete) **e chiuso con il trasporto Blottner (coarse: Cf 16→7%, St 11→2%)**.
+- **Prossimo passo**: rerun fine sul cluster con Blottner (`qsub job-cone-fine.sh` poi `qsub job-post-fine.sh` dopo `git pull`) per il verdetto a grado-paper; poi cilindro Mach 20 reagente (secondo caso del paper Part Two).
 - Rimandati noti invariati: diffusione del pool ve nella EveEqn (κ_ve), Fig 9, CVDV-QK, Tve multiple.

@@ -18,7 +18,12 @@ thermoType
 {
     type            highEnthalpyThermo;
     mixture         coefficientWilkeMulticomponentMixture;
-    transport       sutherland;
+    // blottner: curve fit valido su tutto il range 100-30000 K. Il fit
+    // sutherland del file janaf insegue la Blottner solo tra 1000 e 5000 K
+    // ed e' -21% a 297 K (la T di parete, dove si valutano tau_w e q_w):
+    // con sutherland Cf/St escono ~16%/~12% sotto il paper, invariati tra
+    // mesh coarse e fine (quindi errore di modello, non di griglia).
+    transport       blottner;
     thermo          rrho;
     energy          sensibleInternalEnergy;
     equationOfState perfectGas;
