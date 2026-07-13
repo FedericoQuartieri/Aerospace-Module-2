@@ -99,10 +99,29 @@ parallelo a 28 core non è mai stato verificato (solo fino a 4 core) e
 resta ben dentro il tetto di 48h della coda. Il paper: 2.8h su 24 core
 per il caso equivalente — coerente con la stima.
 
+## Post-processing (confronto con la Fig 2 del paper)
+
+A run finito, le grandezze di parete e il confronto con i riferimenti
+digitalizzati si ottengono con un secondo job:
+
+```sh
+qsub job-post-fine.sh           # 1 core, ~minuti
+cat cone-post.log               # scarti Cp/Cf/St
+```
+
+Fa `foamPostProcess -solver shockThermo -func wallHeatFlux` (il flag
+`-solver` è necessario: senza, il post non costruisce il
+thermophysicalTransport e fallisce), idem `wallShearStress`, poi
+`compare-fig2.py`. **Non lanciarlo a mano sul nodo di login**: anche se
+dura pochi minuti, un processo in foreground lì muore al primo calo di
+connessione (SIGHUP) e si porta via l'output.
+
 ## Cosa riportare indietro
 
 - `cone-stagnation.png`, `cone-surface.png` e l'output testuale del
   postProcess (standoff, Cp di ristagno)
+- `fig2-comparison.png`, `fig2-stagnation-comparison.png` e
+  `cluster/cone-post.log` (scarti vs paper)
 - `log.foamRun` (per i tempi e la convergenza)
 - la directory dell'ultimo time step se si vuole rifare il post in locale
 
