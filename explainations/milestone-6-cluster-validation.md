@@ -72,8 +72,28 @@ La progressione completa del Cp racconta l'intera vicenda: **1.30 (clamp attivo,
 
 **La pressione di parete al punto di ristagno è validata a grado-paper.**
 
-## 7. Stato e prossimi passi (scope M6)
+## 7. I riferimenti della Fig 2: estrazione vettoriale, non ricalco manuale
 
-- **Fatto**: cluster operativo end-to-end (setup + job + log), run fine diagnostico, causa del Cp trovata e corretta, guard-rail nel postProcess, **run fine definitivo validato (Cp entro lo 0.5% dal teorico, standoff in banda)**.
-- **Prossimo passo**: digitalizzazione dei riferimenti del paper (Fig 2: linea di ristagno Wang&Boyd/MONACO, Cp/Cf/St con esperimenti CUBRC run 31) per il confronto quantitativo completo sui profili — pattern Engauge già usato per la Fig 5. Il confronto più significativo è lo **Stanton number** (flusso termico a parete), la grandezza per cui il fix del datum a parete (M5) era il prerequisito.
+Per il confronto quantitativo sui profili serve la Fig 2 del paper in forma numerica. Invece del pattern Engauge (ricalco manuale sul raster, già usato per la Fig 5 in M2), qui si è sfruttato il fatto che le figure MDPI sono **grafica vettoriale**: le curve esistono nel PDF come comandi di disegno con coordinate esatte. `references/digitize-fig2.py` le estrae con PyMuPDF (`get_drawings`), calibra gli assi dai sei riquadri dei pannelli (range noti dalle etichette) e classifica le serie per proprietà geometriche del tracciato:
+
+- **colore blu** → hy2Foam prima cella 10 µm; **path neri connessi e lunghi** (contiguità >80%) → hy2Foam solida; **tratti neri staccati** → CFD Michigan (dash-dot); **simboli pieni** → triangoli DSMC (centroide); **piccoli path gambo+cap** → barre d'errore CUBRC (punto = centro barra).
+
+L'accuratezza è limitata solo dalla calibrazione degli assi. Le trappole trovate (documentate nel README di `references/`): i **tick degli assi** vanno filtrati per segmento, non per path (gnuplot emette i tick speculari di due bordi opposti in un unico path), e la distinzione solida/tratteggiata va fatta sulla **contiguità dei segmenti**, non sulla lunghezza. QA obbligatorio: `fig2-overlay.png` sovrappone i punti estratti al render della pagina. Risultato: 21 CSV (`references/fig2{a-f}-{serie}.csv`).
+
+## 8. Primo confronto quantitativo (mesh coarse)
+
+`compare-fig2.py` calcola le grandezze di parete del paper (eq. 30–32: Cp, Cf, St normalizzati sul free-stream nominale) leggendo `p` nelle celle owner della parete e i campi generati da `foamPostProcess -solver shockThermo -func wallHeatFlux` / `-func wallShearStress` (il flag `-solver` è necessario: il foamPostProcess liscio non costruisce il thermophysicalTransport). Sul **coarse** locale (prima cella 24.5 µm), scarti rispetto alla hy2Foam digitalizzata su 0.5–4 cm:
+
+| Grandezza | Scarto medio | Scarto max | Lettura |
+|---|---|---|---|
+| Cp | **2.0%** | 3.7% | sovrapposto a paper/DSMC/esperimenti |
+| Cf | 15.9% | 18.1% | sotto le curve paper sul fianco: attesa, è la grandezza più sensibile alla prima cella (24.5 µm vs 2–10 µm del paper) |
+| St | 10.6% | 14.5% | forma giusta; nel plateau più vicino agli **esperimenti CUBRC** che alle CFD del paper |
+
+Sulla linea di ristagno (Fig 2a) il profilo T/T∞ segue la hy2Foam (picco ~25.9 vs 25.8) e la Tve ricalca i punti Michigan; lo shock DSMC è più diffuso, com'è fisicamente atteso a Kn~0.002. Figure: `fig2-comparison.png`, `fig2-stagnation-comparison.png` nel caso.
+
+## 9. Stato e prossimi passi (scope M6)
+
+- **Fatto**: cluster operativo end-to-end, causa del Cp trovata e corretta, guard-rail nel postProcess, **run fine definitivo validato (Cp entro lo 0.5%)**, riferimenti Fig 2 digitalizzati per via vettoriale, primo confronto quantitativo coarse (Cp 2%, St 10.6%, Cf 15.9%).
+- **Prossimo passo**: rifare il confronto Fig 2 sui campi del **run fine** (prima cella 2.3 µm, comparabile al paper) — sul cluster: `foamPostProcess -solver shockThermo -func wallHeatFlux -time <t>`, idem `wallShearStress`, poi `python3 compare-fig2.py`. Lì Cf e St devono chiudersi; è il confronto per cui il fix del datum a parete (M5) era il prerequisito.
 - **Più avanti nello scope M6 o successivo**: cilindro Mach 20 reagente (secondo caso del paper Part Two); rimandati noti invariati (diffusione del pool ve nella EveEqn, Fig 9, CVDV-QK, Tve multiple).
