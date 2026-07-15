@@ -1,0 +1,15 @@
+<!-- Binary nitrogen mixture for the Mach 20 reacting cylinder
+     (Part Two, Sec. 3.2): pure-N2 free stream dissociating into N.
+     Two species instead of the 5-species air mixture halve the
+     per-cell bridge work on the 155k-cell paper-grade mesh. -->
+<mixture mechanism="N2N_diss_park">
+
+    <species>
+        N2 N
+    </species>
+
+    <element_compositions default="nitrogen">
+        <composition name="nitrogen"> N:1.0 </composition>
+    </element_compositions>
+
+</mixture>

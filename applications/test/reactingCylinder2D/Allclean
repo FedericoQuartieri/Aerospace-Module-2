@@ -1,0 +1,9 @@
+#!/bin/sh
+
+cd ${0%/*} || exit 1
+
+foamListTimes -rm 2>/dev/null
+rm -rf 0 processor* constant/polyMesh postProcessing dynamicCode
+rm -f log.* cylinder-*.png
+
+#------------------------------------------------------------------------------

@@ -1,0 +1,68 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  13
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+thermoType
+{
+    type            highEnthalpyThermo;
+    mixture         coefficientWilkeMulticomponentMixture;
+    // Blottner + Eucken, come nel paper (che pero' miscela con
+    // Armaly-Sutton invece di Wilke: differenza da tenere annotata).
+    transport       blottner;
+    thermo          rrho;
+    energy          sensibleInternalEnergy;
+    equationOfState perfectGas;
+    specie          specie;
+}
+
+// Mach 20 reacting cylinder (Part Two, Sec. 3.2): binary N2/N mixture,
+// irreversible Park dissociation with both colliding partners (run 3 of
+// Table 3: Park TTv + Park's rates; il q=0.5 di Mutation++ vs il
+// T^0.7*Tv^0.3 del paper vale ~3% nel transitorio 0D, vedi M2).
+// Run with MPP_DATA_DIRECTORY pointing to nonEqTTv/mutation-data-noel.
+highEnthalpyMutation
+{
+    mixture                 N2N;
+    stateModel              ChemNonEqTTv;
+    thermodynamicDatabase   RRHO;
+    mechanism               N2N_diss_park;
+    minTemperature          50;
+    maxTemperature          50000;
+    minPressure             0.01;
+    forceThermalEquilibrium no;
+}
+
+highEnthalpyRelaxation
+{
+    solveEve        yes;
+}
+
+
+// Read ONLY by the smoluchowskiJumpT wall BC (rhoCentralFoam-style lookup
+// of the Prandtl number from the pureMixture layout). The multicomponent
+// thermo ignores this subdict. Pr for N2.
+mixture
+{
+    transport
+    {
+        Pr      0.72;
+    }
+}
+
+defaultSpecie N2;
+
+#include "speciesThermo.janaf"
+
+// ************************************************************************* //

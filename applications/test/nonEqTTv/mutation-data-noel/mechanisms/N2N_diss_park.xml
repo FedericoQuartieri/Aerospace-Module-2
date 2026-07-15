@@ -1,0 +1,39 @@
+<!--
+Two-reaction mechanism for the Mach 20 reacting cylinder of
+Casseau et al., Aerospace 2016, 3, 45 - Section 3.2 (Part Two).
+
+Irreversible ("=>") dissociation of nitrogen with both colliding
+partners, as stated in the paper:
+
+    N2 + N2 -> 2N + N2
+    N2 + N  -> 2N + N
+
+Rates: Park (Table 4 of Part Two), run number 3 ("the one
+conventionally used in hypersonics", Park TTv + Park's rates):
+A = 7.0e21 (N2 partner), A = 3.0e22 (N partner), beta = -1.6,
+Ta = 113200 K. The A units are cm^3/(mol s) as in the classic Park
+1993 tables and in the sibling N2_diss_park.xml (validated against
+Part One Figs. 7/8 in the 0D tests, M2): the "m^3" claim in the
+Part Two Table 4 caption is a typo - with true m^3 units the rates
+would be off by a factor 1e6.
+
+NOTE: the vendored Mutation++ evaluates the forward rate of
+DISSOCIATION_M reactions at Tf = sqrt(T*Tv) (Park exponent 0.5,
+hard-coded in kinetics/RateManager.cpp). The paper uses
+Tf = T^0.7 * Tv^0.3; the 0D comparison (M2) showed a max ~3%
+transient difference on the heat-bath case.
+-->
+<mechanism name="N2N_diss_park">
+
+    <arrhenius_units A="mol,cm,s,K" E="kcal,mol,K" />
+
+    <!-- Park via QK-consistent table of Part Two, run 3 -->
+    <reaction formula="N2+N2=>2N+N2">
+        <arrhenius A="7.0E+21" n="-1.6" T="113200.0" />
+    </reaction>
+
+    <reaction formula="N2+N=>2N+N">
+        <arrhenius A="3.0E+22" n="-1.6" T="113200.0" />
+    </reaction>
+
+</mechanism>

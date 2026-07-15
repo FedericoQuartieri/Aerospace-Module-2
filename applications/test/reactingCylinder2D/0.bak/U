@@ -1,0 +1,49 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  13
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volVectorField;
+    location    "0";
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Free-stream: Mach 20, Table 2 of the paper (Part Two, Sec. 3.2)
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (6047 0 0);
+
+boundaryField
+{
+    inlet
+    {
+        type            fixedValue;
+        value           uniform (6047 0 0);
+    }
+
+    outlet
+    {
+        type            zeroGradient;
+    }
+
+    wall
+    {
+        type            maxwellSlipU;
+        accommodationCoeff 1.0;
+        Uwall           uniform (0 0 0);
+        thermalCreep    on;
+        curvature       on;
+        value           uniform (0 0 0);
+    }
+
+    symm            { type symmetryPlane; }
+    frontAndBack    { type empty; }
+}
+
+// ************************************************************************* //
