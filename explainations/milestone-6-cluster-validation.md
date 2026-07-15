@@ -125,8 +125,18 @@ Coefficienti Blottner (tab. Gupta 1990) aggiunti alle 5 specie attive in `specie
 
 Il residuo Cf ~7% sulla coarse ha due candidati: la prima cella (24.5 µm vs 2.3 µm del fine — ora che il modello è giusto la risoluzione può tornare a contare) e lo spessore della linea tratteggiata digitalizzata. Verdetto al rerun fine sul cluster.
 
+**Rerun fine con Blottner (15 lug 2026)** — il quadro definitivo della Fig 2:
+
+| Grandezza | Sutherland fine | Blottner coarse | **Blottner fine** |
+|---|---|---|---|
+| Cp | 0.7% / 1.7% | 2.0% | **0.7% / 1.7%** (identico al fine sutherland: solo griglia) |
+| Cf | 16.3% | 7.3% | **7.7% / max 11.2%** |
+| St | 11.6% | 1.8% | **2.7% / max 4.3%** |
+
+**St chiuso a grado-paper** (2.7%, dentro la dispersione tra le CFD del paper — era il confronto per cui serviva il fix del datum a parete di M5). Il **Cf residuo ~7.7% è stabile tra coarse e fine**: non è risoluzione né viscosità; candidati rimasti i coefficienti di accomodamento delle BC di slip e la digitalizzazione della tratteggiata — e nel paper stesso hy2Foam sta ~4% sopra la DSMC sullo stesso plateau, quindi siamo nell'ordine della dispersione interna tra i riferimenti.
+
 ## 11. Stato e prossimi passi (scope M6)
 
-- **Fatto**: cluster operativo end-to-end, causa del Cp trovata e corretta, guard-rail nel postProcess, run fine validato (Cp ristagno 0.5%), riferimenti Fig 2 digitalizzati per via vettoriale, confronto Fig 2 coarse+fine, gap Cf/St diagnosticato (fit Sutherland a parete) **e chiuso con il trasporto Blottner (coarse: Cf 16→7%, St 11→2%)**.
-- **Prossimo passo**: rerun fine sul cluster con Blottner (`qsub job-cone-fine.sh` poi `qsub job-post-fine.sh` dopo `git pull`) per il verdetto a grado-paper; poi cilindro Mach 20 reagente (secondo caso del paper Part Two).
-- Rimandati noti invariati: diffusione del pool ve nella EveEqn (κ_ve), Fig 9, CVDV-QK, Tve multiple.
+- **Fatto**: cluster operativo end-to-end, causa del Cp trovata e corretta, guard-rail nel postProcess, riferimenti Fig 2 digitalizzati per via vettoriale, gap Cf/St diagnosticato (fit Sutherland a parete) e chiuso con il trasporto Blottner. **Fig 2 validata sul fine: Cp 0.7%, St 2.7%, Cf 7.7%** (quest'ultimo nell'ordine della dispersione tra i riferimenti del paper).
+- **Prossimo passo**: cilindro Mach 20 reagente (secondo caso del paper Part Two).
+- Rimandati noti invariati: diffusione del pool ve nella EveEqn (κ_ve), Fig 9, CVDV-QK, Tve multiple; eventuale indagine sui coefficienti di accomodamento per l'ultimo ~7% di Cf.
