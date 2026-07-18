@@ -49,6 +49,26 @@ tdir = times[-1]
 nt = len(times)
 print(f"t = {tdir} s ({nt} snapshots)")
 
+# ------------------------------------------------- convergence guard-rail --
+# LTS verso lo stazionario: la soluzione e' credibile solo se i campi non
+# cambiano piu' tra gli ultimi due snapshot (lezione del run locale: a
+# 30k step il transitorio M20 e' ancora vivo e Cp/Cf oscillano).
+def _read_scalar(td, name):
+    txt = open(os.path.join(HERE, td, name)).read()
+    m = re.search(r"internalField\s+nonuniform\s+List<scalar>\s*\d+\s*"
+                  r"\((.*?)\)\s*;", txt, re.S)
+    return np.array([float(q) for q in m.group(1).split()])
+
+if nt >= 2:
+    pPrev = _read_scalar(times[-2], "p")
+    pLast = _read_scalar(times[-1], "p")
+    dp = np.abs(pLast - pPrev)/np.maximum(np.abs(pPrev), 1e-3)
+    print(f"convergenza: dp/p tra {times[-2]} e {times[-1]}: "
+          f"media {dp.mean()*100:.2f}%, max {dp.max()*100:.1f}%")
+    if dp.mean() > 0.01:
+        print("  *** WARNING: NON a regime (media > 1%): prolungare il run "
+              "prima di fidarsi di Cp/Cf/C_D/C_H ***")
+
 # ------------------------------------------------------------ mesh parsing --
 def strip_comments(txt):
     txt = re.sub(r"/\*.*?\*/", "", txt, flags=re.S)
@@ -159,8 +179,12 @@ if abs(T_eff - T_INF) > 2:
     print("  *** WARNING: free-stream simulato != nominale (clamp? BC?) ***")
 
 # ------------------------------------------------------- stagnation line ---
-axisBand = np.abs(y) < 0.02*R_CYL
-line = axisBand & (x < -R_CYL*0.999)
+# angular selection: the first theta-row of cells next to the -x axis.
+# A fixed |y| band fails on a polar mesh (it runs out of cells at small
+# radius and the "standoff" becomes the band edge, not the shock).
+thC = np.degrees(np.arctan2(np.abs(y), -x))   # 0 on the upstream axis
+dTh = thC[(x < -R_CYL) & (thC < 10)].min()*1.001
+line = (thC <= 1.5*dTh) & (x < -R_CYL*0.999)
 xs = x[line] + R_CYL  # 0 at the wall, negative upstream
 o = np.argsort(xs)
 xso, Tso, Tveo = xs[o], T[line][o], Tve[line][o]
@@ -186,14 +210,17 @@ print(f"stagnation Cp = {CpStag:.3f}  (Rayleigh pitot ideale frozen a "
 
 # ------------------------------------------------------------- C_D / C_H ---
 pWall = p[wallOwner]
-Dp = -np.sum((pWall - P_INF)*wallAreas[:, 0])  # aree puntano dentro il corpo
+# le aree (uscenti dall'owner) puntano DENTRO il corpo: la forza di
+# pressione sul corpo e' p*n con n verso il corpo -> componente x diretta
+Dp = np.sum((pWall - P_INF)*wallAreas[:, 0])
 CdP = 2.0*Dp/(Q_INF*2*R_CYL*depth)             # x2: mezzo dominio
 
 CdF = 0.0
 Ch = float("nan")
 try:
     tau = read_wall_boundary("wallShearStress")
-    # wallShearStress = forza per area sul FLUIDO: sul corpo agisce -tau
+    # wallShearStress = forza per area sul FLUIDO (verso -x sul lato
+    # vento): sul corpo agisce -tau
     Df = -np.sum(tau[:, 0]*np.linalg.norm(wallAreas, axis=1))
     CdF = 2.0*Df/(Q_INF*2*R_CYL*depth)
 except FileNotFoundError:
@@ -220,7 +247,7 @@ axes[0].plot(xso - 0*R_CYL, Tso/1000, "r-", label="T")
 axes[0].plot(xso, Tveo/1000, "b--", label="Tve")
 axes[0].set_xlabel("stagnation line position x+R [m]")
 axes[0].set_ylabel("T [kK]")
-axes[0].set_xlim(-0.5, 0)
+axes[0].set_xlim(-0.8, 0)
 axes[0].legend(); axes[0].grid(alpha=0.3)
 axes[0].set_title(f"standoff {standoff:.3f} m (paper ~0.25)")
 
@@ -228,13 +255,13 @@ Mline = np.linalg.norm(U[line][o], axis=1)/np.sqrt(GAMMA*R_N2*Tso)
 axes[1].plot(xso, Mline, "k-")
 axes[1].set_xlabel("stagnation line position x+R [m]")
 axes[1].set_ylabel("Mach")
-axes[1].set_xlim(-0.5, 0); axes[1].grid(alpha=0.3)
+axes[1].set_xlim(-0.8, 0); axes[1].grid(alpha=0.3)
 
 axes[2].semilogy(xso, nN2[line][o], "k-", label="N2")
 axes[2].semilogy(xso, nN[line][o], "g--", label="N")
 axes[2].set_xlabel("stagnation line position x+R [m]")
 axes[2].set_ylabel("number density [1/m3]")
-axes[2].set_xlim(-0.5, 0); axes[2].set_ylim(1e18, 1e22)
+axes[2].set_xlim(-0.8, 0); axes[2].set_ylim(1e18, 1e22)
 axes[2].legend(); axes[2].grid(alpha=0.3)
 
 fig.suptitle(f"Mach 20 reacting cylinder - stagnation line (t = {tdir})")

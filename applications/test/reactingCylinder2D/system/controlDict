@@ -25,7 +25,7 @@ stopAt          endTime;
 // LTS pseudo-time: 3e-3/1e-7 = 30k iterazioni, come il cono M5/M6
 // (la convergenza va comunque verificata sulla stabilita' dei campi
 // tra checkpoint, non sul timeout)
-endTime         3e-3;
+endTime         9e-3;
 
 deltaT          1e-7;
 
