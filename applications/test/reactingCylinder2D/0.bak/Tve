@@ -35,8 +35,15 @@ boundaryField
 
     wall
     {
-        type            fixedValue;
-        value           uniform 1000;
+        // zeroGradient come nel cono M5/M6, NON fixedValue Tw: la EveEqn
+        // non ha (ancora) diffusione del pool ve (kappa_ve), quindi un
+        // valore imposto a parete non ha alcun meccanismo per propagarsi
+        // e innesca una scacchiera odd-even di eve nelle prime celle
+        // (verificato sul coarse cluster: T al floor del limiter, p 2x).
+        // Costo noto: q_w senza contributo vibrazionale, come nel cono.
+        // Il fix vero (kappa_ve = mu*cv_ve alla Eucken -> laplacian(mu,
+        // eve)) e' il passo successivo di M7.
+        type            zeroGradient;
     }
 
     symm            { type symmetryPlane; }
