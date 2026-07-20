@@ -197,9 +197,26 @@ standoff = -xso[ix[0]] if len(ix) else float("nan")
 print(f"shock standoff (linea di ristagno) = {standoff:.3f} m "
       f"(paper: ~0.25 m, entrambi i codici)")
 
-# stagnation Cp + ideal Rayleigh reference at the effective Mach
-iw = np.argmin(np.abs(xso))
-CpStag = (p[line][o][-0] if False else p[line][o][np.argmax(xso)] - P_INF)/Q_INF
+# ------------------------------------------------------------- C_D / C_H ---
+# ROBUST (vedi il commit "Tve wall" e la doc M7): il solver sviluppa un
+# checkerboard odd-even confinato alla SOLA cella a parete (aspect ratio
+# ~1700:1 + flusso centrale + BC slip/jump); l'interno e' pulito. Le
+# grandezze di parete si leggono come le misurerebbe uno strato limite:
+# pressione dalla banda radiale pulita 3-9 celle fuori parete (dp/dn=0
+# nello strato limite -> e' il valore di parete), attrito dalla sola
+# componente tangenziale (il checkerboard inietta una spuria componente
+# NORMALE nello sforzo viscoso).
+rCC = np.sqrt(x**2 + y**2)
+thCC = np.degrees(np.arctan2(y, -x))
+thetaWgeo = np.degrees(np.arctan2(wallCentres[:, 1], -wallCentres[:, 0]))
+CpS = np.zeros(nF)
+for i in range(nF):
+    sel = np.abs(thCC - thetaWgeo[i]) < 0.9
+    o = np.argsort(rCC[sel])
+    CpS[i] = (np.median(p[sel][o][2:9]) - P_INF)/Q_INF
+
+# stagnation Cp (robusto: faccia a theta minimo) + Rayleigh a M effettivo
+CpStag = CpS[np.argmin(thetaWgeo)]
 g = GAMMA
 Mr = M_eff
 pratio = ((g + 1)**2*Mr**2/(4*g*Mr**2 - 2*(g - 1)))**(g/(g - 1)) \
@@ -208,20 +225,18 @@ CpRay = (pratio - 1)*P_INF/Q_INF
 print(f"stagnation Cp = {CpStag:.3f}  (Rayleigh pitot ideale frozen a "
       f"M={Mr:.2f}: {CpRay:.3f}; reagente atteso leggermente diverso)")
 
-# ------------------------------------------------------------- C_D / C_H ---
-pWall = p[wallOwner]
-# le aree (uscenti dall'owner) puntano DENTRO il corpo: la forza di
-# pressione sul corpo e' p*n con n verso il corpo -> componente x diretta
-Dp = np.sum((pWall - P_INF)*wallAreas[:, 0])
+Dp = np.sum(CpS*Q_INF*wallAreas[:, 0])
 CdP = 2.0*Dp/(Q_INF*2*R_CYL*depth)             # x2: mezzo dominio
 
 CdF = 0.0
 Ch = float("nan")
+tanShear = None
 try:
     tau = read_wall_boundary("wallShearStress")
-    # wallShearStress = forza per area sul FLUIDO (verso -x sul lato
-    # vento): sul corpo agisce -tau
-    Df = -np.sum(tau[:, 0]*np.linalg.norm(wallAreas, axis=1))
+    nh = wallCentres.copy(); nh[:, 2] = 0
+    nh /= np.linalg.norm(nh[:, :2], axis=1, keepdims=True)
+    tanShear = tau - np.sum(tau*nh, axis=1)[:, None]*nh
+    Df = -np.sum(tanShear[:, 0]*np.linalg.norm(wallAreas, axis=1))
     CdF = 2.0*Df/(Q_INF*2*R_CYL*depth)
 except FileNotFoundError:
     print("  (wallShearStress assente: C_D solo pressione)")
@@ -270,17 +285,16 @@ fig.savefig(os.path.join(HERE, "cylinder-stagnation.png"), dpi=140)
 print("Plot saved to cylinder-stagnation.png")
 
 fig2, axes2 = plt.subplots(1, 3, figsize=(15, 4.6))
-CpW = (pWall - P_INF)/Q_INF
-axes2[0].plot(thetaPaper[orderTh], CpW[orderTh], "r-")
+# CpS robusto (banda pulita); thetaWgeo = theta geometrico (0 = ristagno)
+oS = np.argsort(thetaWgeo)
+axes2[0].plot(thetaWgeo[oS], CpS[oS], "r-")
 axes2[0].set_ylabel("pressure coefficient")
-try:
-    CfW = np.linalg.norm(np.atleast_2d(tau), axis=-1)/Q_INF
-    axes2[1].plot(thetaPaper[orderTh], CfW[orderTh], "r-")
-except NameError:
-    pass
+if tanShear is not None:
+    CfS = np.linalg.norm(tanShear, axis=1)/Q_INF
+    axes2[1].plot(thetaWgeo[oS], CfS[oS], "r-")
 axes2[1].set_ylabel("friction coefficient")
 try:
-    axes2[2].plot(thetaPaper[orderTh], np.abs(qw[orderTh])/1e4, "r-")
+    axes2[2].plot(thetaWgeo[oS], np.abs(qw[oS])/1e4, "r-")
 except NameError:
     pass
 axes2[2].set_ylabel("surface heat flux [W/cm2]")
