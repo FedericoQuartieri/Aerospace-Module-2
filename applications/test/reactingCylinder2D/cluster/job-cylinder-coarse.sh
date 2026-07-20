@@ -12,6 +12,11 @@
 # in testa rifa' tutto: per riprendere, commentare Allclean e lanciare
 # a mano i passi di Allrun senza rigenerare mesh/0).
 #
+# Questo rerun testa anche il rimedio al checkerboard a parete: fvSchemes
+# usa ora Minmod (piu' dissipativo) invece di vanAlbada. Nel log finale
+# guardare il Cp di ristagno robusto e il pannello Cf/flusso termico: se
+# il checkerboard e' curato, Cf/q non sono piu' frastagliati.
+#
 # Schema PBS identico agli altri job (vedi job-cone-fine.sh per i
 # dettagli della trafila su questo cluster).
 #

@@ -42,9 +42,16 @@ interpolationSchemes
 {
     default         linear;
 
-    reconstruct(rho) vanAlbada;
-    reconstruct(U)  vanAlbadaV;
-    reconstruct(T)  vanAlbada;
+    // Minmod invece di vanAlbada: e' il piu' dissipativo dei limiter
+    // MUSCL. Il cono M11 girava bene con vanAlbada (compressivo), ma sul
+    // cilindro M20 la combinazione flusso centrale + celle a parete con
+    // aspect ratio ~1700:1 lascia passare un checkerboard odd-even nella
+    // cella a contatto con la parete: Minmod aggiunge la dissipazione
+    // near-wall che lo smorza. Costo: shock leggermente piu' diffuso
+    // (accettabile, lo standoff era gia' su 0.247 vs 0.25).
+    reconstruct(rho) Minmod;
+    reconstruct(U)  MinmodV;
+    reconstruct(T)  Minmod;
 }
 
 snGradSchemes
