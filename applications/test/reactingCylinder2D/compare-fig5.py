@@ -219,15 +219,19 @@ axes2[1].plot(xs[o], T[line][o]/1000, "r--", lw=1.8, label="T")
 axes2[1].plot(xs[o], Tve[line][o]/1000, "r:", lw=1.8, label="Tve")
 db = ref("fig5b-run3.csv")
 if db is not None:
-    axes2[1].plot(db[:, 0] + R_CYL, db[:, 1], "b-", lw=1.0,
-                  label="hy2Foam run3")
+    # il file run3 di (b) contiene DUE curve fisiche (T_tr e T_v) fuse:
+    # disegnarle come linea connessa produce un "blob" (zigzag tra i due
+    # rami a ogni x). Nuvola di punti -> si leggono come due bande.
+    axes2[1].plot(db[:, 0] + R_CYL, db[:, 1], ".", c="b", ms=1.5,
+                  label="hy2Foam run3 (Ttr+Tv)")
 axes2[1].set_ylabel("temperature [kK]"); axes2[1].set_ylim(0, 16)
 axes2[2].semilogy(xs[o], nN2[line][o], "r--", lw=1.8, label="N2")
 axes2[2].semilogy(xs[o], nN[line][o], "g--", lw=1.8, label="N")
 dc = ref("fig5c-run3.csv")
 if dc is not None:
-    axes2[2].semilogy(dc[:, 0] + R_CYL, dc[:, 1], "b-", lw=1.0,
-                      label="hy2Foam N2")
+    # idem: (c) run3 contiene N2 e N fusi -> punti, non linea
+    axes2[2].semilogy(dc[:, 0] + R_CYL, dc[:, 1], ".", c="b", ms=1.5,
+                      label="hy2Foam run3 (N2+N)")
 axes2[2].set_ylabel("number density [1/m3]"); axes2[2].set_ylim(1e18, 1e22)
 for ax in axes2:
     ax.set_xlim(-0.5, 0)
