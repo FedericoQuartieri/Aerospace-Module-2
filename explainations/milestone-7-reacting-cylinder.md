@@ -109,20 +109,39 @@ Confronto con la Fig 5 (`fig5-surface-comparison.png`,
   (63.3) più che al run 3 del paper (88.1, che il paper stesso dice
   sovrastimare la DSMC del 39%).
 
-## 5. Stato e prossimi passi
+## 5. Opzione 1 — Minmod cura (quasi tutto) il checkerboard
 
-- **Validato (grado-paper)**: pressione di parete (Cp, C_D entro 1.2%),
-  standoff, e i profili di linea di ristagno (Mach, T, dissociazione) —
-  cioè **la fisica reattiva two-temperature in multi-D funziona**, che è
-  l'obiettivo di M7.
-- **Aperto**: Cf e flusso termico restano ~20% bassi e sporcati dal
-  checkerboard a parete. Due strade, non alternative:
-  1. **curare il checkerboard** — più dissipazione near-wall (limiter
-     minmod al posto di vanAlbada, o riduzione a primo ordine sullo
-     strato a parete), da testare sulla coarse (rerun ~1h);
-  2. **mesh fine** (156k, 2 µm) sul cluster — è dove il paper fa il
-     confronto; la prima cella molto più fine riduce l'aspect ratio
-     tangenziale relativo e il near-wall è meglio risolto.
+Cambiato `reconstruct(rho|U|T)` da **vanAlbada** (compressivo, andava bene
+sul cono M11) a **Minmod**, il più dissipativo dei limiter MUSCL: aggiunge
+la dissipazione near-wall che smorza il modo odd-even. Costo: shock un filo
+più diffuso, ma lo standoff resta 0.247 m. Rerun coarse sul cluster (90k
+step, converge a dp/p 0.24%):
+
+| Grandezza | vanAlbada | **Minmod** | paper / DSMC |
+|---|---|---|---|
+| Cp ristagno (robusto) | 1.90 | **1.785** | Rayleigh 1.837 |
+| C_D | 1.288 | **1.285** (p 1.254 + attr 0.031) | 1.304 / 1.284 |
+| C_H [kW] | 57.3 | **74.1** | 88.1 / 63.3 |
+| Cf(θ) | seghettata | **liscia**, picco ~0.033 @ 50° | run3 0.040, DSMC 0.055 |
+
+Il C_H schizza da 57 (schiacciato dal checkerboard) a 74.1, **dentro
+l'intervallo fisico** DSMC-paper. Cp e Cf ora sono lisce e grado-paper in
+forma; C_D entro 1.5%. Resta **un solo spike di flusso termico a θ≈27°**
+vicino al ristagno — l'ultima cella dove il disturbo sopravvive, perché
+q~dT/dn è la più sensibile. Figure aggiornate:
+`cylinder-surface.png`, `cylinder-stagnation.png`.
+
+## 6. Stato e prossimi passi
+
+- **Validato (grado-paper)**: pressione di parete (Cp, C_D entro 1.5%),
+  standoff, profili di ristagno (Mach, T, dissociazione) e ora anche
+  **Cf e C_H nell'intervallo fisico** dopo Minmod — **la fisica reattiva
+  two-temperature in multi-D funziona**, l'obiettivo di M7.
+- **Prossimo passo (opzione 2)**: **mesh fine** (156k, 2 µm) sul cluster
+  con Minmod già in mano — è dove il paper fa il confronto; la prima cella
+  molto più fine dovrebbe togliere anche lo spike residuo di flusso
+  termico e alzare Cf verso i riferimenti. Job pronto:
+  `cluster/job-cylinder-fine.sh`.
 - **Rimandati** (invariati da M6): diffusione del pool ve nella EveEqn
   (κ_ve = μ·cv_ve alla Eucken → un `laplacian(μ, eve)`); è il pezzo che
   darebbe il contributo vibrazionale al flusso termico e permetterebbe di
