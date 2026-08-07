@@ -131,22 +131,58 @@ vicino al ristagno — l'ultima cella dove il disturbo sopravvive, perché
 q~dT/dn è la più sensibile. Figure aggiornate:
 `cylinder-surface.png`, `cylinder-stagnation.png`.
 
-## 6. Stato e prossimi passi
+## 6. La mesh fine non converge — e perché non serve inseguirla
 
-- **Validato (grado-paper)**: pressione di parete (Cp, C_D entro 1.5%),
-  standoff, profili di ristagno (Mach, T, dissociazione) e ora anche
-  **Cf e C_H nell'intervallo fisico** dopo Minmod — **la fisica reattiva
-  two-temperature in multi-D funziona**, l'obiettivo di M7.
-- **Prossimo passo (opzione 2)**: **mesh fine** (156k, 2 µm) sul cluster
-  con Minmod già in mano — è dove il paper fa il confronto; la prima cella
-  molto più fine dovrebbe togliere anche lo spike residuo di flusso
-  termico e alzare Cf verso i riferimenti. Job pronto:
-  `cluster/job-cylinder-fine.sh`.
-- **Rimandati** (invariati da M6): diffusione del pool ve nella EveEqn
-  (κ_ve = μ·cv_ve alla Eucken → un `laplacian(μ, eve)`); è il pezzo che
-  darebbe il contributo vibrazionale al flusso termico e permetterebbe di
-  rimettere la parete vibrazionale a 1000 K. Fig 9 (aria 5 specie),
-  CVDV-QK, Tve multiple.
+Provata l'opzione 2 (156k celle, prima cella 1.9 µm, Minmod) sul cluster.
+**A 90k step non è a regime**: il guard-rail di convergenza segna dp/p
+media 2.66%, max 1236% (la coarse allo stesso punto era 0.24%), e i numeri
+escono spazzatura (Cp ristagno 4.8, C_D 4.6, C_H 1516 kW). Due cause
+concorrenti:
+
+1. **LTS più lento su celle più piccole**: il passo pseudo-temporale
+   locale è ∝ alla dimensione di cella, quindi celle ~4× più fini vogliono
+   ~4× più iterazioni per convergere. 90k non bastano.
+2. **Aspect ratio near-wall peggiore**: la prima cella a 1.9 µm su celle
+   tangenziali da ~10 mm dà ~5000:1 (contro 1700:1 della coarse) — il modo
+   odd-even è *più* alimentato, non meno. Il Cp robusto che esce 4.8 (non
+   ~1.8) dice che sulla fine il checkerboard è più profondo della cella-1,
+   quindi nemmeno la banda pulita salva l'estrazione.
+
+**Decisione: la coarse Minmod è il risultato di M7, la fine è rifinitura
+futura.** Motivo di fondo, oltre alla convergenza: i riferimenti del paper
+**non concordano tra loro** — sul Cf il picco va da 0.040 (hy2Foam run3) a
+0.055 (DSMC), spread 37%; sul flusso termico il paper stesso dice che Park
+sovrastima la DSMC del 39% (C_H 88 vs 63). Il nostro Cf coarse ~0.033 e
+C_H 74 kW cadono *dentro* questa forbice. Inseguire la mesh fine non
+avvicinerebbe un "valore vero" (che non esiste come punto singolo), a
+fronte di un problema numerico reale da risolvere prima. La cura giusta,
+quando/se si vorrà chiudere il quantitativo sulla fine, è il **re-grading
+near-wall** (più celle tangenziali o grading più dolce mantenendo ~2 µm a
+parete) per riportare l'aspect ratio a ~1500:1; il paper gira 155k a 2 µm
+senza questo problema perché il suo flusso KNP tollera quella risoluzione
+meglio del nostro centrale. (Bug minore corretto lungo la strada: `o`
+riusato in `postProcess-cylinder.py` faceva crashare il plot Mach di
+ristagno — commit `ea3901d`.)
+
+## 7. Verdetto M7
+
+**Validato (grado-paper) sulla coarse Minmod**: pressione di parete (Cp,
+C_D entro 1.5%), standoff (0.247 vs 0.25 m), profili di linea di ristagno
+(Mach = run3, T con la sovrastima del picco *attesa* per la combinazione
+Park, dissociazione N nel posto giusto), e Cf/C_H **nell'intervallo dei
+riferimenti**. **La fisica reattiva two-temperature in multi-D funziona** —
+la chimica, validata finora solo in 0D/1D (M2/M3/M4), regge accoppiata al
+two-temperature su un caso 2D completo con shock staccato. È l'obiettivo
+di M7, centrato.
+
+**Aperto / rifinitura futura**:
+- mesh fine convergente (re-grading near-wall + più step LTS) per limare
+  il gap Cf e lo spike residuo di flusso termico;
+- diffusione del pool ve nella EveEqn (κ_ve = μ·cv_ve alla Eucken → un
+  `laplacian(μ, eve)`), invariata da M6: darebbe il contributo
+  vibrazionale al flusso termico e permetterebbe la parete vibrazionale a
+  1000 K come nel paper;
+- Fig 9 (aria 5 specie), CVDV-QK, Tve multiple.
 
 Caveat di digitalizzazione (`references/README.md`): nei pannelli (b) e
 (c) ogni file `run*` contiene due curve fisiche (T_tr+T_v, N2+N): vanno
