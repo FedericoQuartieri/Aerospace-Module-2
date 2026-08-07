@@ -212,8 +212,8 @@ thetaWgeo = np.degrees(np.arctan2(wallCentres[:, 1], -wallCentres[:, 0]))
 CpS = np.zeros(nF)
 for i in range(nF):
     sel = np.abs(thCC - thetaWgeo[i]) < 0.9
-    o = np.argsort(rCC[sel])
-    CpS[i] = (np.median(p[sel][o][2:9]) - P_INF)/Q_INF
+    ro = np.argsort(rCC[sel])          # NON riusare 'o': e' della linea di ristagno
+    CpS[i] = (np.median(p[sel][ro][2:9]) - P_INF)/Q_INF
 
 # stagnation Cp (robusto: faccia a theta minimo) + Rayleigh a M effettivo
 CpStag = CpS[np.argmin(thetaWgeo)]
