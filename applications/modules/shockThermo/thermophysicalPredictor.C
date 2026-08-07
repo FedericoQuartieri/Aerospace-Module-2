@@ -225,6 +225,19 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
           + fvModels().source(rho, eve)
         );
 
+        // Vibro-electronic conduction (deferred since M3, added in M8).
+        // Modified Eucken for the internal modes gives kappa_ve = mu*cv_ve.
+        // Since grad(eve) = cv_ve*grad(Tve) pointwise, the vibrational heat
+        // flux is  q_ve = -kappa_ve*grad(Tve) = -mu*grad(eve)  exactly, so
+        // the conduction is laplacian(mu, eve) - implicit in eve (stable),
+        // using the same molecular mu the EEqn conducts the total energy
+        // with via thermophysicalTransport->divq(e). Guarded like the EEqn:
+        // no viscous/conductive terms in an inviscid run.
+        if (!inviscid)
+        {
+            EveEqn -= fvm::laplacian(thermo.mu(), eve);
+        }
+
         if (hasMutChemistry)
         {
             EveEqn -= mesh.lookupObject<volScalarField::Internal>("mutQcv");
