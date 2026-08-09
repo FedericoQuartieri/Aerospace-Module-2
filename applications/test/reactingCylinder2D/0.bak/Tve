@@ -35,15 +35,18 @@ boundaryField
 
     wall
     {
-        // zeroGradient come nel cono M5/M6, NON fixedValue Tw: la EveEqn
-        // non ha (ancora) diffusione del pool ve (kappa_ve), quindi un
-        // valore imposto a parete non ha alcun meccanismo per propagarsi
-        // e innesca una scacchiera odd-even di eve nelle prime celle
-        // (verificato sul coarse cluster: T al floor del limiter, p 2x).
-        // Costo noto: q_w senza contributo vibrazionale, come nel cono.
-        // Il fix vero (kappa_ve = mu*cv_ve alla Eucken -> laplacian(mu,
-        // eve)) e' il passo successivo di M7.
-        type            zeroGradient;
+        // M8: ora che la EveEqn ha la diffusione del pool ve
+        // (laplacian(mu,eve), Eucken kappa_ve=mu*cv_ve) il valore di
+        // parete si propaga e NON innesca piu' la scacchiera odd-even che
+        // in M7 aveva costretto a zeroGradient. Jump di Smoluchowski come
+        // per T (paper: jump su entrambe le temperature, accommodation 1,
+        // parete a 1000 K): da' il flusso termico vibrazionale a parete
+        // che mancava -> C_H atteso piu' vicino al paper (era 74 vs 88).
+        type            smoluchowskiJumpT;
+        accommodationCoeff 1.0;
+        Twall           uniform 1000;
+        gamma           1.4;
+        value           uniform 1000;
     }
 
     symm            { type symmetryPlane; }

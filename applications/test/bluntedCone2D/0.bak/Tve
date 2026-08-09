@@ -32,7 +32,17 @@ boundaryField
 
     wall
     {
-        type            zeroGradient;
+        // M8: con la diffusione del pool ve (laplacian(mu,eve)) ora la
+        // parete vibrazionale puo' avere un gradiente - prima era
+        // impraticabile (nessun meccanismo per propagarlo -> scacchiera).
+        // Jump di Smoluchowski come per T (paper: jump su entrambe le
+        // temperature, accommodation 1). Da' il flusso termico
+        // vibrazionale a parete che finora mancava.
+        type            smoluchowskiJumpT;
+        accommodationCoeff 1.0;
+        Twall           uniform 297.2;
+        gamma           1.4;
+        value           uniform 297.2;
     }
 
     wedge0 { type wedge; }
