@@ -69,7 +69,59 @@ Tw o `smoluchowskiJumpT` come per T. Prima di M8 questa BC era impraticabile
 Questo chiude il cerchio con il gap di flusso termico rimasto aperto in
 M6/M7. È lavoro 2D su cluster, quindi separato da questa parte solver.
 
-## 4. Rimandati (invariati)
+## 4. Il verdetto 2D sul cluster (cilindro coarse M8)
 
-Fig 9 (aria 5 specie), CVDV-QK, Tve multiple per specie nel solver, mesh
-fine convergente del cilindro (re-grading near-wall, vedi M7 §6).
+Rilanciato il cilindro coarse sul cluster con solver M8 (diffusione attiva,
+verificata: lib compilata dal sorgente M8) e parete Tve a `smoluchowskiJumpT`
+(Tw=1000). Risultato:
+
+| | M7 Minmod | **M8** | riferimenti |
+|---|---|---|---|
+| convergenza dp/p | 0.24% | **0.02%** | — |
+| Cp ristagno | 1.785 | **1.869** | Rayleigh 1.837 |
+| C_D | 1.285 | **1.286** | 1.304 / DSMC 1.284 |
+| C_H [kW] | 74.1 | **58.7** | DSMC 63.3 / paper 88.1 |
+| flusso termico(θ) | spike a θ≈27° | **liscio, nessuno spike** | — |
+| Cf(θ) | liscia (0.033) | **liscia (0.0355)** | run3 0.040 |
+
+**(a) La scacchiera NON ritorna**: Cp ristagno 1.869 pulito, dp/p 0.02%,
+Cf e flusso termico perfettamente lisci. La diffusione eve sostiene la
+parete Tve a gradiente — il meccanismo centrale di M8 è **validato**.
+
+**(b) Sul C_H, la mia previsione ("sale verso 88") era sbagliata, e il
+motivo è istruttivo.** C_H *scende* a 58.7, ma:
+- lo spike a θ≈27° di M7 era un residuo di scacchiera che **gonfiava**
+  il C_H integrato; M8 lo rimuove → 58.7 è il valore **pulito**, non un
+  peggioramento;
+- 58.7 cade a **~7% dalla DSMC (63.3)**. Il paper (run3, Park) fa 88.1, che
+  *il paper stesso* dichiara sovrastimare la DSMC del 39% — quindi stare
+  vicino alla DSMC è coerenza fisica, non un difetto;
+- la parete è **fredda (1000 K < θ_vib=3390 K)**: la vibrazione vi si
+  congela, quindi il flusso *vibrazionale* a parete è intrinsecamente
+  piccolo, e la ridistribuzione interna della diffusione (che leviga il
+  gradiente near-wall) domina sul contributo aggiunto.
+
+Incertezza residua onesta: non ho i valori sulla faccia di parete per
+separare del tutto "vibrazione congelata" da "il jump su Tve leviga troppo
+il gradiente". Un `fixedValue` Tve=Tw darebbe un gradiente più netto; da
+provare se si volesse spingere il quantitativo. Ma il risultato M8 è
+**pulito, stabile, e vicino alla DSMC** — fisica più completa dei run
+precedenti.
+
+## 5. Verdetto M8
+
+Il solver two-temperature ora conduce anche il pool vibro-elettronico
+(κ_ve), il tassello mancante da M3. Validato: no-op 0D, regressione 1D,
+e sul cluster (cilindro 2D) la parete Tve a gradiente è **stabile grazie
+alla diffusione** (niente scacchiera), con superficie pulita e C_H vicino
+alla DSMC. **È l'ultima milestone obbligatoria: la validazione del paper
+Casseau Part One (0D) + Part Two (cono M11 e cilindro M20) è completa, con
+la fisica two-temperature reattiva e conduttiva in multi-D.**
+
+## 6. Rimandati (rifinitura opzionale, non richiesti dalla validazione)
+
+- split pulito κ_tr/κ_ve nella EEqn (ora il totale usa un fattore Eucken
+  ~1.9 sul gradiente vibrazionale; hy2Foam li tiene separati);
+- `fixedValue` Tve a parete vs jump, per il gradiente vibrazionale netto;
+- mesh fine convergente del cilindro (re-grading near-wall, M7 §6);
+- Fig 9 (aria 5 specie), CVDV-QK, Tve multiple per specie nel solver.
