@@ -1,0 +1,5 @@
+# run artifacts del harness di scaling (rigenerati da run-scaling.sh/job)
+log.*
+local-sweep.log
+scaling.log
+results-scaling.csv
