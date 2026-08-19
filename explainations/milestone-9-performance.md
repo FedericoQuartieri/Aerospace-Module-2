@@ -74,28 +74,58 @@ collo di bottiglia è la banda di memoria condivisa più che la comunicazione.
 È il regime "caso piccolo" — utile a validare l'harness, non
 rappresentativo di un nodo HPC.
 
-## 6. Strong scaling — sweep rappresentativo sul cluster (da lanciare)
+## 6. Strong scaling sul cluster (1 nodo, 28 core) — RISULTATI
 
-`perf/job-scaling.sh` fa lo sweep su **1 nodo da 28 core**, rank
-{1,2,4,7,14,28}, su **due mesh**:
-- **coarse** (9k celle): a 28 rank ~320 celle/rank → *communication-bound*,
-  lo scaling satura — lo stesso regime del kernel 0D del gruppo 1, ma su un
-  solver accoppiato vero;
-- **fine** (156k celle): ~5600 celle/rank a 28 → *compute-bound*, scala
-  bene.
+`perf/job-scaling.sh` ha fatto lo sweep su rank {1,2,4,7,14,28} su due mesh.
+Figura: `perf/scaling.png`.
 
-Sovrapporre le due curve mostra il compromesso compute/comunicazione —
-un'analisi di strong scaling completa. Sul cluster:
+**Coarse (9000 celle)** — a 28 rank fa ~320 celle/rank:
 
-```
-qsub perf/job-scaling.sh          # ~1-2h su 28 core
-python3 perf/plot-scaling.py      # tabella + perf/scaling.png (coarse+fine)
-```
+| ranks | ms/step | speedup | efficienza |
+|---|---|---|---|
+| 1 | 383.8 | 1.00 | 1.00 |
+| 2 | 200.0 | 1.92 | 0.96 |
+| 4 | 115.9 | 3.31 | 0.83 |
+| 7 | 85.0 | 4.51 | 0.64 |
+| 14 | 54.0 | 7.11 | 0.51 |
+| 28 | 48.0 | **8.00** | **0.29** |
 
-_(Risultati cluster da inserire qui dopo il run: tabella coarse/fine +
-`perf/scaling.png`.)_
+**Fine (156000 celle)** — a 28 rank fa ~5600 celle/rank:
 
-## 7. Cosa manca ancora (rifinitura, non obbligatorio)
+| ranks | ms/step | speedup | efficienza |
+|---|---|---|---|
+| 1 | 11257 | 1.00 | 1.00 |
+| 2 | 5698 | 1.98 | 0.99 |
+| 4 | 2949 | 3.82 | 0.95 |
+| 7 | 1735 | 6.49 | 0.93 |
+| 14 | 920 | 12.24 | 0.87 |
+| 28 | 566 | **19.90** | **0.71** |
+
+**Il compromesso compute/comunicazione, da manuale.** La coarse segue
+l'ideale fino a ~4 rank poi piega e satura (8× a 28, efficienza 0.29):
+troppo poche celle per rank, il costo di scambio degli halo domina — lo
+stesso regime del kernel 0D di Group 1, ma qui su un solver accoppiato
+vero. La fine invece resta **quasi lineare fino a 14 rank** (efficienza
+0.87) e arriva a **19.9× su 28 core (efficienza 0.71)**: con ~5600 celle
+per rank il costo dominante è il calcolo per cella (bridge Mutation++), non
+la comunicazione → compute-bound, scala.
+
+**Confronto diretto con Group 1**: loro OpenMP su kernel 0D di celle
+indipendenti → **2.81× su 8 thread** (efficienza 0.35, satura). Noi MPI su
+solver 2D reagente accoppiato → **19.9× su 28 rank** (efficienza 0.71),
+near-linear fino a 14. È scaling distributed-memory reale su un problema
+con scambio di halo, non repliche di un kernel embarrassingly-parallel.
+
+## 7. Verdetto M9
+
+L'asse "High Performance" del corso è coperto, e con una storia più forte:
+strong scaling MPI di un solver reagente multi-D accoppiato, correttezza
+seriale-vs-parallelo già garantita (M5, 1e-5), efficienza 0.71 su 28 core
+sul caso rappresentativo (fine 156k). Il progetto è ora completo su
+entrambi gli assi — **validazione fisica del paper (M1–M8) + performance
+HPC (M9)**.
+
+## 8. Cosa manca ancora (rifinitura, non obbligatorio)
 
 - weak scaling (celle/rank costante) — richiede mesh scalate coi rank;
 - multi-nodo (oltre le 28 core di un nodo) per vedere il costo
