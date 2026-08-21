@@ -106,24 +106,24 @@ tempo caratteristico `tauVT` (dipendente da T e composizione, fornito da
 Mutation++). In forma di sorgente per l'equazione di `eve`:
 
 ```
-sorgente V-T = rho·(eveEq − eve)/tauVT
+sorgente V-T = rho·(eveEq - eve)/tauVT
 ```
 
 dove `eveEq = e_ve(T)` è l'energia vibrazionale che si avrebbe
 all'equilibrio con la temperatura traslazionale. Il termine è
-semi-implicito (parte in `eveEq`, parte implicita `−Sp(rho/tauVT, eve)`)
+semi-implicito (parte in `eveEq`, parte implicita `-Sp(rho/tauVT, eve)`)
 per stabilità.
 
 ### Chimica a velocità finita, a due temperature
 
 La dissociazione (es. `N2 + M → 2N + M`) è governata da velocità di
 reazione che dipendono **da entrambe** le temperature (modello Park:
-temperatura di controllo `Tf = T^q · Tve^(1−q)`). Mutation++ fornisce per
+temperatura di controllo `Tf = T^q · Tve^(1-q)`). Mutation++ fornisce per
 cella:
 
 - le velocità nette di produzione `ω̇_i` di ogni specie → termini
   sorgente nelle equazioni `Yi`;
-- il calore di reazione `Qdot = −Σ hf_i·ω̇_i` → nell'equazione dell'energia
+- il calore di reazione `Qdot = -Σ hf_i·ω̇_i` → nell'equazione dell'energia
   totale;
 - l'accoppiamento chimica-vibrazione `Qcv = Σ e_ve,i·ω̇_i` (Candler:
   dissociazione preferenziale) → nell'equazione di `eve`.
@@ -145,7 +145,7 @@ e = e_tr(T) + e_ve(Tve)        (energie di formazione escluse)
 Le due temperature si ricavano per **decode** cella per cella con Newton:
 
 1. `Tve` da `eve` (invertendo `e_ve(Tve) = eve`);
-2. `T` da `e − eve` (invertendo `e_tr(T)`, lineare per un modello RRHO).
+2. `T` da `e - eve` (invertendo `e_tr(T)`, lineare per un modello RRHO).
 
 Questo garantisce la **conservazione stretta dell'energia totale**: il
 travaso V-T è interno a `e` e agisce solo attraverso il decode. Non serve
@@ -229,7 +229,7 @@ in Mutation++ vs `q=0.7` del paper differiscono ~3% nel transitorio.
 ### M3 — Chimica nel solver + formulazione conservativa piena
 
 Il salto architetturale: il campo `e` vive sul datum Mutation
-`e_tr(T)+e_ve(Tve)`, decode per cella (Tve da eve, T da e−eve), sorgenti
+`e_tr(T)+e_ve(Tve)`, decode per cella (Tve da eve, T da e-eve), sorgenti
 chimiche per cella dal thermo. Niente più termine V-T in EEqn (il travaso è
 interno a `e`). Due bug storici risolti qui: **SIGFPE su OmegaVT con X=0**
 (floor delle frazioni a 1e-30) e **clamp `Thigh` del JANAF** che
@@ -284,7 +284,7 @@ La milestone più densa. Tre cose:
 **Risultato Fig 2 (mesh fine):** Cp ristagno **1.843 vs 1.833 (0.5%)**,
 Cp superficie **0.7%**, St **2.7%**, Cf **7.7%**, standoff 0.150 Rn. Il gap
 Cf/St, inizialmente ~16%/11% con la Sutherland, si è chiuso passando a
-Blottner (la Sutherland era −21% a 297 K, la temperatura di parete).
+Blottner (la Sutherland era -21% a 297 K, la temperatura di parete).
 
 ### M7 — Cilindro Mach 20 reagente *(2D)*
 
@@ -419,13 +419,13 @@ pubblico con licenza **MIT**.
 
 | | Questo progetto | L'altro gruppo |
 |---|---|---|
-| Validazione 0D (heat bath) | ✅ (M1–M2) | ✅ (unico risultato fisico) |
-| Chimica **nel** solver | ✅ (M3) | descritto, non eseguito |
-| **1D** shock tube | ✅ (M4) | *sviluppo futuro* |
-| **2D cono M11** vs Fig 2 | ✅ (M5–M6) | *sviluppo futuro* |
-| **2D cilindro M20** vs Fig 5 | ✅ (M7) | *sviluppo futuro (lo nominano)* |
-| Conduzione vibrazionale κ_ve | ✅ (M8) | — |
-| Analisi performance | ✅ MPI (M9) | ✅ OpenMP su kernel 0D |
+| Validazione 0D (heat bath) | ✓ (M1–M2) | ✓ (unico risultato fisico) |
+| Chimica **nel** solver | ✓ (M3) | descritto, non eseguito |
+| **1D** shock tube | ✓ (M4) | *sviluppo futuro* |
+| **2D cono M11** vs Fig 2 | ✓ (M5–M6) | *sviluppo futuro* |
+| **2D cilindro M20** vs Fig 5 | ✓ (M7) | *sviluppo futuro (lo nominano)* |
+| Conduzione vibrazionale κ_ve | ✓ (M8) | — |
+| Analisi performance | ✓ MPI (M9) | ✓ OpenMP su kernel 0D |
 
 **In sintesi:** su questo progetto sono stati fatti **tutti i loro
 risultati** (0D) **più tutto ciò che loro elencano come "sviluppi futuri"**
