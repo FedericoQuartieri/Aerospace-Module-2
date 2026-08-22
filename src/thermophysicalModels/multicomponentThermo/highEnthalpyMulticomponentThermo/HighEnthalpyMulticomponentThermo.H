@@ -37,9 +37,6 @@ private:
     //- Relaxation time used where V-T exchange is negligible/unavailable [s]
     static constexpr scalar tauInf_ = 1e10;
 
-    //- Vibrational-electronic temperature field [K]
-    volScalarField Tve_;
-
     //- Vibro-electronic energy per unit mass [J/kg]. Conserved variable
     //  solved by the flow solver; Tve_ is derived from it in correct().
     volScalarField eve_;
@@ -155,19 +152,6 @@ public:
     )
     :
         FluidMulticomponentThermo<Thermo>(mesh, phaseName),
-        Tve_
-        (
-            IOobject
-            (
-                this->phasePropertyName("Tve"),
-                mesh.time().name(),
-                mesh,
-                IOobject::READ_IF_PRESENT,
-                IOobject::AUTO_WRITE
-            ),
-            mesh,
-            dimensionedScalar(dimTemperature, Zero)
-        ),
         eve_
         (
             IOobject
@@ -239,7 +223,7 @@ public:
         nMutationEnergyEqns_(0)
     {
         // Fallback to translational temperature when Tve is not provided.
-        scalarField& TveCells = Tve_.primitiveFieldRef();
+        scalarField& TveCells = this->Tve_.primitiveFieldRef();
         const scalarField& TCells = this->T_.primitiveField();
         forAll(TveCells, celli)
         {
@@ -249,7 +233,7 @@ public:
             }
         }
 
-        volScalarField::Boundary& TveBf = Tve_.boundaryFieldRef();
+        volScalarField::Boundary& TveBf = this->Tve_.boundaryFieldRef();
         const volScalarField::Boundary& TBf = this->T_.boundaryField();
         forAll(TveBf, patchi)
         {
@@ -267,18 +251,6 @@ public:
     }
 
     virtual ~HighEnthalpyMulticomponentThermo() = default;
-
-    //- Access to vibrational-electronic temperature [K]
-    const volScalarField& Tve() const
-    {
-        return Tve_;
-    }
-
-    //- Non-const access to vibrational-electronic temperature [K]
-    volScalarField& Tve()
-    {
-        return Tve_;
-    }
 
     //- Access to vibro-electronic energy [J/kg]
     const volScalarField& eve() const
@@ -312,7 +284,7 @@ public:
 
         const scalarField& pCells = this->p_.primitiveField();
         scalarField& TCells = this->T_.primitiveFieldRef();
-        scalarField& TveCells = Tve_.primitiveFieldRef();
+        scalarField& TveCells = this->Tve_.primitiveFieldRef();
         const scalarField& eveCells = eve_.primitiveField();
         scalarField& eveEqCells = eveEq_.primitiveFieldRef();
         scalarField& tauCells = tauVT_.primitiveFieldRef();
@@ -401,7 +373,7 @@ public:
 
         const volScalarField::Boundary& pBf = this->p_.boundaryField();
         volScalarField::Boundary& TBf = this->T_.boundaryFieldRef();
-        volScalarField::Boundary& TveBf = Tve_.boundaryFieldRef();
+        volScalarField::Boundary& TveBf = this->Tve_.boundaryFieldRef();
         const volScalarField::Boundary& eveBf = eve_.boundaryField();
         volScalarField::Boundary& eveEqBf = eveEq_.boundaryFieldRef();
         volScalarField::Boundary& tauBf = tauVT_.boundaryFieldRef();
@@ -645,7 +617,7 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initialiseEve()
     const PtrList<volScalarField>& Y = this->Y();
 
     const scalarField& TCells = this->T_.primitiveField();
-    const scalarField& TveCells = Tve_.primitiveField();
+    const scalarField& TveCells = this->Tve_.primitiveField();
     scalarField& eveCells = eve_.primitiveFieldRef();
 
     forAll(eveCells, celli)
@@ -666,7 +638,7 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initialiseEve()
 
     volScalarField::Boundary& eveBf = eve_.boundaryFieldRef();
     const volScalarField::Boundary& TBf = this->T_.boundaryField();
-    const volScalarField::Boundary& TveBf = Tve_.boundaryField();
+    const volScalarField::Boundary& TveBf = this->Tve_.boundaryField();
 
     forAll(eveBf, patchi)
     {
@@ -699,7 +671,7 @@ inline bool HighEnthalpyMulticomponentThermo<Thermo>::mutationMassFractions
     const YAccessor& yFoam
 ) const
 {
-    std::fill(mutY_.begin(), mutY_.end(), 0.0);
+    std::fill(mutY_.begin(), mutY_.end(), 1e-8);
 
     const label nFoamSpecies = foamToMutationSpecie_.size();
 

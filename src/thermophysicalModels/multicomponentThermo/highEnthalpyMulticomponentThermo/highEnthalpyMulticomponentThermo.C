@@ -44,7 +44,17 @@ Foam::autoPtr<Foam::highEnthalpyMulticomponentThermo> Foam::highEnthalpyMulticom
     return basicThermo::New<highEnthalpyMulticomponentThermo>(mesh, phaseName);
 }
 
+// * * * * * * * * * * * * * * * * Accessors * * * * * * * * * * * * * * * * //
 
+Foam::volScalarField& Foam::highEnthalpyMulticomponentThermo::composite::Tve()
+{
+    return Tve_;
+}
+
+const Foam::volScalarField& Foam::highEnthalpyMulticomponentThermo::composite::Tve() const
+{
+    return Tve_;
+}
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
 Foam::highEnthalpyMulticomponentThermo::~highEnthalpyMulticomponentThermo()

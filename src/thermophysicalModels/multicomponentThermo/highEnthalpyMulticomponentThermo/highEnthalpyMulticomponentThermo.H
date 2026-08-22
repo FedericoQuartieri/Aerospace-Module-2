@@ -112,6 +112,12 @@ public:
             return "highEnthalpyThermo";
         };
 
+    // Accessors
+
+        virtual volScalarField& Tve() = 0;
+
+        virtual const volScalarField& Tve() const = 0;
+
     //- Destructor
     virtual ~highEnthalpyMulticomponentThermo();
 
@@ -133,6 +139,10 @@ class highEnthalpyMulticomponentThermo::composite
 {
 
 private:
+
+protected:
+    //- Vibrational-electronic temperature field [K]
+    volScalarField Tve_;
 
 public:
 
@@ -157,6 +167,18 @@ public:
                 mixture.specieNames(),
                 mesh,
                 phaseName
+            ),
+            Tve_
+            (
+                IOobject
+                (
+                    this->phasePropertyName("Tve"),
+                    mesh.time().name(),
+                    mesh,
+                    IOobject::MUST_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                mesh
             )
         {
 
@@ -164,6 +186,12 @@ public:
                 << "constructor"
                 << endl;
         }
+
+    // Accessors
+
+        virtual volScalarField& Tve();
+
+        virtual const volScalarField& Tve() const;
 };
 
 

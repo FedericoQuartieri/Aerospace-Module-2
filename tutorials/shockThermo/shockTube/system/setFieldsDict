@@ -18,8 +18,8 @@ defaultValues
 {
     U       (0 0 0);
     T       10000;
-    Tve     3000;
-    p       100000;
+    Tve     1000;
+    p       101325;
 }
 
 zones {}

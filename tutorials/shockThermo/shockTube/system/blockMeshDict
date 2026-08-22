@@ -13,18 +13,18 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-convertToMeters 1;
+convertToMeters 1e-5;
 
 vertices
 (
-    (-5 -1 -1)
-    (5 -1 -1)
-    (5 1 -1)
-    (-5 1 -1)
-    (-5 -1 1)
-    (5 -1 1)
-    (5 1 1)
-    (-5 1 1)
+    (0 0 0)
+    (1 0 0)
+    (1 1 0)
+    (0 1 0)
+    (0 0 1)
+    (1 0 1)
+    (1 1 1)
+    (0 1 1)
 );
 
 blocks
@@ -44,7 +44,7 @@ boundary
             (0 4 7 3)
         );
     }
-    empty 
+    noboundary 
     {
         type empty;
         faces
