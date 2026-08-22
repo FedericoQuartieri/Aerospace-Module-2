@@ -19,11 +19,6 @@ internalField   uniform 0;
 
 boundaryField
 {
-    sides
-    {
-        type            zeroGradient;
-    }
-
     noboundary
     {
         type            empty;

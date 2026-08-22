@@ -34,6 +34,7 @@ License
 #include "addToRunTimeSelectionTable.H"
 
 #include "psiThermo.H"
+#include "highEnthalpyMulticomponentThermo.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -60,10 +61,10 @@ Foam::solvers::shockThermo::shockThermo(fvMesh& mesh)
 shockFluid
 (
     mesh,
-    autoPtr<fluidThermo>(fluidMulticomponentThermo::New(mesh).ptr())
+    autoPtr<fluidThermo>(highEnthalpyMulticomponentThermo::New(mesh).ptr())
 ),
 
-thermo_(refCast<fluidMulticomponentThermo>(shockFluid::thermo_)),
+thermo_(refCast<highEnthalpyMulticomponentThermo>(shockFluid::thermo_)),
 
 Y_(thermo_.Y()),
 

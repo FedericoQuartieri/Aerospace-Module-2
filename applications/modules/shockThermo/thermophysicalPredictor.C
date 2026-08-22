@@ -37,31 +37,8 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
     // registered its fields: the conserved vibro-electronic energy "eve" and
     // the Landau-Teller linearisation ("eveEq", "tauVT") computed from
     // Mutation++ in thermo.correct().
-    const bool hasEve =
-        mesh.foundObject<volScalarField>("eve")
-     && mesh.foundObject<volScalarField>("eveEq")
-     && mesh.foundObject<volScalarField>("tauVT")
-     && mesh.foundObject<volScalarField>("cvTrRatio");
-
-    bool solveEve = false;
-    bool coupleEnergy = false;
-
-    const dictionary& thermoProperties = thermo_.properties();
-    if (hasEve && thermoProperties.found("highEnthalpyRelaxation"))
-    {
-        const dictionary& relaxDict =
-            thermoProperties.subDict("highEnthalpyRelaxation");
-
-        solveEve = relaxDict.lookupOrDefault<Switch>
-        (
-            "solveEve",
-            relaxDict.lookupOrDefault<Switch>("solveTve", false)
-        );
-        coupleEnergy =
-            relaxDict.lookupOrDefault<Switch>("coupleEnergy", false);
-    }
-
     // add support to multi-specie chemistry
+
     tmp<fv::convectionScheme<scalar>> mvConvection
     (
         fv::convectionScheme<scalar>::New
@@ -114,7 +91,6 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
             << exit(FatalError);
     }
 
-
     //- ------------------------------------------------------------------------
 
     // solve the equation of energy.
@@ -144,47 +120,14 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
         phiEp += mesh.phi()*(a_pos()*p_pos() + a_neg()*p_neg());
     }
 
-
-    //- for high enthalpy flows, e = e_rt + e_ve.
-
-    // V-T energy sink in the solved energy equation: the energy transferred
-    // to the vibro-electronic pool, Q_VT = rho*(eveEq - eve)/tauVT, scaled by
-    // cvTrRatio = Cv_base/cv_tr so that the base-thermo T inversion produces
-    // dT/dt = -Q_VT/(rho*cv_tr) as prescribed by the two-temperature model.
-    volScalarField eRelaxSource
-    (
-        IOobject
-        (
-            "eRelaxSource",
-            mesh.time().name(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimensionedScalar(dimEnergy/dimVolume/dimTime, Zero)
-    );
-
-    if (hasEve && solveEve && coupleEnergy)
-    {
-        const volScalarField& eve =
-            mesh.lookupObject<volScalarField>("eve");
-        const volScalarField& eveEq =
-            mesh.lookupObject<volScalarField>("eveEq");
-        const volScalarField& tauVT =
-            mesh.lookupObject<volScalarField>("tauVT");
-        const volScalarField& cvTrRatio =
-            mesh.lookupObject<volScalarField>("cvTrRatio");
-
-        eRelaxSource = cvTrRatio*rho*(eveEq - eve)/tauVT;
-    }
-
+    // Solving for the total energy e,
+    // for high enthalpy flows e = e_tr + e_ve
     fvScalarMatrix EEqn
     (
         fvm::ddt(rho, e) + fvc::div(phiEp)
       + fvc::ddt(rho, K)
      ==
-        fvModels().source(rho, e) - eRelaxSource
+        fvModels().source(rho, e)
     );
 
     if (!inviscid)
@@ -206,44 +149,28 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
 
     fvConstraints().constrain(e);
 
-    // Updates T from the solved energy and refreshes eveEq/tauVT/cvTrRatio
-    // (and Tve from eve) through the highEnthalpyThermo bridge
+    volScalarField& eve = thermo_.eve();
+
+    tmp<volScalarField> Q_VT = thermo_.computeSourceVT(thermo_.defaultSpecie());
+
+    // Solve for vibrational energy e_ve
+    fvScalarMatrix EveEqn
+    (
+        fvm::ddt(rho, eve)
+     ==
+        Q_VT()
+    );
+
+    EveEqn.relax();
+
+    fvConstraints().constrain(EveEqn);
+
+    EveEqn.solve("eve");
+
+    fvConstraints().constrain(eve);
+
+    // Update T_ (T_tr) and Tve_ based on solved energies
     thermo_.correct();
-
-    if (hasEve && solveEve)
-    {
-        volScalarField& eve = mesh.lookupObjectRef<volScalarField>("eve");
-        const volScalarField& eveEq =
-            mesh.lookupObject<volScalarField>("eveEq");
-        const volScalarField& tauVT =
-            mesh.lookupObject<volScalarField>("tauVT");
-
-        // Conservative vibro-electronic energy equation with semi-implicit
-        // Landau-Teller relaxation towards eveEq = e_ve(Ttr)
-        fvScalarMatrix EveEqn
-        (
-            fvm::ddt(rho, eve)
-          + mvConvection->fvmDiv(phi, eve)
-         ==
-            rho*eveEq/tauVT
-          - fvm::Sp(rho/tauVT, eve)
-          + fvModels().source(rho, eve)
-        );
-
-        EveEqn.relax();
-
-        fvConstraints().constrain(EveEqn);
-
-        EveEqn.solve("eve");
-
-        fvConstraints().constrain(eve);
-
-        eve.max(dimensionedScalar(eve.dimensions(), Zero));
-        eve.correctBoundaryConditions();
-
-        // Derive Tve from the updated eve and refresh the properties
-        thermo_.correct();
-    }
 }
 
 

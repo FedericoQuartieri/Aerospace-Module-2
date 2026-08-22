@@ -19,7 +19,7 @@ thermoType
     type            highEnthalpyThermo; 
     mixture         coefficientWilkeMulticomponentMixture;
     transport       sutherland; // gupta
-    thermo          rrho;
+    thermo          janaf; //rrho;
     energy          sensibleInternalEnergy;
     equationOfState perfectGas;
     specie          specie;
@@ -35,15 +35,6 @@ highEnthalpyMutation
     maxTemperature          50000;
     minPressure             1;
     forceThermalEquilibrium no;
-}
-
-// V-T relaxation: tauVT and the source terms are now computed per-cell from
-// Mutation++ (Millikan-White + Park through the transfer database); the
-// solver solves a conservative equation for the vibro-electronic energy eve.
-highEnthalpyRelaxation
-{
-    solveEve        yes;
-    coupleEnergy    yes;
 }
 
 defaultSpecie N2;

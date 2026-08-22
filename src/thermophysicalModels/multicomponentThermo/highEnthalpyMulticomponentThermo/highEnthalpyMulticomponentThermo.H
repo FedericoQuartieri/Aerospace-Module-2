@@ -118,6 +118,13 @@ public:
 
         virtual const volScalarField& Tve() const = 0;
 
+        virtual volScalarField& eve() = 0;
+
+        virtual const volScalarField& eve() const = 0;
+
+    // Source term for V-T energy exchange
+    virtual tmp<volScalarField> computeSourceVT(const label speciei) const = 0;
+
     //- Destructor
     virtual ~highEnthalpyMulticomponentThermo();
 
@@ -141,8 +148,11 @@ class highEnthalpyMulticomponentThermo::composite
 private:
 
 protected:
-    //- Vibrational-electronic temperature field [K]
+    //- Vibro-electronic temperature [K]
     volScalarField Tve_;
+
+    //- Vibro-electronic energy [J/Kg]
+    volScalarField eve_;
 
 public:
 
@@ -179,6 +189,19 @@ public:
                     IOobject::AUTO_WRITE
                 ),
                 mesh
+            ),
+            eve_
+            (
+                IOobject
+                (
+                    this->phasePropertyName("eve"),
+                    mesh.time().name(),
+                    mesh,
+                    IOobject::NO_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                mesh,
+                dimensionedScalar(dimEnergy/dimMass, Zero)
             )
         {
 
@@ -192,6 +215,10 @@ public:
         virtual volScalarField& Tve();
 
         virtual const volScalarField& Tve() const;
+
+        virtual volScalarField& eve();
+
+        virtual const volScalarField& eve() const;
 };
 
 

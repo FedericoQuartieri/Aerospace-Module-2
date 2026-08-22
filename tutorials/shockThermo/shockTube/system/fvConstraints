@@ -15,6 +15,7 @@ FoamFile
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 //#includeConstraint limitLowPressure(min=1e4)
+// Clamps e after solving EEqn based on e_min=e(T_min) and e_max=e(T_max)
 #includeConstraint limitTemperature(min=299, max=20000)
 
 // ************************************************************************* //
