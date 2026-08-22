@@ -45,7 +45,7 @@ Author:
 #define shockThermo_H
 
 #include "shockFluid.H"
-#include "fluidMulticomponentThermo.H"
+#include "highEnthalpyMulticomponentThermo.H"
 #include "combustionModel.H"
 #include "fluidMulticomponentThermophysicalTransportModel.H"
 #include "multivariateScheme.H"
@@ -71,7 +71,7 @@ private:
 
     // Thermophysical properties
 
-        fluidMulticomponentThermo& thermo_;
+        highEnthalpyMulticomponentThermo& thermo_;
 
     // Composition
 

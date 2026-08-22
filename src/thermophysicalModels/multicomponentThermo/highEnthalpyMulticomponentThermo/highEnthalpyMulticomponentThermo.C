@@ -55,6 +55,17 @@ const Foam::volScalarField& Foam::highEnthalpyMulticomponentThermo::composite::T
 {
     return Tve_;
 }
+
+Foam::volScalarField& Foam::highEnthalpyMulticomponentThermo::composite::eve()
+{
+    return eve_;
+}
+
+const Foam::volScalarField& Foam::highEnthalpyMulticomponentThermo::composite::eve() const
+{
+    return eve_;
+}
+
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
 Foam::highEnthalpyMulticomponentThermo::~highEnthalpyMulticomponentThermo()
