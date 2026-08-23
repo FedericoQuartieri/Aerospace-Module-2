@@ -19,7 +19,7 @@ thermoType
     type            highEnthalpyThermo; 
     mixture         coefficientWilkeMulticomponentMixture;
     transport       sutherland; // gupta
-    thermo          janaf; //rrho;
+    thermo          janaf;//rrho;
     energy          sensibleInternalEnergy;
     equationOfState perfectGas;
     specie          specie;

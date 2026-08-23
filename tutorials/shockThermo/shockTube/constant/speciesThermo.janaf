@@ -20,7 +20,8 @@ Air 25-species: O2 O N2 N NO C C2 CO CO2 CN AR HE e- N+ NO+ N2+ O+ O2+ AR+ CO2+ 
 \*---------------------------------------------------------------------------*/
 
 
-species  11 ( O2 O N2 N NO e- N+ NO+ N2+ O+ O2+);
+//species  11 ( O2 O N2 N NO e- N+ NO+ N2+ O+ O2+);
+species 1 (N2);
 
 N2+
 {
