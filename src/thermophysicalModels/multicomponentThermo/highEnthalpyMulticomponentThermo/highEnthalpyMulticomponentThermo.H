@@ -122,6 +122,7 @@ public:
 
         virtual const volScalarField& eve() const = 0;
 
+    // scambio V-T: implementato nel bridge (HighEnthalpyMulticomponentThermo.H)
     // Source term for V-T energy exchange
     virtual tmp<volScalarField> computeSourceVT(const label speciei) const = 0;
 
@@ -148,6 +149,7 @@ class highEnthalpyMulticomponentThermo::composite
 private:
 
 protected:
+    // i due campi nuovi del progetto: T_ve ed eve
     //- Vibro-electronic temperature [K]
     volScalarField Tve_;
 
@@ -178,6 +180,7 @@ public:
                 mesh,
                 phaseName
             ),
+            // T_ve letta dal file 0/Tve
             Tve_
             (
                 IOobject
@@ -190,6 +193,7 @@ public:
                 ),
                 mesh
             ),
+            // eve non letta da file: parte da zero, la calcola il bridge all'avvio
             eve_
             (
                 IOobject

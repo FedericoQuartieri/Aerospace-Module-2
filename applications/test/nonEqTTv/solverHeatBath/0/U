@@ -15,8 +15,10 @@ FoamFile
 
 dimensions      [0 1 -1 0 0 0 0];
 
+// gas fermo
 internalField   uniform (0 0 0);
 
+// bordi: con il gas fermo non entra ne' esce nulla
 boundaryField
 {
     sides

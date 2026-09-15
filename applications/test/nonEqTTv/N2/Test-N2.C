@@ -35,14 +35,20 @@ int main(int argc, char *argv[])
     // electrons in the mixture) is not modeled, nor present
     // for N, N2-N and N2-O2
 
-    // Initializing a 5-species air mixture
+    // si usa la mixture di aria a 5 specie perche' contiene N2,
+    // che e' l'unica specie presente nella simulazione
     Mutation::MixtureOptions opts("air_5");
-    // We're using the RRHO two-temperature model
+
+    // usiamo il modello a due temperature ed energie RRHO
     opts.setStateModel("ChemNonEqTTv");
     opts.setThermodynamicDatabase("RRHO");
+
+    //nessuna rezione chimica, solo VT
     opts.setMechanism("none"); // N2 already has only VT exchange
+
     Mutation::Mixture mix(opts);
 
+    // ---- stato iniziale: solo N2, 1 atm, T_tr e T_ve
     const int N2_idx = mix.speciesIndex("N2");
 
     // The mixture is composed of only N2
@@ -51,10 +57,12 @@ int main(int argc, char *argv[])
     // Pressure of the mixture in Pascal
     const double P = Mutation::ONEATM;
      // Trans-rotational temperature
+     //Il valore scritto è 30 000 K, ma verrà sostituito da Allrun
     double T_tr = 30000.0; // 10000.0 for non-electronic case
     // Vibro-electronic temperature
     double T_ve = 1000.0;
 
+    // Allrun passa "10000 1000": le temperature del test 3a
     // Optional overrides: Test-N2 <T_tr> <T_ve>
     if (argc > 2)
     {
@@ -62,12 +70,15 @@ int main(int argc, char *argv[])
         T_ve = std::atof(argv[2]);
     }
 
+    // lo stato va a Mutation++, che calcola la densita' del gas
     const std::vector<double> P_Ttr_Tve = { Mutation::ONEATM, T_tr, T_ve };
     mix.setState(Y_per_specie.data(), P_Ttr_Tve.data(), 2);
 
     std::vector<double> rho_per_specie(mix.nSpecies());
     mix.densities(rho_per_specie.data());
+    // ---- fine stato iniziale
 
+    // passo di tempo 1 ns come il paper, fine a 20 micro-secondi
     const double dt = 1.0e-9;
     const double end_time = 2.0e-5;
     double t = 0.0;
@@ -85,11 +96,14 @@ int main(int argc, char *argv[])
     //
     // Mutationmpp can compute Q_VT and Cvs for us :)
 
+    // file dei risultati: t, T_tr, T_ve, ovvero le temperature calcolate da Mutation++ e aggiornate nel ciclo
     OFstream out("output/results-N2.csv");
     out << "t,T_tr,T_ve" << endl;
     out << "0," << mix.T() << "," << mix.Tv() << endl;
 
+    // ---- ciclo nel tempo (qui si aggiornano le temperature, il solver invece le energie)
     while (t < end_time) {
+        // Mutation++ calcola lo scambio V-T Q, tau compreso (eq. 8-17)
         // Computing the source term of the energy equation
         std::vector<double> Q_sources(mix.nEnergyEqns());
         mix.energyTransferSource(Q_sources.data());
@@ -98,10 +112,12 @@ int main(int argc, char *argv[])
         // The mixture is N2, hence Q_ve = Q_N2,VT since there
         // are no other vibrationally excited molecules
 
+        // calori specifici dei due serbatoi
         // Computing specific heat capacities
         std::vector<double> cv_per_specie(mix.nSpecies() * mix.nEnergyEqns());
         mix.getCvsMass(cv_per_specie.data());
 
+        // ---- aggiorna le temperature: T_ve sale, T_tr scende della stessa energia
         // Updating temperatures as dT/dt = Q_VT / (rho cv)
         // Trans-rotational source term is -Q_VT since total Q = 0
         T_tr += -Q_sources[0] * dt / (cv_per_specie[N2_idx] *
@@ -109,15 +125,19 @@ int main(int argc, char *argv[])
 
         T_ve += Q_sources[0] * dt / (rho_per_specie[N2_idx] *
                                      cv_per_specie[mix.nSpecies() + N2_idx]);
+        // ---- fine aggiornamento
 
+        // temperature nuove a Mutation++, per il passo dopo
         const std::vector<double> temps = { T_tr, T_ve };
         mix.setState(rho_per_specie.data(), temps.data(), 1);
 
         t += dt;
         step++;
 
+        // una riga del csv
         out << t << "," << mix.T() << "," << mix.Tv() << endl;
     }
+    // ---- fine ciclo nel tempo
 
     Info << "Output saved to output/results-N2.csv" << endl;
 

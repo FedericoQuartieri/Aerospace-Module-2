@@ -4,10 +4,12 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+# riferimento: curve di Test-N2
 # Reference: standalone Mutation++ heat bath (t, T_tr, T_ve)
 ref = np.loadtxt("reference.csv", delimiter=",", skiprows=1)
 t_ref, Ttr_ref, Tve_ref = ref[:, 0], ref[:, 1], ref[:, 2]
 
+# ---- curve del solver, lette dai probes
 # Solver probes: "time value" per line, one probe
 def load_probe(field):
     path = glob.glob(f"postProcessing/probes/0/{field}")[0]
@@ -16,7 +18,9 @@ def load_probe(field):
 
 t_T, T = load_probe("T")
 t_Tve, Tve = load_probe("Tve")
+# ---- fine curve del solver
 
+# ---- stessi istanti di tempo, errori massimi e temperature finali
 # Interpolate the solver histories onto the reference times for the metrics
 mask = (t_ref >= max(t_T[0], 1e-12)) & (t_ref <= t_T[-1])
 T_i = np.interp(t_ref[mask], t_T, T)
@@ -31,7 +35,9 @@ print(f"T_ve : max |err| = {err_Tve.max():8.2f} K   "
       f"({100 * (err_Tve / np.maximum(Tve_ref[mask], 1.0)).max():.2f} %)")
 print(f"final: solver T = {T[-1]:.1f} / Tve = {Tve[-1]:.1f}   "
       f"reference T = {Ttr_ref[-1]:.1f} / Tve = {Tve_ref[-1]:.1f}")
+# ---- fine errori
 
+# ---- grafico con le due curve sovrapposte
 plt.figure()
 
 m = t_ref > 0
@@ -49,3 +55,4 @@ plt.legend()
 plt.tight_layout()
 plt.savefig("heatbath-comparison.png", dpi=150)
 print("Plot saved to heatbath-comparison.png")
+# ---- fine grafico

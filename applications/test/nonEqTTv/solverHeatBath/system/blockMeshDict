@@ -29,6 +29,7 @@ vertices
 
 blocks
 (
+    // una sola cella: e' la scatola chiusa del test 3a
     // Single-cell box: homogeneous heat-bath test
     hex (0 1 2 3 4 5 6 7) (1 1 1) simpleGrading (1 1 1)
 );

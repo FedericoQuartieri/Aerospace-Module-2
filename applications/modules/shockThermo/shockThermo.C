@@ -61,6 +61,7 @@ Foam::solvers::shockThermo::shockThermo(fvMesh& mesh)
 shockFluid
 (
     mesh,
+    // legge physicalProperties e carica il bridge (highEnthalpyThermo)
     autoPtr<fluidThermo>(highEnthalpyMulticomponentThermo::New(mesh).ptr())
 ),
 

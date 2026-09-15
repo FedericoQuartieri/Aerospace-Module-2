@@ -15,9 +15,11 @@ FoamFile
 
 dimensions      [1 -1 -2 0 0 0 0];
 
+// pressione iniziale: 1 atm
 // 1 atm, as in the standalone Test-N2 heat bath
 internalField   uniform 101325;
 
+// bordi: con il gas fermo non entra ne' esce nulla
 boundaryField
 {
     sides
