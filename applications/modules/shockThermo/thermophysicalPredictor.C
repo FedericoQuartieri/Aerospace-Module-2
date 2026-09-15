@@ -31,6 +31,7 @@ License
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
+// chiamata da foamRun a ogni passo: dopo flussi e velocita', prima della pressione
 void Foam::solvers::shockThermo::thermophysicalPredictor()
 {
     // The two-temperature model is active when the highEnthalpyThermo
@@ -39,6 +40,7 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
     // Mutation++ in thermo.correct().
     // add support to multi-specie chemistry
 
+    // ---- equazioni delle specie (macchinario OpenFOAM): con solo N2 non cambia nulla
     tmp<fv::convectionScheme<scalar>> mvConvection
     (
         fv::convectionScheme<scalar>::New
@@ -83,6 +85,7 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
     }
 
     thermo_.normaliseY();
+    // ---- fine specie
 
     if (thermo_.he().name() != "e")
     {
@@ -101,6 +104,7 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
     // defined in the derived class; shockFluid::thermophysicalPredictor() is
     // pasted here below.
 
+    // ---- energia totale e (copiata da shockFluid): nessuna sorgente, si conserva (eq. 22)
     volScalarField& e = thermo_.he();
 
     const surfaceScalarField e_pos(interpolate(e, pos, thermo.T().name()));
@@ -148,11 +152,14 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
     EEqn.solve();
 
     fvConstraints().constrain(e);
+    // ---- fine energia totale
 
     volScalarField& eve = thermo_.eve();
 
+    // scambio V-T calcolato nel bridge (computeSourceVT, eq. 8-17)
     tmp<volScalarField> Q_VT = thermo_.computeSourceVT(thermo_.defaultSpecie());
 
+    // ---- equazione di eve: d(rho*eve)/dt = Q_VT (eq. 22, forma 0D: senza trasporto)
     // Solve for vibrational energy e_ve
     fvScalarMatrix EveEqn
     (
@@ -168,7 +175,9 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
     EveEqn.solve("eve");
 
     fvConstraints().constrain(eve);
+    // ---- fine eve
 
+    // decode nel bridge: dalle energie ricava T_tr e T_ve
     // Update T_ (T_tr) and Tve_ based on solved energies
     thermo_.correct();
 }

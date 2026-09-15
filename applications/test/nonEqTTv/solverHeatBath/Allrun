@@ -2,20 +2,27 @@
 
 cd ${0%/*} || exit 1
 
+# test 3a del paper: stesso heat bath fatto 2 volte e poi confrontato
+
 # Use the same Mutation++ data as the standalone nonEqTTv tests
 export MPP_DATA_DIRECTORY="$(cd .. && pwd)/mutation-data"
 
+# ---- 1) riferimento: Test-N2 (solo Mutation++), curve salvate in reference.csv
 # 1. Reference: standalone Mutation++ heat bath at (T_tr, T_ve) = (10000, 1000)
 (
     cd .. || exit 1
     Test-N2 10000 1000 || exit 1
     cp output/results-N2.csv solverHeatBath/reference.csv
 ) || exit 1
+# ---- fine riferimento
 
+# ---- 2) stesso caso nel solver: mesh di una cella, poi foamRun
 # 2. Solver heat bath (single cell, zero velocity)
 blockMesh > log.blockMesh 2>&1 || { cat log.blockMesh; exit 1; }
 foamRun > log.foamRun 2>&1 || { tail -30 log.foamRun; exit 1; }
+# ---- fine solver
 
+# 3) confronto delle due curve: errori e grafico
 # 3. Compare the two temperature histories
 python3 compare-heatbath.py
 

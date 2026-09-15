@@ -51,6 +51,7 @@ private:
 
     void initMutation();
 
+    // da h/RT di Mutation++ a energia in J/kg
     inline scalar hToE(scalar h, scalar T, scalar M) const
     {
         // speciesHOverRT gives h/RT, moreover h_v = e_v, h_el = e_el
@@ -60,6 +61,7 @@ private:
 
 public:
 
+    // ---- avvio: crea Mutation++ e trasforma le temperature iniziali in energie
     // Constructors
     HighEnthalpyMulticomponentThermo
     (
@@ -77,8 +79,10 @@ public:
         nMutationSpecies_(0),
         nMutationEnergyEqns_(0)
     {
+        // crea la miscela di Mutation++ (vedi initMutation in fondo)
         initMutation();
 
+        // ---- energie di partenza di ogni cella
         // Initialize eve_ and he_ from Tve_ and T_
         const scalarField& TCells = this->T_.primitiveField();
         const scalarField& TveCells = this->Tve_.primitiveField();
@@ -104,15 +108,20 @@ public:
                 Ttr, Ttr, Ttr, Tve, Tve,
                 nullptr, nullptr, nullptr, h_v.data(), h_el.data(), nullptr);
 
+            // eve dal risultato di Mutation++ (eq. 5+7)
             eveCells[celli] = hToE(h_v[mIdx] + h_el[mIdx], Ttr, Wi);
+            // e = 2.5*R_s*T_tr + eve (eq. 1, 3, 4)
             heCells[celli]  = Cv_tr * Ttr + eveCells[celli];
         }
+        // ---- fine energie di partenza
     }
+    // ---- fine avvio
 
     virtual ~HighEnthalpyMulticomponentThermo() = default;
 
     // Member Functions
 
+    // ---- scambio V-T in ogni cella: Q_VT = rho*(e_ve(T_tr) - e_ve(T_ve))/tau (eq. 8)
     virtual tmp<volScalarField> computeSourceVT(const label speciei) const override
     {
         tmp<volScalarField> Q_VT
@@ -161,6 +170,7 @@ public:
             // Mixture molecular weight
             const scalar Wmix = WmixCells[celli];
 
+            // ---- tau con Millikan-White + Park, scritto a mano (eq. 9-17)
             // Compute tau_vt
             scalar inv_tau_vt = 0;
             // Loop over the species
@@ -173,6 +183,7 @@ public:
                 if (Xs > 1e-15)  {
                     const scalar Wis = (Wi * Ws) / (Wi + Ws);
 
+                    // Millikan-White: eq. 11-14
                     // Millikan-white contribution
                     const scalar A = 1.16e-3 * sqrt(Wis)
                                              * pow(theta_v_N2, 4.0 / 3.0);
@@ -183,6 +194,7 @@ public:
                         (p / 101325.0); // convert to atm
 
                     // TODO: Get raw pointer to YCells?
+                    // Park: eq. 15-17
                     // Park contribution
                     const scalar Ri = Ru / Wi;
                     const scalar cbar = sqrt(8.0 * Ri * Ttr / PI);
@@ -190,14 +202,17 @@ public:
                     const scalar nTot = p / (kb * Ttr);
                     const double tauPark = 1.0 / (cbar * sigma * Xs * nTot);
 
+                    // media sulla miscela: eq. 9-10
                     inv_tau_vt += Xs / (tauMW + tauPark);
                 }
             }
+            // ---- fine tau
 
             // Partial density of speciei
             const scalar rho = rhoCells[celli] * Y[speciei][celli];
             const scalar Tve = TveCells[celli];
 
+            // ---- e_ve(T_tr) ed e_ve(T_ve) chieste a Mutation++ (eq. 5+7)
             // Compute target equilibrium energy and current energy from Mutation++
             mutationMixturePtr_->speciesHOverRT(
                 Ttr, Ttr, Ttr, Ttr, Ttr,
@@ -208,14 +223,18 @@ public:
                 Ttr, Ttr, Ttr, Tve, Tve,
                 nullptr, nullptr, nullptr, h_v.data(), h_el.data(), nullptr);
             const scalar eve = hToE(h_v[mIdx] + h_el[mIdx], Ttr, Wi);
+            // ---- fine energie
 
+            // eq. 8
             // rho (e_ve(T_tr) - e_ve(T_ve)) / tau_vt
             QCells[celli] = rho * (eve_eq - eve) * inv_tau_vt;
         }
 
         return Q_VT;
     }
+    // ---- fine scambio V-T
 
+    // ---- decode: dalle energie risolte ricava T_tr e T_ve
     virtual void correct() override
     {
         // TODO: Should this be called?
@@ -246,12 +265,15 @@ public:
             const scalar eTot = eTotCells[celli];
             const scalar eve  = eveCells[celli];
 
+            // T_tr = (e - eve)/(2.5*R_s): eq. 3+4 al contrario
             const scalar e_tr = eTot - eve;
             const scalar Ttr  = e_tr / Cv_tr;
 
+            // stima di T_ve: eq. 5 invertita
             // Harmonic oscillator initial guess for Tve
             scalar Tv = theta_v_N2 / Foam::log(1.0 + (Rs * theta_v_N2) / eve);
 
+            // ---- Newton con Mutation++: corregge la stima includendo l'elettronica (eq. 7)
             // Newton refinement using Mutation++ (accounting for electronic excitation)
             for (int iter = 0; iter < 2; ++iter)
             {
@@ -272,20 +294,25 @@ public:
                     if (Foam::mag(deltaT) < 1e-2) break;
                 }
             }
+            // ---- fine Newton
 
             TCells[celli]   = Ttr;
             TveCells[celli] = Tv;
+            // psi = 1/(R_s*T_tr): serve a OpenFOAM per la pressione (eq. 24)
             psiCells[celli] = 1.0 / (Rs * Ttr);
         }
     }
+    // ---- fine decode
 
 };
 
+// ---- initMutation: legge highEnthalpyMutation da physicalProperties e crea la miscela
 template<class Thermo>
 void HighEnthalpyMulticomponentThermo<Thermo>::initMutation()
 {
     const dictionary& propertiesDict = this->properties();
 
+    // legge solo mixture, stateModel, thermodynamicDatabase e mechanism
     if (propertiesDict.found("highEnthalpyMutation"))
     {
         const dictionary& mutationDict =
@@ -314,6 +341,7 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initMutation()
     nMutationSpecies_ = mutationMixturePtr_->nSpecies();
     nMutationEnergyEqns_ = mutationMixturePtr_->nEnergyEqns();
 
+    // collega ogni specie di OpenFOAM alla stessa specie di Mutation++
     const wordList& foamSpecies = this->species();
     foamToMutationSpecie_.setSize(foamSpecies.size(), -1);
 
@@ -322,6 +350,7 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initMutation()
         foamToMutationSpecie_[i] = mutationMixturePtr_->speciesIndex(foamSpecies[i].c_str());
     }
 }
+// ---- fine initMutation
 
 } // End namespace Foam
 

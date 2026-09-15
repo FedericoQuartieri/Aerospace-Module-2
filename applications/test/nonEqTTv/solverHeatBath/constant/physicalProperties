@@ -14,6 +14,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+// "type highEnthalpyThermo" carica la termodinamica del progetto (il bridge)
 thermoType
 {
     type            highEnthalpyThermo;
@@ -25,6 +26,7 @@ thermoType
     specie          specie;
 }
 
+// impostazioni di Mutation++, uguali a Test-N2
 // Same Mutation++ configuration as the standalone nonEqTTv tests:
 // 5-species air, two-temperature RRHO, no chemistry (V-T exchange only).
 // Run with MPP_DATA_DIRECTORY pointing to nonEqTTv/mutation-data.
@@ -34,12 +36,15 @@ highEnthalpyMutation
     stateModel              ChemNonEqTTv;
     thermodynamicDatabase   RRHO;
     mechanism               none;
+    // ---- non lette dal codice: residui
     minTemperature          200;
     maxTemperature          50000;
     minPressure             1;
     forceThermalEquilibrium no;
+    // ---- fine residui
 }
 
+// blocco non letto dal codice: residuo (oggi tau e' scritto a mano nel bridge)
 // V-T relaxation: tauVT and the source terms are computed per-cell from
 // Mutation++; the solver solves a conservative equation for the
 // vibro-electronic energy eve.
