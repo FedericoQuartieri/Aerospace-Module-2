@@ -2,9 +2,32 @@
 
 cd ${0%/*} || exit 1
 
-export MPP_DATA_DIRECTORY=mutation-data
+# test 0D del capitolo 3 del paper, con confronto con le curve estratte dal pdf
+# (paper-data/) e, dove esiste, con il risultato del solver (output/*-solver.csv)
 
-Test-N2
-Test-N2N-VT
-Test-N2O2-VT-VV
+mkdir -p output
+here=$(pwd)
 
+# ---- senza energia elettronica: fig. 3a, 3b, 4 "without E_el", 5, 7, 8
+export MPP_DATA_DIRECTORY=$here/mutation-data-noElectronic
+Test-N2  3000 10000 1e-4 output/fig3b.csv
+Test-N2 10000  1000 3e-5 output/fig3a.csv
+Test-N2 30000  1000 1e-5 output/fig4-noEl.csv
+# fig 5, 7, 8: le curve del paper tornano solo senza energia elettronica
+Test-N2N 30000  1000 1e-5 none    output/fig5.csv
+Test-N2N 30000  1000 1e-3 N2_Park output/fig7.csv
+Test-N2N 30000 30000 1e-4 N2_Park output/fig8.csv
+
+# ---- con energia elettronica: fig. 4 "with E_el", 6
+export MPP_DATA_DIRECTORY=$here/mutation-data
+Test-N2 30000  1000 1e-5 output/fig4-el.csv
+Test-N2O2 off 3e-6 output/fig6-noVV.csv
+Test-N2O2 on  3e-6 output/fig6-VV.csv
+
+# ---- confronti
+for fig in fig3b fig3a fig4-noEl fig4-el fig5 fig6-noVV fig6-VV fig7 fig8
+do
+    python3 compare.py $fig
+done
+
+#------------------------------------------------------------------------------

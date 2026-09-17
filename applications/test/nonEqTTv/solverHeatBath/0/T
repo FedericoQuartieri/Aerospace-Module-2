@@ -13,20 +13,19 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+// temperatura traslazionale-rotazionale iniziale, scritta da Allrun in conditions
+#include "$FOAM_CASE/conditions"
+
 dimensions      [0 0 0 1 0 0 0];
 
-// T_tr iniziale del test 3a
-// Vibrational heating case (paper Fig. 3a): T_tr = 10000 K, T_ve = 1000 K
-internalField   uniform 10000;
+internalField   uniform $Ttr;
 
-// bordi: con il gas fermo non entra ne' esce nulla
 boundaryField
 {
     sides
     {
         type            zeroGradient;
     }
-
     empty
     {
         type            empty;

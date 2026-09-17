@@ -1,0 +1,13 @@
+<!--
+  dissociazione dell'azoto N2 + N2 -> 2N + N2, irreversibile come nel paper
+  (Casseau et al. 2016, tabella 2, costanti di Park 1993); A in cm3/mol/s
+-->
+<mechanism name="N2_Park">
+
+    <arrhenius_units A="mol,cm,s,K" E="kcal,mol,K" />
+
+    <reaction formula="N2+N2=>2N+N2">
+        <arrhenius A="7.0E+21" n="-1.6" T="113200.0" />
+    </reaction>
+
+</mechanism>

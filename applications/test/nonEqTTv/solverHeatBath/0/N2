@@ -13,10 +13,12 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+// frazione in massa di N2, scritta da Allrun in conditions
+#include "$FOAM_CASE/conditions"
+
 dimensions      [0 0 0 0 0 0 0];
 
-// Pure N2 heat bath
-internalField   uniform 1;
+internalField   uniform $YN2;
 
 boundaryField
 {
@@ -24,7 +26,6 @@ boundaryField
     {
         type            zeroGradient;
     }
-
     empty
     {
         type            empty;

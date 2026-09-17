@@ -14,7 +14,9 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// usa il solver del progetto (modulo shockThermo)
+// tempo finale scelto da Allrun in base alla figura
+#include "$FOAM_CASE/conditions"
+
 solver          shockThermo;
 
 startFrom       startTime;
@@ -23,18 +25,14 @@ startTime       0;
 
 stopAt          endTime;
 
-// ---- tempo come Test-N2: fine a 20 micro-secondi, passo 1 ns
-// Same time span and step as the standalone Test-N2 heat bath
-endTime         2e-5;
+endTime         $endTime;
 
+// passo di 1 ns come il paper
 deltaT          1e-9;
-// ---- fine tempo
 
-writeControl    adjustableRunTime;
+writeControl    runTime;
 
-writeInterval   2e-6;
-
-cycleWrite      0;
+writeInterval   1e-5;
 
 writeFormat     ascii;
 
@@ -56,7 +54,7 @@ maxDeltaT       1;
 
 functions
 {
-    // registra T, Tve e p ogni 10 passi: servono al confronto
+    // registra le grandezze nella cella ogni 10 passi: servono al confronto
     probes
     {
         type            probes;
@@ -64,7 +62,7 @@ functions
         writeControl    timeStep;
         writeInterval   10;
         probeLocations  ((0 0 0));
-        fields          (T Tve p);
+        fields          (T Tve p rho N2 N);
     }
 }
 
