@@ -24,7 +24,7 @@ di `mutationSources.H`, il programma 0D integra le stesse sorgenti a mano.
 | 4 senza E_el | N2 da 30000 K | 34 K (0.14 %) | 86 K (0.69 %) | — |
 | 4 con E_el | N2 da 30000 K | 112 K (0.51 %) | 101 K (1.18 %) | — |
 | 5 | N2 + N | 4.3 K (0.02 %) | 18 K (0.13 %) | — |
-| 7 | N2 + N reagente, Park 0.7 | FIG7_TTR | FIG7_TV | FIG7_N |
+| 7 | N2 + N reagente, Park 0.7 | 5.8 K (0.03 %) | 26 K (0.18 %) | 0.03 % (0.0001 decadi) |
 
 L'accordo resta allo 0.03-0.2 % anche con la chimica accesa (specie, calore di
 reazione e accoppiamento chimica-vibrazione): è la verifica che l'integrazione del
