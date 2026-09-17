@@ -26,5 +26,3 @@ applications/test/nonEqTTv/solverHeatBath/postProcessing/
 applications/test/nonEqTTv/solverHeatBath/processor*/
 applications/test/nonEqTTv/solverHeatBath/log.*
 
-# Test-N2 transient output (canonical results committed with descriptive names)
-applications/test/nonEqTTv/output/results-N2.csv
