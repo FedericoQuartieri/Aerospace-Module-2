@@ -1,4 +1,4 @@
-// heat bath 0D di N2 puro: rilassamento V-T con Mutation++ (fig. 3a, 3b, 4 del paper)
+// heat bath 0D di N2 puro: rilassamento V-T (fig. 3a, 3b, 4 del paper)
 //
 // uso: Test-N2 <T_tr> <T_ve> <t_fine> <file_csv>
 //   fig 3a: Test-N2 10000  1000 3e-5 output/fig3a.csv
@@ -9,6 +9,7 @@
 // (variabile MPP_DATA_DIRECTORY: mutation-data oppure mutation-data-noElectronic)
 
 #include "mutation++.h"
+#include "mutationSources.H"
 #include "heatBath.H"
 
 #include <cstdlib>
@@ -60,6 +61,9 @@ int main(int argc, char *argv[])
     const double temps0[2] = {T_tr0, T_ve0};
     mix.setState(rho_s.data(), temps0, 1);
 
+    // tempi di rilassamento V-T delle molecole (qui solo N2)
+    const std::vector<Vibrator> vibrators = makeVibrators(mix);
+
     std::ofstream csv(csvName);
     csv << "# T_eq = " << T_eq << " K (conservazione dell'energia)\n";
     csv << "t,Ttr,Tv\n";
@@ -67,27 +71,26 @@ int main(int argc, char *argv[])
 
     // ---- ciclo nel tempo: passo di 1 ns come il paper
     const double dt = 1.0e-9;
+    const int nSteps = int(t_end / dt + 0.5);
+    // al massimo 10000 righe nel csv
+    const int writeEvery = std::max(10, nSteps / 10000);
     double t = 0.0;
-    int step = 0;
-    std::vector<double> Q(mix.nEnergyEqns());
 
-    while (t < t_end)
+    for (int step = 1; step <= nSteps; step++)
     {
-        // Q[0] = Q_VT: energia che passa dal serbatoio traslazionale a quello
-        // vibrazionale, calcolata da Mutation++ (Landau-Teller, eq. 8, con
-        // Millikan-White e correzione di Park, eq. 9-17)
-        mix.energyTransferSource(Q.data());
+        // Q_VT: energia che passa dal serbatoio traslazionale a quello
+        // vibro-elettronico (Landau-Teller, eq. 8, tau da Mutation++)
+        const double Q = sourceVT(mix, rho_s, vibrators);
 
         // eq. 22: cambia solo E_ve, l'energia totale E si conserva
-        Eve += Q[0] * dt;
+        Eve += Q * dt;
         t += dt;
-        step++;
 
         // nuove temperature dalle energie (Mutation++ inverte E ed E_ve)
         const double energies[2] = {E, Eve};
         mix.setState(rho_s.data(), energies, 0);
 
-        if (step % 10 == 0)
+        if (step % writeEvery == 0)
         {
             csv << t << "," << mix.T() << "," << mix.Tv() << "\n";
         }

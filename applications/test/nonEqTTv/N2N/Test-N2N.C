@@ -1,13 +1,16 @@
-// heat bath 0D di N2 + N con Mutation++ (fig. 5, 7 e 8 del paper):
-// 5e22 particelle/m3 per specie, rilassamento V-T e, se richiesto, la
-// dissociazione N2 + N2 -> 2N + N2 con le costanti di Park (meccanismo N2_Park)
+// heat bath 0D di N2 + N (fig. 5, 7 e 8 del paper): 5e22 particelle/m3 per
+// specie, rilassamento V-T e, se richiesto, la dissociazione
+// N2 + N2 -> 2N + N2 con le costanti di Park (meccanismo N2_Park, tabella 2)
 //
-// uso: Test-N2N <T_tr> <T_ve> <t_fine> <meccanismo> <file_csv>
-//   fig 5: Test-N2N 30000  1000 1e-5 none    output/fig5.csv
-//   fig 7: Test-N2N 30000  1000 1e-3 N2_Park output/fig7.csv
-//   fig 8: Test-N2N 30000 30000 1e-4 N2_Park output/fig8.csv
+// uso: Test-N2N <T_tr> <T_ve> <t_fine> <meccanismo> <esponente_Park> <file_csv>
+//   fig 5: Test-N2N 30000  1000 1e-5 none    0.7 output/fig5.csv
+//   fig 7: Test-N2N 30000  1000 1e-3 N2_Park 0.7 output/fig7.csv
+//   fig 8: Test-N2N 30000 30000 1e-4 N2_Park 0.7 output/fig8.csv
+// l'esponente e' quello della temperatura di Park T^a Tv^(1-a) (eq. 29):
+// 0.7 come il paper, 0.5 e' quello fisso di Mutation++
 
 #include "mutation++.h"
+#include "mutationSources.H"
 #include "heatBath.H"
 
 #include <cstdlib>
@@ -18,16 +21,18 @@
 
 int main(int argc, char *argv[])
 {
-    if (argc != 6)
+    if (argc != 7)
     {
-        std::cerr << "uso: Test-N2N <T_tr> <T_ve> <t_fine> <meccanismo> <file_csv>" << std::endl;
+        std::cerr << "uso: Test-N2N <T_tr> <T_ve> <t_fine> <meccanismo> <esponente_Park> <file_csv>"
+                  << std::endl;
         return 1;
     }
     const double T_tr0 = std::atof(argv[1]);
     const double T_ve0 = std::atof(argv[2]);
     const double t_end = std::atof(argv[3]);
     const std::string mechanism = argv[4];
-    const char* csvName = argv[5];
+    const double parkExponent = std::atof(argv[5]);
+    const char* csvName = argv[6];
     const bool chemistry = (mechanism != "none");
 
     Mutation::MixtureOptions opts("air_5");
@@ -72,38 +77,43 @@ int main(int argc, char *argv[])
     auto nN = [&]() { return rho_s[iN] / mix.speciesMw(iN) * Mutation::NA / n0; };
     csv << "0," << mix.T() << "," << mix.Tv() << "," << nN2() << "," << nN() << "\n";
 
+    // tempi di rilassamento V-T delle molecole (qui solo N2)
+    const std::vector<Vibrator> vibrators = makeVibrators(mix);
+
     // ---- ciclo nel tempo: passo di 1 ns come il paper
     const double dt = 1.0e-9;
+    const int nSteps = int(t_end / dt + 0.5);
+    // al massimo 10000 righe nel csv
+    const int writeEvery = std::max(10, nSteps / 10000);
     double t = 0.0;
-    int step = 0;
-    std::vector<double> Q(mix.nEnergyEqns());
     std::vector<double> wdot(ns, 0.0);
 
-    while (t < t_end)
+    for (int step = 1; step <= nSteps; step++)
     {
-        // Q[0]: scambio V-T (eq. 8) piu', con la chimica, l'energia
-        // vibro-elettronica tolta dalle reazioni (eq. 30, modello non
-        // preferenziale, l'unico di Mutation++)
-        mix.energyTransferSource(Q.data());
-        Eve += Q[0] * dt;
+        // scambio V-T (eq. 8)
+        double Q = sourceVT(mix, rho_s, vibrators);
 
         if (chemistry)
         {
-            // produzione delle specie (eq. 27), kg/m3/s
-            mix.netProductionRates(wdot.data());
+            // produzione delle specie alla temperatura di Park (eq. 27-29)
+            // e energia vibro-elettronica che se ne va con esse (eq. 30)
+            productionRates(mix, rho_s, parkExponent, wdot);
+            Q += sourceCV(mix, wdot);
             for (int s = 0; s < ns; s++)
             {
                 rho_s[s] += wdot[s] * dt;
             }
         }
+
+        // eq. 22: cambiano E_ve e le densita', E si conserva
+        Eve += Q * dt;
         t += dt;
-        step++;
 
         // nuove temperature dalle energie
         const double energies[2] = {E, Eve};
         mix.setState(rho_s.data(), energies, 0);
 
-        if (step % 10 == 0)
+        if (step % writeEvery == 0)
         {
             csv << t << "," << mix.T() << "," << mix.Tv() << "," << nN2() << "," << nN() << "\n";
         }

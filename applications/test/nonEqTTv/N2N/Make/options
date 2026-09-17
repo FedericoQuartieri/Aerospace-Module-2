@@ -10,6 +10,7 @@ c++WARN += -Wno-old-style-cast \
 EXE_INC = \
     -std=c++17 \
     -I../common \
+    -I$(POLIMI_SRC)/thermophysicalModels/multicomponentThermo/lnInclude \
     -I$(MPP_DIRECTORY)/install/include/mutation++ \
     -I$(MPP_DIRECTORY)/install/include/eigen3
 
