@@ -8,24 +8,31 @@ cd ${0%/*} || exit 1
 mkdir -p output
 here=$(pwd)
 
-# ---- senza energia elettronica: fig. 3a, 3b, 4 "without E_el", 5, 7, 8
+# ---- senza energia elettronica: fig. 3a, 3b, 4 "without E_el", 5, 6, 7, 8
+# (per fig. 5, 6, 7, 8 le curve del paper tornano solo cosi')
 export MPP_DATA_DIRECTORY=$here/mutation-data-noElectronic
 Test-N2  3000 10000 1e-4 output/fig3b.csv
 Test-N2 10000  1000 3e-5 output/fig3a.csv
 Test-N2 30000  1000 1e-5 output/fig4-noEl.csv
-# fig 5, 7, 8: le curve del paper tornano solo senza energia elettronica
-Test-N2N 30000  1000 1e-5 none    output/fig5.csv
-Test-N2N 30000  1000 1e-3 N2_Park output/fig7.csv
-Test-N2N 30000 30000 1e-4 N2_Park output/fig8.csv
-
-# ---- con energia elettronica: fig. 4 "with E_el", 6
-export MPP_DATA_DIRECTORY=$here/mutation-data
-Test-N2 30000  1000 1e-5 output/fig4-el.csv
+Test-N2N 30000  1000 1e-5 none    0.7 output/fig5.csv
+# fig 7 e 8 con l'esponente di Park del paper (0.7) e con quello di Mutation++ (0.5)
+Test-N2N 30000  1000 1e-3 N2_Park 0.7 output/fig7.csv
+Test-N2N 30000 30000 1e-4 N2_Park 0.7 output/fig8.csv
+Test-N2N 30000  1000 1e-3 N2_Park 0.5 output/fig7-park05.csv
+Test-N2N 30000 30000 1e-4 N2_Park 0.5 output/fig8-park05.csv
 Test-N2O2 off 3e-6 output/fig6-noVV.csv
 Test-N2O2 on  3e-6 output/fig6-VV.csv
+# fig 9: una sola temperatura; meccanismo di Park di Mutation++ (air5_Park)
+# e set QK di hyStrath (air5_QK, vedi hystrath-data/README.md)
+Test-air5 air5_Park 1e-3 output/fig9-park.csv
+Test-air5 air5_QK   1e-3 output/fig9-QK.csv  air5_QK_back
+
+# ---- con energia elettronica: fig. 4 "with E_el"
+export MPP_DATA_DIRECTORY=$here/mutation-data
+Test-N2 30000  1000 1e-5 output/fig4-el.csv
 
 # ---- confronti
-for fig in fig3b fig3a fig4-noEl fig4-el fig5 fig6-noVV fig6-VV fig7 fig8
+for fig in fig3b fig3a fig4-noEl fig4-el fig5 fig6-noVV fig6-VV fig7 fig8 fig7-park05 fig8-park05 fig9-park fig9-QK
 do
     python3 compare.py $fig
 done

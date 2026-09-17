@@ -2,17 +2,16 @@
 // due temperature vibrazionali, scambio V-T e, a scelta, scambio V-V
 //
 // Mutation++ ha una sola temperatura vibrazionale e non ha lo scambio V-V,
-// quindi qui le sorgenti sono scritte a mano seguendo il paper (eq. 8 e 18);
-// da Mutation++ si prendono le energie delle specie e i tempi di
-// rilassamento di Millikan-White con la correzione di Park (eq. 9-17)
+// quindi qui il ciclo tiene un serbatoio per molecola e usa le funzioni di
+// mutationSources.H specie per specie (energie, tempi di rilassamento);
+// lo scambio V-V e' scritto seguendo l'eq. 18 del paper
 //
 // uso: Test-N2O2 <VV: on|off> <t_fine> <file_csv>
 //   fig 6: Test-N2O2 off 3e-6 output/fig6-noVV.csv
 //          Test-N2O2 on  3e-6 output/fig6-VV.csv
 
 #include "mutation++.h"
-#include "HarmonicOscillator.h"
-#include "MillikanWhite.h"
+#include "mutationSources.H"
 #include "heatBath.H"
 
 #include <cmath>
@@ -21,27 +20,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-
-// energia vibrazionale e_v ed elettronica e_el (J/kg) della specie s alla
-// temperatura Tv, dalle entalpie adimensionali di Mutation++ (eq. 5 e 7)
-static void speciesVibElEnergies
-(
-    Mutation::Mixture& mix,
-    const int s,
-    const double Tv,
-    double& e_v,
-    double& e_el
-)
-{
-    const int ns = mix.nSpecies();
-    std::vector<double> h_v(ns), h_el(ns);
-    // tutte le temperature uguali a Tv: h_v/RT e h_el/RT dipendono solo da Tv
-    mix.speciesHOverRT(Tv, Tv, Tv, Tv, Tv, nullptr, nullptr, nullptr,
-                       h_v.data(), h_el.data(), nullptr);
-    const double RT_over_M = Mutation::RU * Tv / mix.speciesMw(s);
-    e_v = h_v[s] * RT_over_M;
-    e_el = h_el[s] * RT_over_M;
-}
 
 // temperatura vibro-elettronica della specie s dalla sua energia e_ve (J/kg),
 // per bisezione (e_ve cresce con Tv)
@@ -52,9 +30,7 @@ static double TvFromEve(Mutation::Mixture& mix, const int s, const double e_ve)
     for (int iter = 0; iter < 60; iter++)
     {
         const double Tv = 0.5 * (Tlow + Thigh);
-        double e_v, e_el;
-        speciesVibElEnergies(mix, s, Tv, e_v, e_el);
-        if (e_v + e_el > e_ve)
+        if (speciesEve(mix, s, Tv) > e_ve)
         {
             Thigh = Tv;
         }
@@ -111,11 +87,8 @@ int main(int argc, char *argv[])
     // energie per unita' di volume (eq. 23): quella totale E si conserva,
     // quelle vibro-elettroniche dei due serbatoi cambiano nel tempo
     const double E = totalEnergy(mix, rho_s);
-    double e_v, e_el;
-    speciesVibElEnergies(mix, iN2, Tv_N2, e_v, e_el);
-    double Eve_N2 = rho_N2 * (e_v + e_el);
-    speciesVibElEnergies(mix, iO2, Tv_O2, e_v, e_el);
-    double Eve_O2 = rho_O2 * (e_v + e_el);
+    double Eve_N2 = rho_N2 * speciesEve(mix, iN2, Tv_N2);
+    double Eve_O2 = rho_O2 * speciesEve(mix, iO2, Tv_O2);
 
     // energia traslazionale-rotazionale iniziale: cresce con T come
     // 2.5 R T per molecola (eq. 3 e 4), e' il modo per ricavare T dopo
@@ -127,14 +100,15 @@ int main(int argc, char *argv[])
     // T finale dalla conservazione dell'energia (il paper la legge in figura)
     const double T_eq = equilibriumTemperature(mix, rho_s, E);
 
-    // ---- tempi di rilassamento V-T di Mutation++ (Millikan-White + Park,
-    // eq. 9-17, con le costanti del suo file VT.xml)
-    Mutation::Thermodynamics::HarmonicOscillatorDB hoDB;
-    Mutation::Transfer::MillikanWhiteModelDB mwDB(mix);
-    Mutation::Transfer::MillikanWhiteModel tauModel_N2 =
-        mwDB.create("N2", hoDB.create("N2").characteristicTemperatures()[0]);
-    Mutation::Transfer::MillikanWhiteModel tauModel_O2 =
-        mwDB.create("O2", hoDB.create("O2").characteristicTemperatures()[0]);
+    // ---- tempi di rilassamento V-T di Mutation++ (eq. 9-17), uno per molecola
+    const std::vector<Vibrator> vibrators = makeVibrators(mix);
+    const Vibrator* vibN2 = nullptr;
+    const Vibrator* vibO2 = nullptr;
+    for (const Vibrator& v : vibrators)
+    {
+        if (v.species == iN2) vibN2 = &v;
+        if (v.species == iO2) vibO2 = &v;
+    }
     // ---- fine tempi di rilassamento
 
     // ---- costanti dello scambio V-V (eq. 18)
@@ -155,34 +129,32 @@ int main(int argc, char *argv[])
 
     // ---- ciclo nel tempo: passo di 1 ns come il paper
     const double dt = 1.0e-9;
+    const int nSteps = int(t_end / dt + 0.5);
+    const int writeEvery = std::max(10, nSteps / 10000);
     double t = 0.0;
-    int step = 0;
 
-    while (t < t_end)
+    for (int step = 1; step <= nSteps; step++)
     {
         // stato di Mutation++ a T_tr: serve per i tempi di rilassamento
         const double temps[2] = {T, Tv_N2};
         mix.setState(rho_s.data(), temps, 1);
-        const double tau_N2 = tauModel_N2.relaxationTime(mix);
-        const double tau_O2 = tauModel_O2.relaxationTime(mix);
 
-        // energie vibro-elettroniche a T_tr (obiettivo) e alle T_v attuali
-        double ev_N2_T, eel_N2_T, ev_O2_T, eel_O2_T;
-        speciesVibElEnergies(mix, iN2, T, ev_N2_T, eel_N2_T);
-        speciesVibElEnergies(mix, iO2, T, ev_O2_T, eel_O2_T);
-        double ev_N2, eel_N2, ev_O2, eel_O2;
-        speciesVibElEnergies(mix, iN2, Tv_N2, ev_N2, eel_N2);
-        speciesVibElEnergies(mix, iO2, Tv_O2, ev_O2, eel_O2);
-
-        // scambio V-T di ogni molecola, Landau-Teller (eq. 8)
-        const double Q_N2_VT = rho_N2 * (ev_N2_T + eel_N2_T - ev_N2 - eel_N2) / tau_N2;
-        const double Q_O2_VT = rho_O2 * (ev_O2_T + eel_O2_T - ev_O2 - eel_O2) / tau_O2;
+        // scambio V-T di ogni molecola, Landau-Teller (eq. 8), con la forza
+        // motrice e_ve(T_tr) - e_ve(T_v) della molecola stessa
+        const double Q_N2_VT = rho_N2 * (speciesEve(mix, iN2, T) - speciesEve(mix, iN2, Tv_N2))
+                             / vibN2->tau.relaxationTime(mix);
+        const double Q_O2_VT = rho_O2 * (speciesEve(mix, iO2, T) - speciesEve(mix, iO2, Tv_O2))
+                             / vibO2->tau.relaxationTime(mix);
 
         // scambio V-V fra N2 e O2 (eq. 18, con le sole energie vibrazionali);
         // quello che entra in N2 esce da O2
         double Q_N2_VV = 0.0;
         if (withVV)
         {
+            const double ev_N2_T = speciesEv(mix, iN2, T);
+            const double ev_O2_T = speciesEv(mix, iO2, T);
+            const double ev_N2 = speciesEv(mix, iN2, Tv_N2);
+            const double ev_O2 = speciesEv(mix, iO2, Tv_O2);
             Q_N2_VV = Mutation::NA * sigma_N2O2 * P_N2O2
                     * std::sqrt(8.0 * Mutation::RU * T / (Mutation::PI * M_N2O2))
                     * (rho_O2 / M_O2) * rho_N2
@@ -194,14 +166,13 @@ int main(int argc, char *argv[])
         Eve_N2 += (Q_N2_VT + Q_N2_VV) * dt;
         Eve_O2 += (Q_O2_VT + Q_O2_VV) * dt;
         t += dt;
-        step++;
 
         // nuove temperature: T_v dai serbatoi, T_tr dall'energia che resta
         Tv_N2 = TvFromEve(mix, iN2, Eve_N2 / rho_N2);
         Tv_O2 = TvFromEve(mix, iO2, Eve_O2 / rho_O2);
         T = T0 + (E - Eve_N2 - Eve_O2 - Etr0) / rhoCvTr;
 
-        if (step % 10 == 0)
+        if (step % writeEvery == 0)
         {
             csv << t << "," << T << "," << Tv_N2 << "," << Tv_O2 << "\n";
         }

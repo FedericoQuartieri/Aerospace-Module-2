@@ -54,13 +54,13 @@ maxDeltaT       1;
 
 functions
 {
-    // registra le grandezze nella cella ogni 10 passi: servono al confronto
+    // registra le grandezze nella cella ogni writeEvery passi: servono al confronto
     probes
     {
         type            probes;
         libs            ("libsampling.so");
         writeControl    timeStep;
-        writeInterval   10;
+        writeInterval   $writeEvery;
         probeLocations  ((0 0 0));
         fields          (T Tve p rho N2 N);
     }

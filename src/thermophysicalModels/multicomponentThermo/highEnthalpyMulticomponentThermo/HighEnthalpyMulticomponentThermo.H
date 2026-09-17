@@ -14,6 +14,7 @@
 #endif
 
 #include "mutation++.h"
+#include "mutationSources.H"
 
 #include <algorithm>
 #include <memory>
@@ -30,7 +31,8 @@ namespace Foam
 // ponte fra OpenFOAM e Mutation++: in ogni cella lo stato del gas e' dato
 // dalle variabili conservate del paper (eq. 23), densita' parziali rho_s,
 // energia totale ed energia vibro-elettronica; Mutation++ ricava da queste
-// le due temperature e calcola le sorgenti di scambio (V-T e chimica)
+// le due temperature, e le sorgenti (V-T e chimica) sono quelle di
+// mutationSources.H, le stesse dei programmi 0D
 template<class Thermo>
 class HighEnthalpyMulticomponentThermo
 :
@@ -49,8 +51,14 @@ private:
     word mutationThermoDatabase_;
     word mutationMechanism_;
 
+    // esponente a della temperatura di Park T^a Tv^(1-a) (eq. 29)
+    scalar parkExponent_;
+
     int nMutationSpecies_;
     int nMutationEnergyEqns_;
+
+    // molecole che vibrano, con il loro tempo di rilassamento V-T
+    std::vector<Vibrator> vibrators_;
 
     // entalpia di formazione di ogni specie di Mutation++ (J/kg): l'energia e
     // del solver e' sensibile, quella di Mutation++ comprende la formazione
@@ -60,7 +68,6 @@ private:
     mutable std::vector<double> yS_;    // frazioni in massa
     mutable std::vector<double> rhoS_;  // densita' parziali
     mutable std::vector<double> eS_;    // energie per specie (totale, poi ve)
-    mutable std::vector<double> Q_;     // sorgenti di energia
     mutable std::vector<double> wS_;    // produzione delle specie
 
     void initMutation();
@@ -89,6 +96,19 @@ private:
         return hf;
     }
 
+    // porta Mutation++ nello stato della cella: densita' parziali e le due
+    // temperature (riempie yS_ e rhoS_)
+    void setCellState(const label celli, const scalar rho) const
+    {
+        fillMassFractions(this->Y(), celli);
+        for (int s = 0; s < nMutationSpecies_; s++)
+        {
+            rhoS_[s] = rho*yS_[s];
+        }
+        const double TTv[2] = {this->T_[celli], this->Tve_[celli]};
+        mutationMixturePtr_->setState(rhoS_.data(), TTv, 1);
+    }
+
 public:
 
     // ---- avvio: crea Mutation++ e trasforma le temperature iniziali in energie
@@ -106,6 +126,7 @@ public:
         mutationStateModel_("ChemNonEqTTv"),
         mutationThermoDatabase_("RRHO"),
         mutationMechanism_("none"),
+        parkExponent_(0.7),
         nMutationSpecies_(0),
         nMutationEnergyEqns_(0)
     {
@@ -173,8 +194,9 @@ public:
 
     // Member Functions
 
-    // ---- sorgenti di Mutation++ in ogni cella: scambio V-T piu', se c'e' la
-    // chimica, l'energia vibro-elettronica portata via dalle reazioni (eq. 26)
+    // ---- sorgente dell'energia vibro-elettronica in ogni cella (eq. 26):
+    // scambio V-T (eq. 8) piu', con la chimica, l'energia vibro-elettronica
+    // portata via dalle reazioni (eq. 30)
     virtual tmp<volScalarField> computeSourceVe() const override
     {
         tmp<volScalarField> tQ
@@ -188,35 +210,29 @@ public:
         );
         scalarField& QCells = tQ.ref().primitiveFieldRef();
 
-        const scalarField& TCells = this->T_.primitiveField();
-        const scalarField& TveCells = this->Tve_.primitiveField();
         // tengo vivo il tmp di rho (= psi*p) finche' serve
         const tmp<volScalarField> tRho = this->rho();
         const scalarField& rhoCells = tRho().primitiveField();
 
         Mutation::Mixture& mix = *mutationMixturePtr_;
 
-        forAll(TCells, celli)
+        forAll(QCells, celli)
         {
-            // stato della cella: densita' parziali e le due temperature
-            fillMassFractions(this->Y(), celli);
-            for (int s = 0; s < nMutationSpecies_; s++)
-            {
-                rhoS_[s] = rhoCells[celli]*yS_[s];
-            }
-            const double TTv[2] = {TCells[celli], TveCells[celli]};
-            mix.setState(rhoS_.data(), TTv, 1);
+            setCellState(celli, rhoCells[celli]);
+            QCells[celli] = sourceVT(mix, rhoS_, vibrators_);
 
-            // Q_[0] = Q_VT (eq. 8-17) + Q_CV (eq. 30) [W/m3]
-            mix.energyTransferSource(Q_.data());
-            QCells[celli] = Q_[0];
+            if (mutationMechanism_ != "none")
+            {
+                productionRates(mix, rhoS_, parkExponent_, wS_);
+                QCells[celli] += sourceCV(mix, wS_);
+            }
         }
 
         return tQ;
     }
-    // ---- fine sorgenti
+    // ---- fine sorgente di eve
 
-    // ---- produzione chimica delle specie di OpenFOAM (kg/m3/s), eq. 27
+    // ---- produzione chimica della specie di OpenFOAM speciei (kg/m3/s), eq. 27
     virtual tmp<volScalarField> computeSourceY(const label speciei) const override
     {
         tmp<volScalarField> tw
@@ -236,27 +252,16 @@ public:
             return tw;
         }
 
-        const scalarField& TCells = this->T_.primitiveField();
-        const scalarField& TveCells = this->Tve_.primitiveField();
-        // tengo vivo il tmp di rho (= psi*p) finche' serve
         const tmp<volScalarField> tRho = this->rho();
         const scalarField& rhoCells = tRho().primitiveField();
 
         Mutation::Mixture& mix = *mutationMixturePtr_;
         const label mIdx = foamToMutationSpecie_[speciei];
 
-        forAll(TCells, celli)
+        forAll(wCells, celli)
         {
-            fillMassFractions(this->Y(), celli);
-            for (int s = 0; s < nMutationSpecies_; s++)
-            {
-                rhoS_[s] = rhoCells[celli]*yS_[s];
-            }
-            const double TTv[2] = {TCells[celli], TveCells[celli]};
-            mix.setState(rhoS_.data(), TTv, 1);
-
-            // velocita' di reazione con la temperatura di Park (eq. 28-29)
-            mix.netProductionRates(wS_.data());
+            setCellState(celli, rhoCells[celli]);
+            productionRates(mix, rhoS_, parkExponent_, wS_);
             wCells[celli] = wS_[mIdx];
         }
 
@@ -285,24 +290,15 @@ public:
             return tQ;
         }
 
-        const scalarField& TCells = this->T_.primitiveField();
-        const scalarField& TveCells = this->Tve_.primitiveField();
-        // tengo vivo il tmp di rho (= psi*p) finche' serve
         const tmp<volScalarField> tRho = this->rho();
         const scalarField& rhoCells = tRho().primitiveField();
 
         Mutation::Mixture& mix = *mutationMixturePtr_;
 
-        forAll(TCells, celli)
+        forAll(QCells, celli)
         {
-            fillMassFractions(this->Y(), celli);
-            for (int s = 0; s < nMutationSpecies_; s++)
-            {
-                rhoS_[s] = rhoCells[celli]*yS_[s];
-            }
-            const double TTv[2] = {TCells[celli], TveCells[celli]};
-            mix.setState(rhoS_.data(), TTv, 1);
-            mix.netProductionRates(wS_.data());
+            setCellState(celli, rhoCells[celli]);
+            productionRates(mix, rhoS_, parkExponent_, wS_);
 
             double Q = 0.0;
             for (int s = 0; s < nMutationSpecies_; s++)
@@ -321,7 +317,6 @@ public:
     {
         const scalarField& eCells = this->he().primitiveField();
         const scalarField& eveCells = this->eve_.primitiveField();
-        // tengo vivo il tmp di rho (= psi*p) finche' serve
         const tmp<volScalarField> tRho = this->rho();
         const scalarField& rhoCells = tRho().primitiveField();
 
@@ -368,7 +363,7 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initMutation()
 {
     const dictionary& propertiesDict = this->properties();
 
-    // legge solo mixture, stateModel, thermodynamicDatabase e mechanism
+    // legge mixture, stateModel, thermodynamicDatabase, mechanism e parkExponent
     if (propertiesDict.found("highEnthalpyMutation"))
     {
         const dictionary& mutationDict =
@@ -386,6 +381,8 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initMutation()
             );
         mutationMechanism_ =
             mutationDict.lookupOrDefault<word>("mechanism", mutationMechanism_);
+        parkExponent_ =
+            mutationDict.lookupOrDefault<scalar>("parkExponent", parkExponent_);
     }
 
     Mutation::MixtureOptions opts(mutationMixtureName_);
@@ -415,11 +412,13 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initMutation()
         }
     }
 
+    // molecole che vibrano e loro tempi di rilassamento
+    vibrators_ = makeVibrators(*mutationMixturePtr_);
+
     // buffer di lavoro
     yS_.assign(nMutationSpecies_, 0.0);
     rhoS_.assign(nMutationSpecies_, 0.0);
     eS_.assign(2*nMutationSpecies_, 0.0);
-    Q_.assign(nMutationEnergyEqns_, 0.0);
     wS_.assign(nMutationSpecies_, 0.0);
 
     // entalpie di formazione (J/kg): hf/RT da Mutation++, a una T qualsiasi

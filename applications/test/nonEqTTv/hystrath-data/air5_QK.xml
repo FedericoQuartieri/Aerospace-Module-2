@@ -1,0 +1,102 @@
+<!--
+  le 19 reazioni QK (Quantum-Kinetic) dell'aria a 5 specie usate dal paper per
+  la fig. 9: 15 dissociazioni e 4 scambi, irreversibili, con le costanti di
+  Arrhenius di Scanlon et al., AIAA J. 53 (2015), tabella 1, prese dal file
+  hTCReactionsQK di hyStrath (vedi README.md in questa cartella)
+  unita': A in cm3/mol/s (nel file di hyStrath e' in m3/kmol/s: x 1000), Ta in K
+
+  Mutation++ non accetta in uno stesso meccanismo due reazioni irreversibili
+  una inversa dell'altra: qui ci sono le 15 dissociazioni e i due scambi
+  "diretti" (NO+O -> O2+N, N2+O -> NO+N); i due scambi inversi stanno in
+  air5_QK_back.xml e vanno sommati a questi
+-->
+<mechanism name="air5_QK">
+
+    <arrhenius_units A="mol,cm,s,K" E="kcal,mol,K" />
+
+    <!-- O2 + N = 2O + N: dissociazione -->
+    <reaction formula="O2+N=>2O+N">
+        <arrhenius A="6.624E+19" n="-1.0" T="59370.6" />
+    </reaction>
+
+    <!-- O2 + NO = 2O + NO: dissociazione -->
+    <reaction formula="O2+NO=>2O+NO">
+        <arrhenius A="6.624E+19" n="-1.0" T="59370.6" />
+    </reaction>
+
+    <!-- O2 + N2 = 2O + N2: dissociazione -->
+    <reaction formula="O2+N2=>2O+N2">
+        <arrhenius A="7.829E+19" n="-1.0" T="59370.6" />
+    </reaction>
+
+    <!-- O2 + O2 = 2O + O2: dissociazione -->
+    <reaction formula="O2+O2=>2O+O2">
+        <arrhenius A="3.21E+19" n="-1.0" T="59370.6" />
+    </reaction>
+
+    <!-- O2 + O = 2O + O: dissociazione -->
+    <reaction formula="O2+O=>2O+O">
+        <arrhenius A="9.033E+19" n="-1.05" T="59370.6" />
+    </reaction>
+
+    <!-- N2 + O = 2N + O: dissociazione -->
+    <reaction formula="N2+O=>2N+O">
+        <arrhenius A="2.409E+18" n="-0.54" T="113497.4" />
+    </reaction>
+
+    <!-- N2 + O2 = 2N + O2: dissociazione -->
+    <reaction formula="N2+O2=>2N+O2">
+        <arrhenius A="9.033E+18" n="-0.68" T="113497.4" />
+    </reaction>
+
+    <!-- N2 + NO = 2N + NO: dissociazione -->
+    <reaction formula="N2+NO=>2N+NO">
+        <arrhenius A="9.033E+18" n="-0.68" T="113497.4" />
+    </reaction>
+
+    <!-- N2 + N2 = 2N + N2: dissociazione -->
+    <reaction formula="N2+N2=>2N+N2">
+        <arrhenius A="2.469E+18" n="-0.62" T="113497.4" />
+    </reaction>
+
+    <!-- N2 + N = 2N + N: dissociazione -->
+    <reaction formula="N2+N=>2N+N">
+        <arrhenius A="6.022E+18" n="-0.68" T="113497.4" />
+    </reaction>
+
+    <!-- NO + N2 = N + O + N2: dissociazione -->
+    <reaction formula="NO+N2=>N+O+N2">
+        <arrhenius A="1.265E+20" n="-1.0" T="75544.2" />
+    </reaction>
+
+    <!-- NO + O2 = N + O + O2: dissociazione -->
+    <reaction formula="NO+O2=>N+O+O2">
+        <arrhenius A="1.204E+20" n="-1.0" T="75544.2" />
+    </reaction>
+
+    <!-- NO + NO = N + O + NO: dissociazione -->
+    <reaction formula="NO+NO=>N+O+NO">
+        <arrhenius A="6.022E+19" n="-1.0" T="75544.2" />
+    </reaction>
+
+    <!-- NO + O = N + 2O: dissociazione -->
+    <reaction formula="NO+O=>N+2O">
+        <arrhenius A="2.409E+20" n="-1.1" T="75544.2" />
+    </reaction>
+
+    <!-- NO + N = O + 2N: dissociazione -->
+    <reaction formula="NO+N=>O+2N">
+        <arrhenius A="2.409E+20" n="-1.1" T="75544.2" />
+    </reaction>
+
+    <!-- NO + O = O2 + N: scambio -->
+    <reaction formula="NO+O=>O2+N">
+        <arrhenius A="1.385E+11" n="0.5" T="19693.6" />
+    </reaction>
+
+    <!-- N2 + O = NO + N: scambio -->
+    <reaction formula="N2+O=>NO+N">
+        <arrhenius A="4.818E+13" n="0" T="37482.4" />
+    </reaction>
+
+</mechanism>

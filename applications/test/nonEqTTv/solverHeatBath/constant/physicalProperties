@@ -38,6 +38,8 @@ highEnthalpyMutation
     stateModel              ChemNonEqTTv;
     thermodynamicDatabase   RRHO;
     mechanism               $mechanism;
+    // esponente a della temperatura di Park T^a Tv^(1-a) per la dissociazione
+    parkExponent            $parkExponent;
 }
 
 defaultSpecie N2;

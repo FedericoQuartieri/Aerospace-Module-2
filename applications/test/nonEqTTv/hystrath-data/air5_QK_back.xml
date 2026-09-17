@@ -1,0 +1,20 @@
+<!--
+  i due scambi inversi del set QK (vedi air5_QK.xml e README.md): stessa
+  fonte e stesse unita'; Mutation++ li rifiuta insieme ai diretti, quindi
+  vivono in un secondo meccanismo le cui velocita' vengono sommate
+-->
+<mechanism name="air5_QK_back">
+
+    <arrhenius_units A="mol,cm,s,K" E="kcal,mol,K" />
+
+    <!-- O2 + N = NO + O: scambio -->
+    <reaction formula="O2+N=>NO+O">
+        <arrhenius A="2.409E+15" n="-0.39" T="1448.6" />
+    </reaction>
+
+    <!-- NO + N = N2 + O: scambio -->
+    <reaction formula="NO+N=>N2+O">
+        <arrhenius A="3.011E+14" n="-0.35" T="1448.6" />
+    </reaction>
+
+</mechanism>
