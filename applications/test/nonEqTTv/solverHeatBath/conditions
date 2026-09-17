@@ -1,0 +1,8 @@
+// condizioni iniziali per fig7, scritte da Allrun
+Ttr        30000;
+Tve        1000;
+p          41419.5;
+YN2        0.6667;
+YN         0.3333;
+endTime    1e-3;
+mechanism  N2_Park;

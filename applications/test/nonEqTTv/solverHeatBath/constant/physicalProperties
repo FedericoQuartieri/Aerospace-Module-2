@@ -20,38 +20,24 @@ thermoType
     type            highEnthalpyThermo;
     mixture         coefficientWilkeMulticomponentMixture;
     transport       sutherland;
-    thermo          rrho;
+    // janaf come nel tutorial shockTube: il thermo base non entra nella fisica,
+    // T e Tve le ricava Mutation++ nel bridge (rrho non e' istanziato nella libreria)
+    thermo          janaf;
     energy          sensibleInternalEnergy;
     equationOfState perfectGas;
     specie          specie;
 }
 
-// impostazioni di Mutation++, uguali a Test-N2
-// Same Mutation++ configuration as the standalone nonEqTTv tests:
-// 5-species air, two-temperature RRHO, no chemistry (V-T exchange only).
-// Run with MPP_DATA_DIRECTORY pointing to nonEqTTv/mutation-data.
+// impostazioni di Mutation++, uguali ai programmi 0D (la cartella dati la
+// sceglie Allrun con MPP_DATA_DIRECTORY); il meccanismo dipende dalla figura
+#include "$FOAM_CASE/conditions"
+
 highEnthalpyMutation
 {
     mixture                 air_5;
     stateModel              ChemNonEqTTv;
     thermodynamicDatabase   RRHO;
-    mechanism               none;
-    // ---- non lette dal codice: residui
-    minTemperature          200;
-    maxTemperature          50000;
-    minPressure             1;
-    forceThermalEquilibrium no;
-    // ---- fine residui
-}
-
-// blocco non letto dal codice: residuo (oggi tau e' scritto a mano nel bridge)
-// V-T relaxation: tauVT and the source terms are computed per-cell from
-// Mutation++; the solver solves a conservative equation for the
-// vibro-electronic energy eve.
-highEnthalpyRelaxation
-{
-    solveEve        yes;
-    coupleEnergy    yes;
+    mechanism               $mechanism;
 }
 
 defaultSpecie N2;

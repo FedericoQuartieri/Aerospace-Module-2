@@ -122,9 +122,16 @@ public:
 
         virtual const volScalarField& eve() const = 0;
 
-    // scambio V-T: implementato nel bridge (HighEnthalpyMulticomponentThermo.H)
-    // Source term for V-T energy exchange
-    virtual tmp<volScalarField> computeSourceVT(const label speciei) const = 0;
+    // sorgenti calcolate da Mutation++ nel bridge (HighEnthalpyMulticomponentThermo.H)
+
+    //- sorgente dell'energia vibro-elettronica: V-T piu' chimica (eq. 26) [W/m3]
+    virtual tmp<volScalarField> computeSourceVe() const = 0;
+
+    //- produzione chimica della specie i (eq. 27) [kg/m3/s]
+    virtual tmp<volScalarField> computeSourceY(const label speciei) const = 0;
+
+    //- calore di reazione per l'energia sensibile, -somma hf_s omega_s [W/m3]
+    virtual tmp<volScalarField> computeSourceE() const = 0;
 
     //- Destructor
     virtual ~highEnthalpyMulticomponentThermo();

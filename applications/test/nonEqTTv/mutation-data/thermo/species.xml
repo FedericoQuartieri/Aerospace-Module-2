@@ -1,70 +1,32 @@
+<!--
+  dati termodinamici delle 5 specie dell'aria, presi dal paper
+  Casseau et al., Aerospace 2016, 3, 34: tabella A1 (theta_v, entalpie di
+  formazione) e tabella A2 (livelli elettronici, convertiti da K a 1/cm
+  dividendo per la seconda costante di radiazione hc/k = 1.438777 cm K)
+-->
 <specieslist>
-    <!-- Nitrogen -->
     <species name="N">
         <stoichiometry> N: 1 </stoichiometry>
         <thermodynamics type="RRHO">
             <electronic_levels units="1/cm">
                 <level degeneracy="4" energy="0.0" />
-                <!--
-                <level degeneracy="10" energy="27664.70" />
-                <level degeneracy="6" energy="41493.09" />
-                -->
+                <level degeneracy="10" energy="19227.9" />
+                <level degeneracy="6" energy="28839.1" />
             </electronic_levels>
-            <formation_enthalpy T="298 K" P="1 atm" units="J/mol"> 472440 </formation_enthalpy>
+            <formation_enthalpy T="298 K" P="1 atm" units="J/mol"> 472025.8 </formation_enthalpy>
         </thermodynamics>
     </species>
-
-    <!-- Oxygen -->
     <species name="O">
         <stoichiometry> O: 1 </stoichiometry>
         <thermodynamics type="RRHO">
             <electronic_levels units="1/cm">
                 <level degeneracy="9" energy="0.0" />
-                <level degeneracy="5" energy="15889.0" />
-                <level degeneracy="1" energy="33794.0" />
-                <level degeneracy="5" energy="73768.0" />
-                <level degeneracy="3" energy="76792.0" />
-                <level degeneracy="15" energy="86624.0" />
-                <level degeneracy="9" energy="88641.0" />
-                <level degeneracy="5" energy="95480.0" />
-                <level degeneracy="3" energy="96222.0" />
-                <level degeneracy="25" energy="97513.0" />
-                <level degeneracy="15" energy="97593.0" />
-                <level degeneracy="15" energy="99207.0" />
-                <level degeneracy="9" energy="99771.0" />
-                <level degeneracy="15" energy="101223.0" />
-                <level degeneracy="5" energy="102191.0" />
-                <level degeneracy="3" energy="102513.0" />
-                <level degeneracy="5" energy="102755.0" />
-                <level degeneracy="25" energy="102917.0" />
-                <level degeneracy="15" energy="102997.0" />
-                <level degeneracy="56" energy="103078.0" />
-                <level degeneracy="15" energy="103723.0" />
-                <level degeneracy="9" energy="103965.0" />
-                <level degeneracy="5" energy="105094.0" />
-                <level degeneracy="3" energy="105256.0" />
-                <level degeneracy="40" energy="105498.0" />
-                <level degeneracy="56" energy="105554.0" />
-                <level degeneracy="15" energy="105901.0" />
-                <level degeneracy="9" energy="105982.0" />
-                <level degeneracy="5" energy="106627.0" />
-                <level degeneracy="3" energy="106708.0" />
-                <level degeneracy="168" energy="106869.0" />
-                <level degeneracy="5" energy="107514.0" />
-                <level degeneracy="3" energy="107595.0" />
-                <level degeneracy="96" energy="107700.0" />
-                <level degeneracy="8" energy="108175.0" />
-                <level degeneracy="40" energy="108224.0" />
-                <level degeneracy="8" energy="108555.0" />
-                <level degeneracy="40" energy="108595.0" />
-                <level degeneracy="3" energy="108829.0" />
-                <level degeneracy="40" energy="108853.0" />
+                <level degeneracy="5" energy="15867.8" />
+                <level degeneracy="1" energy="33792.5" />
             </electronic_levels>
-            <formation_enthalpy T="298 K" P="1 atm" units="J/mol"> 249229 </formation_enthalpy>
+            <formation_enthalpy T="298 K" P="1 atm" units="J/mol"> 249590.6 </formation_enthalpy>
         </thermodynamics>
     </species>
-
-    <!-- Nitric Oxide -->
     <species name="NO">
         <stoichiometry> N: 1, O: 1 </stoichiometry>
         <thermodynamics type="RRHO">
@@ -75,55 +37,51 @@
             <electronic_levels units="1/cm">
                 <level degeneracy="4" energy="0.0" />
                 <level degeneracy="8" energy="38000.0" />
+                <level degeneracy="2" energy="43906.3" />
+                <level degeneracy="4" energy="45868.5" />
+                <level degeneracy="4" energy="47999.9" />
+                <level degeneracy="4" energy="48999.9" />
+                <level degeneracy="4" energy="52065.4" />
+                <level degeneracy="2" energy="53023.3" />
+                <level degeneracy="4" energy="60302.5" />
+                <level degeneracy="2" energy="60568.3" />
+                <level degeneracy="4" energy="61761.3" />
+                <level degeneracy="4" energy="62426.3" />
+                <level degeneracy="2" energy="62472.8" />
+                <level degeneracy="2" energy="62849.9" />
+                <level degeneracy="2" energy="62999.9" />
+                <level degeneracy="4" energy="63329.9" />
             </electronic_levels>
-            <formation_enthalpy T="298 K" P="1 atm" units="J/mol"> 91089 </formation_enthalpy>
+            <formation_enthalpy T="298 K" P="1 atm" units="J/mol"> 91218.5 </formation_enthalpy>
         </thermodynamics>
     </species>
-
-    <!-- Nitrogen diatomic -->
-	<species name="N2">
-		<stoichiometry>
-			N: 2
-		</stoichiometry>
-		<thermodynamics type="RRHO">
-			<linear>
-				yes
-			</linear>
-			<rotational_temperature units="K">
-				2.886
-			</rotational_temperature>
-			<steric_factor>
-				2
-			</steric_factor>
-			<vibrational_temperatures units="K">
-                <!-- (electronic case Fig. 4, from Mutation defaults) 3408.464 -->
-                <!-- (non-electronic case Fig. 3, from paper appendix) 3371.0 -->
-                3408.464
-			</vibrational_temperatures>
-			<electronic_levels units="1/cm">
-				<level degeneracy="1" energy="0.0" />
-                <!-- (electronic case Fig. 4, from Mutation defaults) -->
-				<level degeneracy="3" energy="50203.5" />
-				<level degeneracy="6" energy="59619.2" />
-				<level degeneracy="6" energy="59808.0" />
-				<level degeneracy="3" energy="66272.5" />
-				<level degeneracy="1" energy="68152.7" />
-				<level degeneracy="2" energy="69283.0" />
-				<level degeneracy="2" energy="72097.6" />
-				<level degeneracy="5" energy="77600.0" />
-				<level degeneracy="1" energy="85200.0" />
-				<level degeneracy="6" energy="86800.0" />
-				<level degeneracy="6" energy="89136.7" />
-				<level degeneracy="10" energy="93000.0" />
-				<level degeneracy="6" energy="97603.0" />
-				<level degeneracy="6" energy="104600.0" />
-			</electronic_levels>
-			<formation_enthalpy T="298 K" P="1 atm" units="J/mol">
-				0.0
-			</formation_enthalpy>
-		</thermodynamics>
-	</species>
-     <!-- Oxygen diatomic -->
+    <species name="N2">
+        <stoichiometry> N: 2 </stoichiometry>
+        <thermodynamics type="RRHO">
+            <linear> yes </linear>
+            <rotational_temperature units="K"> 2.886 </rotational_temperature>
+            <steric_factor> 2 </steric_factor>
+            <vibrational_temperatures units="K"> 3371.0 </vibrational_temperatures>
+            <electronic_levels units="1/cm">
+                <level degeneracy="1" energy="0.0" />
+                <level degeneracy="3" energy="50203.5" />
+                <level degeneracy="6" energy="59619.1" />
+                <level degeneracy="6" energy="59807.9" />
+                <level degeneracy="3" energy="66272.4" />
+                <level degeneracy="1" energy="68152.6" />
+                <level degeneracy="2" energy="69282.9" />
+                <level degeneracy="2" energy="72907.5" />
+                <level degeneracy="5" energy="77599.9" />
+                <level degeneracy="1" energy="85199.9" />
+                <level degeneracy="6" energy="86799.9" />
+                <level degeneracy="6" energy="89136.5" />
+                <level degeneracy="10" energy="92999.9" />
+                <level degeneracy="6" energy="97603.5" />
+                <level degeneracy="6" energy="104599.9" />
+            </electronic_levels>
+            <formation_enthalpy T="298 K" P="1 atm" units="J/mol"> 0.0 </formation_enthalpy>
+        </thermodynamics>
+    </species>
     <species name="O2">
         <stoichiometry> O: 2 </stoichiometry>
         <thermodynamics type="RRHO">
@@ -137,8 +95,8 @@
                 <level degeneracy="1" energy="13195.1" />
                 <level degeneracy="1" energy="33055.7" />
                 <level degeneracy="6" energy="34690.9" />
-                <level degeneracy="3" energy="35393.1" />
-                <level degeneracy="3" energy="49792.1" />
+                <level degeneracy="3" energy="35393.0" />
+                <level degeneracy="3" energy="49972.0" />
             </electronic_levels>
             <formation_enthalpy T="298 K" P="1 atm" units="J/mol"> 0.0 </formation_enthalpy>
         </thermodynamics>

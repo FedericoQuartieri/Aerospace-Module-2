@@ -2,28 +2,52 @@
 
 cd ${0%/*} || exit 1
 
-# test 3a del paper: stesso heat bath fatto 2 volte e poi confrontato
+# heat bath in una sola cella con il solver shockThermo, per una figura del
+# paper: ./Allrun fig3b   (fig3a, fig3b, fig4-noEl, fig4-el, fig5, fig7)
+# le condizioni iniziali finiscono nel file "conditions", incluso dai file
+# del caso; il risultato va in ../output/<figura>-solver.csv
 
-# Use the same Mutation++ data as the standalone nonEqTTv tests
-export MPP_DATA_DIRECTORY="$(cd .. && pwd)/mutation-data"
+fig=${1:-fig3a}
 
-# ---- 1) riferimento: Test-N2 (solo Mutation++), curve salvate in reference.csv
-# 1. Reference: standalone Mutation++ heat bath at (T_tr, T_ve) = (10000, 1000)
-(
-    cd .. || exit 1
-    Test-N2 10000 1000 || exit 1
-    cp output/results-N2.csv solverHeatBath/reference.csv
-) || exit 1
-# ---- fine riferimento
+# ---- condizioni iniziali del paper, figura per figura
+# p e frazioni in massa per N2 + N con 5e22 molecole/m3 ciascuna a 30000 K:
+# p = n k T = 1e23 * 1.380649e-23 * 30000 = 41419.5 Pa, Y_N2 = 2/3, Y_N = 1/3
+case $fig in
+    fig3a)     Ttr=10000; Tve=1000;  p=101325;  YN2=1;      YN=0;      endTime=3e-5; data=mutation-data-noElectronic; mechanism=none ;;
+    fig3b)     Ttr=3000;  Tve=10000; p=101325;  YN2=1;      YN=0;      endTime=1e-4; data=mutation-data-noElectronic; mechanism=none ;;
+    fig4-noEl) Ttr=30000; Tve=1000;  p=101325;  YN2=1;      YN=0;      endTime=1e-5; data=mutation-data-noElectronic; mechanism=none ;;
+    fig4-el)   Ttr=30000; Tve=1000;  p=101325;  YN2=1;      YN=0;      endTime=1e-5; data=mutation-data;              mechanism=none ;;
+    fig5)      Ttr=30000; Tve=1000;  p=41419.5; YN2=0.6667; YN=0.3333; endTime=1e-5; data=mutation-data-noElectronic; mechanism=none ;;
+    fig7)      Ttr=30000; Tve=1000;  p=41419.5; YN2=0.6667; YN=0.3333; endTime=1e-3; data=mutation-data-noElectronic; mechanism=N2_Park ;;
+    *) echo "figura sconosciuta: $fig"; exit 1 ;;
+esac
+# ---- fine condizioni iniziali
 
-# ---- 2) stesso caso nel solver: mesh di una cella, poi foamRun
-# 2. Solver heat bath (single cell, zero velocity)
+# stessi dati Mutation++ del programma 0D
+export MPP_DATA_DIRECTORY="$(cd .. && pwd)/$data"
+
+# Mutation++ per le molecole assenti (O2, NO) calcola 1/(n*X) con X = 0: un
+# infinito innocuo (viene moltiplicato per Y = 0), ma OpenFOAM lo intercetta
+# come errore in virgola mobile; qui il trap va disattivato
+unset FOAM_SIGFPE
+
+cat > conditions <<EOF
+// condizioni iniziali per $fig, scritte da Allrun
+Ttr        $Ttr;
+Tve        $Tve;
+p          $p;
+YN2        $YN2;
+YN         $YN;
+endTime    $endTime;
+mechanism  $mechanism;
+EOF
+
+./Allclean keepConditions
+
 blockMesh > log.blockMesh 2>&1 || { cat log.blockMesh; exit 1; }
 foamRun > log.foamRun 2>&1 || { tail -30 log.foamRun; exit 1; }
-# ---- fine solver
 
-# 3) confronto delle due curve: errori e grafico
-# 3. Compare the two temperature histories
-python3 compare-heatbath.py
+# dai probe al csv usato da compare.py
+python3 probes-to-csv.py $fig
 
 #------------------------------------------------------------------------------

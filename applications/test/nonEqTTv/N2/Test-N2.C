@@ -1,145 +1,101 @@
-#include "mutation++.h"
+// heat bath 0D di N2 puro: rilassamento V-T con Mutation++ (fig. 3a, 3b, 4 del paper)
+//
+// uso: Test-N2 <T_tr> <T_ve> <t_fine> <file_csv>
+//   fig 3a: Test-N2 10000  1000 3e-5 output/fig3a.csv
+//   fig 3b: Test-N2  3000 10000 1e-4 output/fig3b.csv
+//   fig 4 : Test-N2 30000  1000 1e-5 output/fig4-noEl.csv   (o fig4-el.csv)
+//
+// con o senza energia elettronica lo decide la cartella dati di Mutation++
+// (variabile MPP_DATA_DIRECTORY: mutation-data oppure mutation-data-noElectronic)
 
-#include "argList.H"
-#include "Time.H"
-#include "IOstreams.H"
-#include "mathematicalConstants.H"
-#include "OFstream.H"
+#include "mutation++.h"
+#include "heatBath.H"
 
 #include <cstdlib>
-
-#ifdef Log
-#undef Log
-#endif
-
-using namespace Foam;
+#include <fstream>
+#include <iostream>
+#include <vector>
 
 int main(int argc, char *argv[])
 {
-    // WARNING: Set MPP_DATA_DIRECTORY env to ./local_data
-    // local_data/thermo/species.xml defines custom energy levels
-    // for the species, as opposed to Mutation default ones
-    //
-    // NOTE: The electronic data (energy levels) shown in the appendix
-    // of the paper are not able to reproduce exactly their results
-    // for the electronic case (Fig. 4, with or without E_el), while
-    // Mutation default ones can.
-    //
-    // For the non-electronic case (Fig. 3), the closest we can get to their
-    // result is to remove all energy levels and set the vibrational
-    // temperature to 3371.0, like shown in their appendix. Lowering the
-    // vibrational temperature can lead to the same exact result, but
-    // there's definitely something weird happening with these constants.
+    if (argc != 5)
+    {
+        std::cerr << "uso: Test-N2 <T_tr> <T_ve> <t_fine> <file_csv>" << std::endl;
+        return 1;
+    }
+    const double T_tr0 = std::atof(argv[1]);
+    const double T_ve0 = std::atof(argv[2]);
+    const double t_end = std::atof(argv[3]);
+    const char* csvName = argv[4];
 
-    // NOTE: Electron energy (related to the number of free
-    // electrons in the mixture) is not modeled, nor present
-    // for N, N2-N and N2-O2
-
-    // si usa la mixture di aria a 5 specie perche' contiene N2,
-    // che e' l'unica specie presente nella simulazione
+    // miscela di aria a 5 specie (contiene N2), modello a due temperature,
+    // energie RRHO, nessuna reazione chimica
     Mutation::MixtureOptions opts("air_5");
-
-    // usiamo il modello a due temperature ed energie RRHO
     opts.setStateModel("ChemNonEqTTv");
     opts.setThermodynamicDatabase("RRHO");
-
-    //nessuna rezione chimica, solo VT
-    opts.setMechanism("none"); // N2 already has only VT exchange
-
+    opts.setMechanism("none");
     Mutation::Mixture mix(opts);
 
-    // ---- stato iniziale: solo N2, 1 atm, T_tr e T_ve
-    const int N2_idx = mix.speciesIndex("N2");
+    const int ns = mix.nSpecies();
+    const int iN2 = mix.speciesIndex("N2");
 
-    // The mixture is composed of only N2
-    std::vector<double> Y_per_specie(mix.nSpecies(), 0.0);
-    Y_per_specie[N2_idx] = 1.0;
-    // Pressure of the mixture in Pascal
-    const double P = Mutation::ONEATM;
-     // Trans-rotational temperature
-     //Il valore scritto è 30 000 K, ma verrà sostituito da Allrun
-    double T_tr = 30000.0; // 10000.0 for non-electronic case
-    // Vibro-electronic temperature
-    double T_ve = 1000.0;
+    // ---- stato iniziale: solo N2 a 1 atm, T_tr e T_ve date
+    std::vector<double> Y(ns, 0.0);
+    Y[iN2] = 1.0;
+    const double P_T_Tv[3] = {Mutation::ONEATM, T_tr0, T_ve0};
+    mix.setState(Y.data(), P_T_Tv, 2);
 
-    // Allrun passa "10000 1000": le temperature del test 3a
-    // Optional overrides: Test-N2 <T_tr> <T_ve>
-    if (argc > 2)
-    {
-        T_tr = std::atof(argv[1]);
-        T_ve = std::atof(argv[2]);
-    }
+    // densita' parziali: restano costanti (scatola chiusa, niente chimica)
+    std::vector<double> rho_s(ns);
+    mix.densities(rho_s.data());
 
-    // lo stato va a Mutation++, che calcola la densita' del gas
-    const std::vector<double> P_Ttr_Tve = { Mutation::ONEATM, T_tr, T_ve };
-    mix.setState(Y_per_specie.data(), P_Ttr_Tve.data(), 2);
-
-    std::vector<double> rho_per_specie(mix.nSpecies());
-    mix.densities(rho_per_specie.data());
+    // energie conservate per unita' di volume (eq. 23)
+    const double E = totalEnergy(mix, rho_s);
+    double Eve = veEnergy(mix, rho_s);
     // ---- fine stato iniziale
 
-    // passo di tempo 1 ns come il paper, fine a 20 micro-secondi
+    // temperatura finale attesa: il paper non la da' sempre, la ricavo
+    // dalla conservazione dell'energia
+    const double T_eq = equilibriumTemperature(mix, rho_s, E);
+    const double temps0[2] = {T_tr0, T_ve0};
+    mix.setState(rho_s.data(), temps0, 1);
+
+    std::ofstream csv(csvName);
+    csv << "# T_eq = " << T_eq << " K (conservazione dell'energia)\n";
+    csv << "t,Ttr,Tv\n";
+    csv << "0," << mix.T() << "," << mix.Tv() << "\n";
+
+    // ---- ciclo nel tempo: passo di 1 ns come il paper
     const double dt = 1.0e-9;
-    const double end_time = 2.0e-5;
     double t = 0.0;
     int step = 0;
+    std::vector<double> Q(mix.nEnergyEqns());
 
-    // For each step:
-    // Compute Q_N2,VT                  [eq. 8 from paper]
-    //   compute e_ve,N2(T_tr)          [eq. 5 or 5+7?]
-    //   compute e_ve,N2(T_ve,N2)       [eq. 5 or 5+7?]
-    //   compute tau_N2,VT              [eq. 9]
-    //
-    // Compute cv_tr and cv_ve
-    // Update T_tr
-    // Update T_ve
-    //
-    // Mutationmpp can compute Q_VT and Cvs for us :)
+    while (t < t_end)
+    {
+        // Q[0] = Q_VT: energia che passa dal serbatoio traslazionale a quello
+        // vibrazionale, calcolata da Mutation++ (Landau-Teller, eq. 8, con
+        // Millikan-White e correzione di Park, eq. 9-17)
+        mix.energyTransferSource(Q.data());
 
-    // file dei risultati: t, T_tr, T_ve, ovvero le temperature calcolate da Mutation++ e aggiornate nel ciclo
-    OFstream out("output/results-N2.csv");
-    out << "t,T_tr,T_ve" << endl;
-    out << "0," << mix.T() << "," << mix.Tv() << endl;
-
-    // ---- ciclo nel tempo (qui si aggiornano le temperature, il solver invece le energie)
-    while (t < end_time) {
-        // Mutation++ calcola lo scambio V-T Q, tau compreso (eq. 8-17)
-        // Computing the source term of the energy equation
-        std::vector<double> Q_sources(mix.nEnergyEqns());
-        mix.energyTransferSource(Q_sources.data());
-        // Q_sources[0] holds Q_ve = sum_m(Q_m,VT + Q_m,VV + Q_m,CV + ..)
-
-        // The mixture is N2, hence Q_ve = Q_N2,VT since there
-        // are no other vibrationally excited molecules
-
-        // calori specifici dei due serbatoi
-        // Computing specific heat capacities
-        std::vector<double> cv_per_specie(mix.nSpecies() * mix.nEnergyEqns());
-        mix.getCvsMass(cv_per_specie.data());
-
-        // ---- aggiorna le temperature: T_ve sale, T_tr scende della stessa energia
-        // Updating temperatures as dT/dt = Q_VT / (rho cv)
-        // Trans-rotational source term is -Q_VT since total Q = 0
-        T_tr += -Q_sources[0] * dt / (cv_per_specie[N2_idx] *
-                                      rho_per_specie[N2_idx]);
-
-        T_ve += Q_sources[0] * dt / (rho_per_specie[N2_idx] *
-                                     cv_per_specie[mix.nSpecies() + N2_idx]);
-        // ---- fine aggiornamento
-
-        // temperature nuove a Mutation++, per il passo dopo
-        const std::vector<double> temps = { T_tr, T_ve };
-        mix.setState(rho_per_specie.data(), temps.data(), 1);
-
+        // eq. 22: cambia solo E_ve, l'energia totale E si conserva
+        Eve += Q[0] * dt;
         t += dt;
         step++;
 
-        // una riga del csv
-        out << t << "," << mix.T() << "," << mix.Tv() << endl;
+        // nuove temperature dalle energie (Mutation++ inverte E ed E_ve)
+        const double energies[2] = {E, Eve};
+        mix.setState(rho_s.data(), energies, 0);
+
+        if (step % 10 == 0)
+        {
+            csv << t << "," << mix.T() << "," << mix.Tv() << "\n";
+        }
     }
     // ---- fine ciclo nel tempo
 
-    Info << "Output saved to output/results-N2.csv" << endl;
+    std::cout << csvName << ": T_tr = " << mix.T() << " K, T_ve = " << mix.Tv()
+              << " K a t = " << t << " s; T_eq attesa = " << T_eq << " K" << std::endl;
 
     return 0;
 }
