@@ -20,9 +20,9 @@ thermoType
     type            highEnthalpyThermo;
     mixture         coefficientWilkeMulticomponentMixture;
     transport       sutherland;
-    // janaf come nel tutorial shockTube: il thermo base non entra nella fisica,
-    // T e Tve le ricava Mutation++ nel bridge (rrho non e' istanziato nella libreria)
-    thermo          janaf;
+    // rrho e' il thermo del template del corso (copia di janaf); il thermo base
+    // non entra nella fisica: T e Tve le ricava Mutation++ nel bridge
+    thermo          rrho;
     energy          sensibleInternalEnergy;
     equationOfState perfectGas;
     specie          specie;
