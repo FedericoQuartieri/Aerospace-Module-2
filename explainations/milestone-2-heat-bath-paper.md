@@ -154,8 +154,12 @@ una inversa dell'altra, quindi i due scambi inversi stanno in un secondo file e
   non è nel paper, si è preso il valore di hy2Foam (2.667e-19 m²), citato nel
   commento. L'effetto del V-V è quello atteso: Tv,O2 e Tv,N2 si avvicinano e il
   rilassamento è più rapido.
-- Caso solver: thermo base `janaf` (il caso chiedeva `rrho`, che la libreria non
-  istanzia); `T` riletta dal file perché janaf la limitava a 20000 K; tolto
+- Caso solver: thermo base `rrho`, quello del template del corso (la libreria lo
+  istanzia accanto ai thermo del core in `highEnthalpyMulticomponentThermos.C`;
+  `rrhoThermo` è una copia di `janafThermo`, e con `janaf` i numeri sono
+  identici). La termodinamica a due temperature non viene dai polinomi di
+  OpenFOAM ma dal ponte con Mutation++: il thermo base serve solo a costruire i
+  campi. `T` riletta dal file perché il thermo base la limitava a 20000 K; tolto
   `limitTemperature` che tagliava l'energia sopra 20000 K.
 - Nessun campo `e`, `eve`, `T` viene più toccato dal thermo base: tutto passa da
   Mutation++ (`setState` con energie, `vars = 0`).
@@ -171,7 +175,7 @@ una inversa dell'altra, quindi i due scambi inversi stanno in un secondo file e
   incertezza di lettura.
 - Il solver risolve `eve` senza trasporto: va bene per l'heat bath, non ancora per
   un caso con flusso.
-- Il thermo base janaf emette avvisi sopra 20000 K (innocui: T e psi le fa
+- Il thermo base rrho emette avvisi sopra 20000 K (innocui: T e psi le fa
   Mutation++).
 - Un milione di passi nel solver a cella singola costano circa 28 minuti (contro
   2 secondi del programma 0D): l'overhead è di OpenFOAM, non di Mutation++.

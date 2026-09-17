@@ -42,8 +42,8 @@ energia vibro-elettronica; Mutation++ ricava da queste le due temperature.
 | `eve_` | Energia vibro-elettronica per unità di massa (la variabile conservata) | J/kg |
 
 Il campo `e` (energia sensibile, `he()` del thermo base) è la seconda variabile
-conservata; il thermo base (janaf) serve solo a OpenFOAM per costruire i campi, la
-sua polinomiale non entra nella fisica.
+conservata; il thermo base (`rrho`, quello del template del corso, copia di janaf)
+serve solo a OpenFOAM per costruire i campi, la sua polinomiale non entra nella fisica.
 
 **Costruttore**: rilegge `T` dal file del caso (il thermo base l'aveva ricalcolata
 dall'energia limitandola a 20000 K, il suo intervallo di validità), poi per ogni
@@ -136,7 +136,7 @@ programma 0D coincidono entro 0.03-0.2 % su tutte le curve, chimica compresa.
 
 - Il solver risolve `eve` senza il termine di trasporto `div(phi, eve)`: va aggiunto
   prima di usare il modello in un caso con flusso (tubo d'urto, milestone 4).
-- Il thermo base (janaf) è valido fino a 20000 K: le sue funzioni (`mu`, `Cp`, ...)
+- Il thermo base (rrho) è valido fino a 20000 K: le sue funzioni (`mu`, `Cp`, ...)
   vengono limitate sopra quella temperatura e OpenFOAM lo segnala con un avviso; le
   temperature e `psi` non ne risentono perché le calcola Mutation++.
 - Le proprietà di trasporto restano quelle del thermo base: i casi validati sono
