@@ -23,7 +23,7 @@ Serve una installazione TeX Live con `latexmk` e `bibtex`.
 | `sezioni/02-lavoro.tex` | il lavoro svolto |
 | `sezioni/03-risultati.tex` | verifica e risultati |
 | `sezioni/04-discussione.tex` | discussione |
-| `sezioni/05-limiti.tex` | limiti e sviluppi futuri |
+| `sezioni/05-conclusioni.tex` | conclusioni e sviluppi futuri |
 | `bibliografia.bib` | riferimenti |
 
 Le sezioni si aggiungono una alla volta: ogni nuova sezione e' un file in
@@ -31,8 +31,13 @@ Le sezioni si aggiungono una alla volta: ogni nuova sezione e' un file in
 
 ## Figure
 
-Le figure dei risultati **non** sono duplicate qui: `\graphicspath` in
-`main.tex` punta direttamente a `../applications/test/nonEqTTv/output/` e a
-`../explainations/dipendenze/`, cosi' il pdf usa sempre l'ultima versione
-prodotta da `Allrun`/`compare.py`. La cartella `immagini/` e' per le figure
-scritte apposta per la relazione.
+I grafici della sezione 3 sono in `immagini/` e si rigenerano con
+
+```sh
+python3 immagini/genera-grafici.py
+```
+
+Lo script legge i risultati del progetto (`../applications/test/nonEqTTv/output/`)
+e le curve estratte dal paper (`../applications/test/nonEqTTv/paper-data/`):
+sono le stesse curve dei grafici di `compare.py`, ma senza titolo, con la
+legenda in italiano e con nomi che non richiamano la numerazione del paper.
