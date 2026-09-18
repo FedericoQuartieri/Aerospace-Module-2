@@ -1,0 +1,58 @@
+\section{Introduzione}
+\label{sec:introduzione}
+
+\subsection{Il non-equilibrio termochimico nel rientro atmosferico}
+\label{sec:contesto}
+
+Un veicolo che rientra nell'atmosfera terrestre a velocità ipersonica genera
+davanti a sé un urto forte, attraverso il quale gran parte dell'energia cinetica
+del flusso si converte in energia interna del gas. Dietro l'urto la temperatura
+sale a diverse decine di migliaia di kelvin e l'aria smette di comportarsi come
+una miscela di gas biatomici ideali: i modi vibrazionali si eccitano, i livelli
+elettronici si popolano, le molecole si dissociano e, più a valle, si
+ionizzano. La previsione dei carichi termici sul sistema di protezione termica,
+che è la ragione per cui questi flussi si calcolano, dipende in modo diretto
+dalla capacità di descrivere tali processi.
+
+La difficoltà sta nel fatto che i modi interni non raggiungono l'equilibrio
+alla stessa velocità. Traslazione e rotazione si equilibrano in pochi urti
+molecolari, la vibrazione ne richiede molti di più: nel tempo in cui una
+particella attraversa la regione di shock i primi due modi hanno già raggiunto
+una distribuzione di equilibrio e il terzo no. Descrivere il gas con una sola
+temperatura, in quelle condizioni, è una approssimazione grossolana. Il modello
+a due temperature di Park~\cite{park1990,park1993}, diventato il riferimento
+nella comunità ipersonica, tiene perciò distinte una temperatura
+traslazionale-rotazionale e una temperatura vibro-elettronica, e ne governa lo
+scambio di energia attraverso un tempo di rilassamento ricavato da correlazioni
+sperimentali. A questo si somma un secondo accoppiamento: le reazioni chimiche
+che avvengono dietro l'urto, a cominciare dalla dissociazione, non dipendono
+dalla sola temperatura traslazionale, perché una molecola già eccitata
+vibrazionalmente si dissocia più facilmente, e a loro volta sottraggono o
+restituiscono energia al serbatoio vibrazionale a seconda delle molecole che
+distruggono e creano. Non-equilibrio termico e non-equilibrio chimico sono due
+facce dello stesso problema e vanno trattati insieme.
+
+Un solver che li tratti insieme è, di conseguenza, difficile da verificare: in
+un caso di volo i meccanismi agiscono tutti contemporaneamente e uno scarto
+rispetto a un riferimento non dice quale modello lo abbia prodotto. La via
+consolidata è isolarli in un bagno termico adiabatico zero-dimensionale, in cui
+non c'è trasporto, la composizione e le temperature sono uniformi e ogni
+meccanismo può essere acceso da solo a partire da uno stato iniziale di
+non-equilibrio noto. Su questa impostazione si fonda il lavoro di riferimento di questa
+relazione.
+
+\subsection{Il lavoro di riferimento}
+\label{sec:riferimento}
+
+Il termine di paragone è il lavoro di Casseau \textit{et al.}~\cite{casseau2016},
+che presenta \hyfoam, un solver per flussi ipersonici reagenti sviluppato
+all'Università di Strathclyde a partire dal solver density-based di
+OpenFOAM~\cite{weller1998}: distingue la temperatura traslazionale-rotazionale
+dalle temperature vibro-elettroniche delle singole molecole, e modella gli
+scambi V--T e V--V e l'accoppiamento fra chimica e vibrazione. La prima parte
+dell'articolo, quella qui ripresa, è dedicata per intero alla verifica del
+solver su una successione di bagni termici di complessità crescente, che va dal
+rilassamento vibrazionale dell'azoto puro al rilassamento termochimico
+dell'aria a cinque specie, confrontati con il solver CFD LeMANS e con i codici
+DSMC \texttt{dsmcFoam} e MONACO. Sono quei casi, e quelle curve, a costituire
+il riferimento quantitativo del lavoro descritto nel seguito.
