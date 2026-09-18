@@ -1,0 +1,155 @@
+%-----------------------------------------------------------------------------
+%  Aerospace-Module-2 - Relazione di progetto
+%
+%  Compilazione:  make        (oppure: latexmk -pdf main.tex)
+%  Le figure dei risultati non sono duplicate qui dentro: \graphicspath punta
+%  direttamente alle cartelle del progetto che le generano.
+%-----------------------------------------------------------------------------
+\documentclass[11pt,a4paper]{article}
+
+% --- lingua e font ---------------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[italian]{babel}
+\usepackage{microtype}
+\usepackage{csquotes}
+
+% --- pagina ----------------------------------------------------------------
+\usepackage[margin=2.7cm]{geometry}
+\usepackage{fancyhdr}
+
+% --- matematica, tabelle, figure -------------------------------------------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+% --- codice ----------------------------------------------------------------
+\usepackage{listings}
+\usepackage{upquote}
+
+% --- bibliografia ----------------------------------------------------------
+\usepackage[numbers,sort&compress]{natbib}
+
+% --- collegamenti (per ultimo) ---------------------------------------------
+\usepackage[hidelinks]{hyperref}
+
+%-----------------------------------------------------------------------------
+%  Impostazioni
+%-----------------------------------------------------------------------------
+
+% figure prese dove il progetto le produce, senza copiarle nel report
+\graphicspath{%
+  {immagini/}%
+  {../applications/test/nonEqTTv/output/}%
+  {../explainations/dipendenze/}%
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Modello a due temperature in OpenFOAM-13 con Mutation++}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\definecolor{codebg}{gray}{0.96}
+\definecolor{codekw}{rgb}{0.15,0.30,0.60}
+\definecolor{codecm}{rgb}{0.35,0.50,0.35}
+
+\lstdefinestyle{progetto}{%
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{codekw}\bfseries,
+  commentstyle=\color{codecm}\itshape,
+  breaklines=true,
+  showstringspaces=false,
+  columns=fullflexible,
+  frame=single,
+  framerule=0pt,
+  xleftmargin=0.6em,
+  framexleftmargin=0.6em,
+  captionpos=b,
+}
+\lstset{style=progetto}
+
+% notazione ricorrente
+\newcommand{\Ttr}{T_{tr}}
+\newcommand{\Tve}{T_{ve}}
+\newcommand{\eve}{e_{ve}}
+\newcommand{\hyfoam}{\texttt{hy2Foam}}
+\newcommand{\mpp}{Mutation\texttt{++}}
+\newcommand{\shockThermo}{\texttt{shockThermo}}
+\newcommand{\file}[1]{\texttt{#1}}
+
+% segnaposto per le sezioni ancora da scrivere
+\newcommand{\daScrivere}{%
+  \par\medskip\noindent
+  \textcolor{gray}{\itshape [sezione da scrivere]}\par\medskip
+}
+
+%-----------------------------------------------------------------------------
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+
+{\Large Politecnico di Milano\par}
+{\large Dipartimento di Scienze e Tecnologie Aerospaziali\par}
+
+\vfill
+
+{\LARGE\bfseries Un modello a due temperature\\[0.2em]
+per flussi ipersonici reagenti\\[0.4em]
+in OpenFOAM-13 e \mpp\par}
+
+\vspace{1.2cm}
+
+{\large Riproduzione degli heat bath zero-dimensionali di\\
+Casseau \textit{et al.}, \textit{Aerospace} \textbf{3} (2016) 34\par}
+
+\vfill
+
+{\large Daniele Salvi\par}
+
+\vspace{0.8cm}
+
+{\large \today\par}
+
+\vspace*{2cm}
+\end{titlepage}
+
+\input{sezioni/00-sommario}
+
+\tableofcontents
+\clearpage
+
+\input{sezioni/01-introduzione}
+\clearpage
+
+\input{sezioni/02-modello}
+\clearpage
+
+\input{sezioni/03-implementazione}
+\clearpage
+
+\input{sezioni/04-validazione}
+\clearpage
+
+\input{sezioni/05-discussione}
+\clearpage
+
+\input{sezioni/06-limiti}
+\clearpage
+
+\input{sezioni/07-conclusioni}
+\clearpage
+
+\bibliographystyle{unsrtnat}
+\bibliography{bibliografia}
+
+\end{document}

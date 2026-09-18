@@ -1,0 +1,11 @@
+# file ausiliari di LaTeX (il pdf si rigenera con "make")
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.toc
+*.synctex.gz
+main.pdf
