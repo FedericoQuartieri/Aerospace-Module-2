@@ -29,6 +29,10 @@
 \usepackage{xcolor}
 \usepackage{enumitem}
 
+% --- schemi ----------------------------------------------------------------
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+
 % --- codice ----------------------------------------------------------------
 \usepackage{listings}
 \usepackage{upquote}
@@ -68,6 +72,7 @@
   breaklines=true,
   showstringspaces=false,
   columns=fullflexible,
+  keepspaces=true,
   frame=single,
   framerule=0pt,
   xleftmargin=0.6em,
@@ -75,12 +80,13 @@
   captionpos=b,
 }
 \lstset{style=progetto}
+\renewcommand{\lstlistingname}{Listato}
 
 % notazione ricorrente
 \newcommand{\Ttr}{T_{tr}}
 \newcommand{\Tve}{T_{ve}}
 \newcommand{\eve}{e_{ve}}
-\newcommand{\hyfoam}{\texttt{hy2Foam}}
+\newcommand{\hyfoam}{hy2Foam}
 \newcommand{\mpp}{Mutation\texttt{++}}
 \newcommand{\shockThermo}{\texttt{shockThermo}}
 \newcommand{\file}[1]{\texttt{#1}}
@@ -123,30 +129,15 @@ Casseau \textit{et al.}, \textit{Aerospace} \textbf{3} (2016) 34\par}
 \vspace*{2cm}
 \end{titlepage}
 
-\input{sezioni/00-sommario}
-
 \tableofcontents
 \clearpage
 
+\input{sezioni/00-sommario}
+
 \input{sezioni/01-introduzione}
-\clearpage
 
-\input{sezioni/02-modello}
-\clearpage
+\input{sezioni/02-lavoro}
 
-\input{sezioni/03-implementazione}
-\clearpage
-
-\input{sezioni/04-validazione}
-\clearpage
-
-\input{sezioni/05-discussione}
-\clearpage
-
-\input{sezioni/06-limiti}
-\clearpage
-
-\input{sezioni/07-conclusioni}
 \clearpage
 
 \bibliographystyle{unsrtnat}

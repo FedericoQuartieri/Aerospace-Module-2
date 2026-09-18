@@ -20,16 +20,11 @@ Serve una installazione TeX Live con `latexmk` e `bibtex`.
 | `main.tex` | preambolo, frontespizio, inclusione delle sezioni |
 | `sezioni/00-sommario.tex` | sommario |
 | `sezioni/01-introduzione.tex` | introduzione |
-| `sezioni/02-modello.tex` | modello a due temperature |
-| `sezioni/03-implementazione.tex` | architettura del codice |
-| `sezioni/04-validazione.tex` | casi di verifica e risultati |
-| `sezioni/05-discussione.tex` | scelte di modellazione |
-| `sezioni/06-limiti.tex` | limiti e sviluppi |
-| `sezioni/07-conclusioni.tex` | conclusioni |
+| `sezioni/02-lavoro.tex` | il lavoro svolto |
 | `bibliografia.bib` | riferimenti |
 
-Le sezioni non ancora scritte contengono solo il titolo, il segnaposto
-`\daScrivere` e una traccia in commento.
+Le sezioni si aggiungono una alla volta: ogni nuova sezione e' un file in
+`sezioni/` incluso con `\input` in `main.tex`.
 
 ## Figure
 

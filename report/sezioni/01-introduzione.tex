@@ -4,55 +4,76 @@
 \subsection{Il non-equilibrio termochimico nel rientro atmosferico}
 \label{sec:contesto}
 
-Un veicolo che rientra nell'atmosfera terrestre a velocità ipersonica genera
-davanti a sé un urto forte, attraverso il quale gran parte dell'energia cinetica
-del flusso si converte in energia interna del gas. Dietro l'urto la temperatura
-sale a diverse decine di migliaia di kelvin e l'aria smette di comportarsi come
-una miscela di gas biatomici ideali: i modi vibrazionali si eccitano, i livelli
-elettronici si popolano, le molecole si dissociano e, più a valle, si
-ionizzano. La previsione dei carichi termici sul sistema di protezione termica,
-che è la ragione per cui questi flussi si calcolano, dipende in modo diretto
-dalla capacità di descrivere tali processi.
+Un veicolo che rientra nell'atmosfera a velocità ipersonica genera un urto
+forte, dietro il quale la temperatura sale a decine di migliaia di kelvin: i
+modi vibrazionali si eccitano, i livelli elettronici si popolano e le molecole
+si dissociano. Questi processi non raggiungono l'equilibrio alla stessa
+velocità: traslazione e rotazione si equilibrano in pochi urti molecolari, la
+vibrazione in molti di più, e il gas dietro l'urto si trova in non-equilibrio
+termico. Il modello a due temperature di Park~\cite{park1990,park1993} lo
+descrive tenendo distinte una temperatura traslazionale-rotazionale e una
+vibro-elettronica, legate da un tempo di rilassamento. A questo si somma
+l'accoppiamento con la chimica: una molecola eccitata vibrazionalmente si
+dissocia più facilmente, e le reazioni a loro volta sottraggono o restituiscono
+energia vibrazionale. Dalla descrizione di questi processi dipende la
+previsione dei carichi termici sul veicolo.
 
-La difficoltà sta nel fatto che i modi interni non raggiungono l'equilibrio
-alla stessa velocità. Traslazione e rotazione si equilibrano in pochi urti
-molecolari, la vibrazione ne richiede molti di più: nel tempo in cui una
-particella attraversa la regione di shock i primi due modi hanno già raggiunto
-una distribuzione di equilibrio e il terzo no. Descrivere il gas con una sola
-temperatura, in quelle condizioni, è una approssimazione grossolana. Il modello
-a due temperature di Park~\cite{park1990,park1993}, diventato il riferimento
-nella comunità ipersonica, tiene perciò distinte una temperatura
-traslazionale-rotazionale e una temperatura vibro-elettronica, e ne governa lo
-scambio di energia attraverso un tempo di rilassamento ricavato da correlazioni
-sperimentali. A questo si somma un secondo accoppiamento: le reazioni chimiche
-che avvengono dietro l'urto, a cominciare dalla dissociazione, non dipendono
-dalla sola temperatura traslazionale, perché una molecola già eccitata
-vibrazionalmente si dissocia più facilmente, e a loro volta sottraggono o
-restituiscono energia al serbatoio vibrazionale a seconda delle molecole che
-distruggono e creano. Non-equilibrio termico e non-equilibrio chimico sono due
-facce dello stesso problema e vanno trattati insieme.
+\subsection{Il modello a una temperatura e i suoi limiti}
+\label{sec:una-temperatura}
 
-Un solver che li tratti insieme è, di conseguenza, difficile da verificare: in
-un caso di volo i meccanismi agiscono tutti contemporaneamente e uno scarto
-rispetto a un riferimento non dice quale modello lo abbia prodotto. La via
-consolidata è isolarli in un bagno termico adiabatico zero-dimensionale, in cui
-non c'è trasporto, la composizione e le temperature sono uniformi e ogni
-meccanismo può essere acceso da solo a partire da uno stato iniziale di
-non-equilibrio noto. Su questa impostazione si fonda il lavoro di riferimento di questa
-relazione.
+Una molecola può immagazzinare energia in modi diversi: spostandosi nello
+spazio (traslazione), ruotando su se stessa (rotazione), facendo oscillare i
+propri atomi (vibrazione) ed eccitando i propri elettroni. Nella maggior parte
+delle simulazioni CFD, compresi i solver standard di OpenFOAM, il gas è
+descritto da una sola temperatura: si assume che l'energia ricevuta dal gas si
+ripartisca subito fra tutti questi modi nelle proporzioni di equilibrio, per
+cui un solo numero basta a sapere quanta energia c'è in ciascuno, e con lo
+stesso numero si calcola anche la velocità delle reazioni chimiche. È
+un'ipotesi eccellente nella gran parte delle applicazioni, perché le molecole
+si urtano così spesso che la ripartizione avviene molto più in fretta di
+quanto cambi il flusso.
+
+Dietro un urto ipersonico questa ipotesi cade: l'energia arriva prima al moto
+delle molecole e solo dopo molti urti alla vibrazione, in un tempo paragonabile
+a quello che il gas impiega ad attraversare la regione dietro l'urto. Un
+modello a una temperatura non vede questo ritardo: prevede appena dietro l'urto
+una temperatura più bassa di quella reale e salta la zona in cui il gas si
+porta gradualmente all'equilibrio. Lo stesso accade per la chimica: la
+dissociazione dipende sia dall'energia con cui le molecole si urtano sia da
+quanto stanno già vibrando, due grandezze che una sola temperatura non può
+distinguere. Il risultato sono errori sulla temperatura e sulla composizione
+del gas, e quindi sulla posizione dell'urto e sul calore che raggiunge la
+parete~\cite{park1990}.
+
+\subsection{La soluzione: il modello a due temperature}
+\label{sec:soluzione}
+
+Il modello a due temperature di Park~\cite{park1990,park1993} supera questi
+limiti usando due temperature invece di una: la prima descrive il moto e la
+rotazione delle molecole, che si equilibrano quasi subito, la seconda la
+vibrazione e gli elettroni, che restano indietro. Subito dietro l'urto le due
+possono differire di migliaia di gradi; l'energia passa poi dall'una all'altra
+gradualmente, tanto più in fretta quanto più il gas è caldo e denso, finché le
+due temperature coincidono e il gas è tornato in equilibrio. Anche la chimica
+le usa entrambe: la dissociazione è calcolata a una temperatura intermedia,
+così che una molecola che vibra ancora poco si dissoci più lentamente, e
+l'energia di vibrazione portata via dalle molecole che si spezzano viene tolta
+da quella del gas. Resta un'approssimazione, perché dentro ciascuno dei due
+gruppi l'energia è supposta in equilibrio, ma cattura l'essenziale senza dover
+seguire ogni singolo livello energetico delle molecole.
 
 \subsection{Il lavoro di riferimento}
 \label{sec:riferimento}
 
-Il termine di paragone è il lavoro di Casseau \textit{et al.}~\cite{casseau2016},
-che presenta \hyfoam, un solver per flussi ipersonici reagenti sviluppato
-all'Università di Strathclyde a partire dal solver density-based di
-OpenFOAM~\cite{weller1998}: distingue la temperatura traslazionale-rotazionale
-dalle temperature vibro-elettroniche delle singole molecole, e modella gli
-scambi V--T e V--V e l'accoppiamento fra chimica e vibrazione. La prima parte
-dell'articolo, quella qui ripresa, è dedicata per intero alla verifica del
-solver su una successione di bagni termici di complessità crescente, che va dal
-rilassamento vibrazionale dell'azoto puro al rilassamento termochimico
-dell'aria a cinque specie, confrontati con il solver CFD LeMANS e con i codici
-DSMC \texttt{dsmcFoam} e MONACO. Sono quei casi, e quelle curve, a costituire
-il riferimento quantitativo del lavoro descritto nel seguito.
+Il lavoro di riferimento è l'articolo di Casseau
+\textit{et al.}~\cite{casseau2016}, dell'Università di Strathclyde, che
+presenta \hyfoam, un solver a due temperature per flussi ipersonici reagenti
+costruito su OpenFOAM e distribuito come codice aperto~\cite{hystrath}. La
+prima parte dell'articolo verifica il solver su una serie di bagni termici:
+piccoli volumi di gas fermi e isolati, preparati fuori equilibrio e lasciati
+evolvere, in cui ogni processo si può studiare da solo. I casi vanno dall'azoto
+puro, con e senza energia elettronica, alle miscele di azoto con azoto atomico
+e con ossigeno, fino ai gas che reagiscono e all'aria a cinque specie, e i
+risultati sono confrontati con altri codici CFD e con codici DSMC, che
+simulano il gas seguendo il moto e gli urti di un gran numero di particelle.
+Sono questi i casi che il presente lavoro riproduce.
