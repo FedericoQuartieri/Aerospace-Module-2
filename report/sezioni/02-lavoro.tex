@@ -93,12 +93,16 @@ di assegnare a ciascun modo una temperatura diversa, ed è quindi la base
 naturale di un modello a due temperature. OpenFOAM non lo offre: per i gas
 mette a disposizione i polinomi JANAF e due modelli a calore specifico
 costante. Il template da cui parte il progetto introduce un modello
-termodinamico apposito, che porta il nome RRHO ma che nella versione attuale
-calcola le proprietà delle specie con gli stessi polinomi JANAF. I dati delle
-specie forniti con il template contengono già, accanto ai coefficienti dei
-polinomi, le costanti che il modello RRHO richiede (temperature
-caratteristiche di rotazione e di vibrazione, livelli elettronici, entalpia di
-formazione), che però in questa versione non vengono utilizzate.
+termodinamico apposito, chiamato RRHO, predisposto per portare questo modello in
+OpenFOAM: i dati delle specie che lo accompagnano contengono già, accanto ai
+coefficienti dei polinomi, tutte le costanti che il modello richiede
+(temperature caratteristiche di rotazione e di vibrazione, livelli elettronici,
+entalpia di formazione). Nella versione attuale calcola le proprietà delle
+specie con i polinomi JANAF, e nel progetto è il modello di base su cui si
+appoggia il modello ad alta entalpia (sezione~\ref{sec:openfoam-highenthalpy}):
+fornisce i campi che OpenFOAM si aspetta, mentre le energie dei singoli modi,
+calcolate proprio con il modello RRHO e con i dati del lavoro di riferimento,
+vengono da \mpp{} (sezione~\ref{sec:mutation}).
 
 \subsubsection{Il modello termodinamico ad alta entalpia}
 \label{sec:openfoam-highenthalpy}
@@ -116,6 +120,58 @@ tre termini sorgente: quello dell'energia vibro-elettronica, la produzione
 chimica di ogni specie e il calore di reazione. Stabilisce cosa il modello deve
 fornire, non come: il modo in cui queste grandezze vengono calcolate è
 descritto nella sezione~\ref{sec:implementato}.
+
+\subsubsection{Il modulo del solver per flussi compressibili}
+\label{sec:openfoam-shockfluid}
+
+Il solver per flussi compressibili descritto nella
+sezione~\ref{sec:openfoam-moduli} è il modulo \texttt{shockFluid}, e il suo
+codice è diviso in un file per ogni fase del passo temporale. Il file
+\texttt{shockFluid.H} dichiara il modulo e i suoi campi; nell'originale il
+modulo costruisce da sé il proprio modello termodinamico. È l'unico file del
+core che il progetto copia e modifica: la copia accetta un modello
+termodinamico costruito dall'esterno e di tipo più generale, così che il
+solver a due temperature possa passargli il modello ad alta entalpia. Il file
+\texttt{thermophysicalPredictor.C} contiene la fase dell'energia: risolve
+l'equazione dell'energia e ne ricava subito la temperatura, ed è la fase che il
+progetto riscrive. Il file \texttt{pressureCorrector.C} aggiorna la pressione
+dividendo la densità per la comprimibilità: è il punto in cui la
+comprimibilità calcolata con \mpp{} entra nel solver. Le altre fasi, cioè i
+flussi alle facce, la densità e la quantità di moto, sono compilate dai file
+originali senza modifiche.
+
+\subsubsection{Il calcolo della temperatura}
+\label{sec:openfoam-psithermo}
+
+Nel modello a una temperatura il passaggio dall'energia alla temperatura
+avviene nel file \texttt{PsiThermo.C}, nella funzione \texttt{calculate()}, che
+OpenFOAM chiama ogni volta che il solver chiede di aggiornare il modello
+termodinamico. Per ogni cella, e poi per ogni faccia di bordo, la funzione
+prende l'energia appena risolta, cerca con il metodo iterativo descritto nella
+sezione~\ref{sec:openfoam-thermo} la temperatura che la produce e da questa
+calcola la comprimibilità, che il solver userà per la pressione. È il cuore
+del modello a una temperatura, e il punto in cui una seconda temperatura non
+trova posto: entra una sola energia ed esce una sola temperatura. Il modello
+ad alta entalpia non usa questa funzione ma la sostituisce con la propria:
+consegna a \mpp{} le due energie di ogni cella, ne riceve le due temperature e
+con queste calcola la comprimibilità.
+
+\subsubsection{Il modello termodinamico standard}
+\label{sec:openfoam-psimulti}
+
+Il modello ad alta entalpia della sezione~\ref{sec:openfoam-highenthalpy} è
+costruito a partire dal modello termodinamico standard di OpenFOAM per le
+miscele di gas compressibili, definito nei file
+\texttt{psiMulticomponentThermo.H} e \texttt{psiMulticomponentThermos.C}. Il
+primo descrive come il modello è assemblato: le classi di base da cui eredita,
+una classe che mette insieme i vari strati e l'ordine in cui gli strati sono
+impilati. Il secondo iscrive nell'elenco dei modelli disponibili tutte le
+combinazioni ammesse, con una chiamata per ogni tipo di miscela, usando macro
+già pronte di OpenFOAM. I file del modello ad alta entalpia seguono la stessa
+struttura, e confrontandoli si vede esattamente che cosa aggiungono: i due
+campi della temperatura e dell'energia vibro-elettronica, le tre funzioni per i
+termini sorgente, lo strato in più in cima, le combinazioni con il modello
+RRHO e il nome con cui il caso lo sceglie.
 
 \subsubsection{Limiti per un modello a due temperature}
 \label{sec:openfoam-limiti}
@@ -342,16 +398,18 @@ Park~\cite{park1993}, che per azoto e ossigeno coincidono con quelli del lavoro
 di riferimento.
 
 L'energia elettronica richiede una scelta. Il lavoro di riferimento la tratta
-esplicitamente solo nella fig.~4, dove confronta i casi con e senza; per le
-altre figure non lo dice, e il testo della fig.~5 parla anzi del contributo
-elettronico dell'azoto atomico. Le temperature finali delle figure, però,
-tornano solo senza livelli elettronici: con i livelli elettronici, la
-temperatura finale della fig.~5 sarebbe di circa 18\,300~K invece dei
-24\,400~K riportati in figura, e quella della fig.~6 di circa 19\,200~K invece
-di 12\,100~K, mentre senza si ottengono 24\,353~K e 12\,133~K. Si è quindi
-seguita la figura: il progetto ha due versioni dei dati, una con i livelli
-elettronici, usata solo per il caso della fig.~4 che li include, e una con il
-solo livello fondamentale, usata in tutti gli altri casi.
+esplicitamente solo nel caso dell'azoto a 30\,000~K, dove confronta il gas con
+e senza; per gli altri casi non lo dice, e il testo che commenta la miscela di
+azoto molecolare e atomico parla anzi del contributo elettronico dell'azoto
+atomico. Le temperature finali riportate nell'articolo, però, tornano solo
+senza livelli elettronici: con i livelli elettronici, la temperatura finale
+della miscela di azoto molecolare e atomico sarebbe di circa 18\,300~K invece
+dei 24\,400~K dell'articolo, e quella della miscela di azoto e ossigeno di
+circa 19\,200~K invece di 12\,100~K, mentre senza si ottengono 24\,353~K e
+12\,133~K. Si sono quindi seguiti i risultati: il progetto ha due versioni dei
+dati, una con i livelli elettronici, usata solo per il caso dell'azoto che li
+include, e una con il solo livello fondamentale, usata in tutti gli altri
+casi.
 
 Le reazioni sono di due tipi. Per la dissociazione dell'azoto si usa la
 reazione irreversibile $\mathrm{N_2 + N_2 \rightarrow 2\,N + N_2}$ con le
