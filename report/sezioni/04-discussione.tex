@@ -1,0 +1,59 @@
+\section{Discussione}
+\label{sec:discussione}
+
+\subsection{Che cosa dicono i risultati}
+\label{sec:discussione-risultati}
+
+Il confronto fra solver e programmi zero-dimensionali mostra che il modello è
+stato inserito correttamente nel solver: le due strade, che fanno la stessa
+fisica, danno le stesse curve entro lo 0{,}2\% in quasi tutti i casi, anche
+con le reazioni accese. Il confronto con il lavoro di riferimento mostra che
+anche la fisica è quella giusta. Nei casi senza reazioni le temperature finali
+coincidono con quelle imposte dalla conservazione dell'energia e con i valori
+del lavoro di riferimento entro circa 50~K, cioè entro l'incertezza con cui si
+leggono le figure; nei casi con reazioni le temperature a fine calcolo
+differiscono al più di 100~K, la composizione della miscela di azoto coincide
+entro il 2{,}5\% e quella dell'aria entro 0{,}06 decadi. Nel transitorio l'accordo
+è di pochi punti percentuali per l'azoto puro, per la miscela di azoto e
+ossigeno e per l'aria. La differenza più grande riguarda la temperatura
+vibrazionale nelle miscele di azoto molecolare e atomico, dove arriva al
+10--20\%.
+
+\subsection{L'origine delle differenze}
+\label{sec:discussione-origine}
+
+L'origine più probabile del ritardo della temperatura vibrazionale nelle
+miscele è il modo in cui \mpp{} media i tempi di rilassamento relativi ai
+diversi partner di collisione, che non è quello del lavoro di riferimento. Il
+modo di mediare conta solo quando i partner sono più di uno: nell'azoto puro
+l'accordo è buono, mentre nelle miscele con azoto atomico la temperatura
+vibrazionale sale più tardi. Lo stato finale non ne risente, perché dipende
+solo dall'energia. L'ipotesi non è stata verificata implementando la media del
+lavoro di riferimento, che resta uno degli sviluppi possibili. Per l'azoto puro
+e per la miscela di azoto e ossigeno restano piccoli spostamenti nel tempo, di
+qualche punto percentuale, la cui origine non è stata isolata.
+
+\subsection{Che cosa insegna il confronto}
+\label{sec:discussione-lezioni}
+
+Buona parte del lavoro è consistita nel ricostruire scelte che l'articolo non
+dichiara, o dichiara in modo incompleto: se l'energia elettronica è accesa,
+quale energia guida lo scambio vibrazionale, con quale esponente si calcola la
+temperatura delle dissociazioni, quali costanti di velocità sono usate per
+l'aria. Nessuna di queste scelte è un dettaglio: sbagliarne una sposta i
+risultati molto più delle differenze rimaste, come mostrano i confronti della
+sezione~\ref{sec:risultati}, con scarti fino al 56\% sulla temperatura
+vibrazionale, un fattore 3 sulle densità dell'aria e oltre 6000~K sulla
+temperatura finale. Lo stesso articolo ne dà un esempio quando spiega la
+differenza con LeMANS nella fig.~5 con una diversa convenzione nella
+correzione di Park.
+
+Per prendere queste decisioni due strumenti sono stati decisivi. Il primo è
+la temperatura finale imposta dalla conservazione dell'energia, che non
+dipende da nessun modello di rilassamento e dice subito se i dati del gas sono
+quelli giusti. Il secondo sono le curve estratte dalle figure vettoriali, che
+trasformano il confronto con l'articolo da una lettura a occhio in una misura.
+Infine, la verifica su due strade separa gli errori di implementazione dalle
+scelte di modello: poiché solver e programmi coincidono, ogni differenza
+rimasta rispetto al lavoro di riferimento viene dal modello, non da un errore
+nel codice.
