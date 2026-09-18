@@ -1,0 +1,190 @@
+\section{Il lavoro svolto}
+\label{sec:lavoro}
+
+\subsection{Approccio generale}
+\label{sec:approccio}
+
+Il lavoro mette insieme due programmi che fanno cose diverse.
+OpenFOAM~\cite{openfoam13} è la piattaforma CFD: gestisce la mesh, risolve le
+equazioni di conservazione cella per cella e fa avanzare la soluzione nel
+tempo. \mpp~\cite{scoggins2020} è una libreria di termochimica: dato lo stato
+di un gas, calcola quanta energia contiene ciascun modo, quanto dura il
+rilassamento vibrazionale e quanto sono veloci le reazioni, e sa fare il
+percorso inverso, dalle energie alle temperature. L'idea è lasciare a ciascuno
+il proprio mestiere: OpenFOAM risolve le equazioni del modello a due
+temperature, \mpp{} fornisce tutte le grandezze termochimiche che vi
+compaiono. Il solver, in particolare, non segue direttamente le due
+temperature ma le energie corrispondenti, che si conservano correttamente anche
+attraverso un urto, e a ogni passo le consegna a \mpp, che ne ricava le
+temperature.
+
+Il collegamento con OpenFOAM è realizzato senza modificarne il codice,
+attraverso \emph{librerie dinamiche}. Una libreria dinamica è un pezzo di codice
+compilato che non fa parte di un programma, ma viene caricato da questo mentre
+è in esecuzione, come un'estensione aggiunta a un'applicazione già installata.
+OpenFOAM è costruito attorno a questo meccanismo: il solver, il modello
+termodinamico, le condizioni al contorno e molti altri componenti non sono
+fissati nel programma, ma scelti per nome nei file di testo del caso. Ogni
+libreria, quando viene caricata, iscrive i componenti che contiene in un
+elenco interno di OpenFOAM; OpenFOAM legge nel caso il nome richiesto, lo cerca
+nell'elenco e costruisce il componente corrispondente. Aggiungere un modello
+nuovo significa quindi compilare una libreria che lo iscriva nell'elenco
+giusto, e OpenFOAM lo userà come uno dei propri.
+
+\subsection{OpenFOAM}
+\label{sec:openfoam}
+
+Questa sezione descrive le parti di OpenFOAM su cui il progetto si appoggia e
+i motivi per cui, così com'è, OpenFOAM non basta per un modello a due
+temperature.
+
+\subsubsection{Organizzazione e solver a moduli}
+\label{sec:openfoam-moduli}
+
+OpenFOAM risolve le equazioni con il metodo dei volumi finiti: il dominio è
+diviso in celle e ogni grandezza (pressione, velocità, temperatura, frazioni
+delle specie) è un \emph{campo} con un valore per cella. Un caso è una cartella
+di file di testo divisa in tre parti: i valori iniziali e le condizioni al
+contorno, la mesh e le proprietà fisiche, le impostazioni numeriche. In
+OpenFOAM-13 i solver non sono programmi separati: un eseguibile generico carica
+il \emph{modulo solver} indicato nel caso e a ogni passo temporale ne chiama le
+fasi in un ordine fisso: prima il calcolo dei flussi e della densità, poi
+l'equazione della quantità di moto, poi quella dell'energia, infine
+l'aggiornamento della pressione. Per i flussi compressibili ad alta velocità
+OpenFOAM-13 offre un modulo density-based, che ha preso il posto del solver da
+cui è nato \hyfoam: calcola i flussi fra le celle con gli schemi di Kurganov e
+Tadmor~\cite{kurganov2001,greenshields2010}, adatti a catturare gli urti. Un
+nuovo solver si ottiene derivando un modulo esistente e riscrivendo solo le
+fasi che cambiano.
+
+\subsubsection{I modelli termodinamici}
+\label{sec:openfoam-thermo}
+
+Il solver non sa nulla delle proprietà del gas: le chiede a un
+\emph{modello termodinamico}, scelto in un file di testo del caso componendo
+pezzi indipendenti: come si mescolano le specie, come si calcolano viscosità e
+conducibilità, come si calcola l'energia di ogni specie in funzione della
+temperatura, quale forma di energia risolve il solver e quale equazione di
+stato lega pressione, densità e temperatura. Nel solver per flussi
+compressibili, dopo che l'equazione dell'energia è stata risolta, il modello
+ricava la temperatura di ogni cella con un metodo iterativo, e da questa la
+comprimibilità $\psi = 1/(RT)$ del gas perfetto, con cui si aggiorna la
+pressione. Per i gas ad alta temperatura OpenFOAM usa i polinomi JANAF: il
+calore specifico di ogni specie è un polinomio della temperatura, con
+coefficienti ricavati da tabelle termochimiche e validi in un intervallo
+dichiarato; se la temperatura ne esce, viene riportata al limite
+dell'intervallo con un avviso. Internamente un modello termodinamico è
+costruito a strati, ognuno dei quali aggiunge un pezzo: le grandezze di base
+(temperatura, energia, pressione), la comprimibilità, le specie chimiche. Ogni
+combinazione ammessa viene iscritta con il proprio nome nell'elenco dei modelli
+disponibili, così che il caso possa sceglierla per nome come spiegato nella
+sezione~\ref{sec:approccio}.
+
+\subsubsection{Il modello RRHO}
+\label{sec:openfoam-rrho}
+
+Il modello RRHO (\emph{rigid rotor, harmonic oscillator}) calcola l'energia di
+un gas a partire dalle costanti delle sue molecole, modo per modo: la
+traslazione come quella di un gas ideale, la rotazione come quella di un
+rotore rigido, la vibrazione come quella di un oscillatore armonico con la sua
+temperatura caratteristica, e i livelli elettronici con le loro energie e
+degenerazioni. Proprio perché costruisce l'energia un modo alla volta, permette
+di assegnare a ciascun modo una temperatura diversa, ed è quindi la base
+naturale di un modello a due temperature. OpenFOAM non lo offre: per i gas
+mette a disposizione i polinomi JANAF e due modelli a calore specifico
+costante. Il template da cui parte il progetto introduce un modello
+termodinamico apposito, che porta il nome RRHO ma che nella versione attuale
+calcola le proprietà delle specie con gli stessi polinomi JANAF. I dati delle
+specie forniti con il template contengono già, accanto ai coefficienti dei
+polinomi, le costanti che il modello RRHO richiede (temperature
+caratteristiche di rotazione e di vibrazione, livelli elettronici, entalpia di
+formazione), che però in questa versione non vengono utilizzate.
+
+\subsubsection{Il modello termodinamico ad alta entalpia}
+\label{sec:openfoam-highenthalpy}
+
+Il punto di aggancio per il modello a due temperature è un modello
+termodinamico ad alta entalpia, costruito sullo stesso schema di quello
+standard di OpenFOAM per le miscele di gas compressibili: stessa struttura a
+strati con uno strato in più in cima, stesse combinazioni disponibili, a cui si
+aggiungono quelle con il modello RRHO, e un proprio nome con cui il caso lo
+sceglie. Per il solver è quindi un modello termodinamico come gli altri.
+Rispetto a quello standard aggiunge due campi, la temperatura
+vibro-elettronica, il cui valore iniziale si assegna nel caso come per la
+temperatura, e l'energia vibro-elettronica, e mette a disposizione del solver
+tre termini sorgente: quello dell'energia vibro-elettronica, la produzione
+chimica di ogni specie e il calore di reazione. Stabilisce cosa il modello deve
+fornire, non come: il modo in cui queste grandezze vengono calcolate è
+l'oggetto della sezione successiva.
+
+\subsubsection{Limiti per un modello a due temperature}
+\label{sec:openfoam-limiti}
+
+Così come sono, i modelli termodinamici di OpenFOAM sono pensati per il
+modello a una temperatura descritto nella sezione~\ref{sec:una-temperatura}:
+
+\begin{itemize}[leftmargin=1.6em]
+  \item ogni cella ha una sola temperatura, ricavata da una sola energia; i
+    polinomi JANAF danno l'energia totale di una specie in equilibrio e non
+    dicono quanta ne stia nella vibrazione, quindi non c'è modo di definire una
+    seconda temperatura;
+  \item i polinomi valgono fino alla temperatura massima dichiarata, nei dati
+    del progetto 20\,000~K; oltre, la temperatura viene tagliata, mentre
+    diversi casi del lavoro di riferimento partono da 30\,000~K;
+  \item le reazioni chimiche sono calcolate alla sola temperatura della cella,
+    e anche viscosità e conducibilità dipendono da quella sola;
+  \item il solver per flussi compressibili non ha un'equazione per l'energia
+    vibro-elettronica né termini che descrivano lo scambio di energia fra i
+    modi.
+\end{itemize}
+
+\subsection{\mpp}
+\label{sec:mutation}
+
+Questa sezione descrive la libreria che fornisce al progetto tutta la
+termochimica e il modo in cui il progetto vi si collega.
+
+\subsubsection{Che cos'è e a cosa serve}
+\label{sec:mutation-cosa}
+
+\mpp~\cite{scoggins2020} è una libreria scritta in C++, sviluppata
+originariamente al von Karman Institute for Fluid Dynamics e distribuita come
+codice aperto; il progetto ne usa la versione 1.1.3. È pensata proprio per
+essere collegata a un codice CFD: non risolve equazioni di flusso, ma, dato lo
+stato di un gas in un punto, ne calcola le proprietà che un solver non sa
+calcolare da solo: termodinamiche, di trasporto, chimiche e di scambio di
+energia fra i modi, dai flussi subsonici a quelli ipersonici, anche per gas
+ionizzati. Il gas è descritto dalle specie che lo compongono, dal numero di
+temperature, una oppure due come nel modello di Park, da una banca dati
+termodinamica, che può essere anche il modello RRHO, e dall'elenco delle
+reazioni. Date le densità delle specie e le temperature, oppure le energie, la
+libreria restituisce tutte le altre grandezze; nel secondo caso ricava lei
+stessa le temperature.
+
+\subsubsection{Il collegamento con il progetto}
+\label{sec:mutation-collegamento}
+
+\mpp{} non fa parte di OpenFOAM: è compilata a parte, insieme al progetto, come
+libreria dinamica, e il modello termodinamico ad alta entalpia descritto nella
+sezione~\ref{sec:openfoam-highenthalpy} e i programmi zero-dimensionali di
+verifica ne chiamano direttamente le funzioni. All'avvio di una simulazione il
+modello termodinamico legge nel caso la descrizione del gas -- specie, numero
+di temperature, banca dati termodinamica, reazioni --, crea il gas
+corrispondente in \mpp{} e associa ogni specie di OpenFOAM alla specie di
+\mpp{} con lo stesso nome. Da quel momento, cella per cella e a ogni passo, gli
+passa lo stato del gas e ne riceve le temperature e tutte le grandezze che
+servono al solver. I dati del gas, cioè le costanti delle specie e le
+reazioni, sono letti da una cartella del progetto che contiene i valori del
+lavoro di riferimento.
+
+% ---------------------------------------------------------------------------
+% Traccia per le prossime sottosezioni (dalla vecchia sezione "Il modello"):
+%  - decomposizione dell'energia nei modi (eq. 1-7 del paper) e le due T
+%  - variabili conservate: rho_s, E, E_ve (eq. 23); perche' energie e non T
+%  - equazione di stato: p = somma delle pressioni parziali (eq. 24)
+%  - scambio V-T: Landau-Teller (eq. 8), tau di Millikan-White + Park (eq. 9-17)
+%  - scambio V-V: Knab (eq. 18), solo nel caso N2-O2
+%  - chimica: legge di azione di massa (eq. 27), Arrhenius (eq. 28),
+%    temperatura di Park T^a Tv^(1-a) (eq. 29)
+%  - accoppiamento chimica-vibrazione: modello non preferenziale (eq. 30-31)
+%  - riepilogo del sistema risolto nel bagno termico (eq. 22, 25, 26)

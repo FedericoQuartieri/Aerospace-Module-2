@@ -13,9 +13,8 @@ in temperature sia il calcolo delle proprietà termodinamiche.
 Il lavoro procede su due percorsi che condividono le stesse funzioni sorgente:
 un insieme di programmi zero-dimensionali autonomi, che integrano le equazioni
 del bagno termico chiamando soltanto \mpp{} e coprono tutte le figure del
-capitolo di verifica del paper, e il solver CFD \shockThermo, che risolve le
-stesse equazioni su una singola cella attraverso un \emph{thermo} che fa da
-ponte verso la libreria. L'accordo fra i due percorsi, entro lo 0{,}03--0{,}2\%
+capitolo di verifica del paper, e il solver CFD, che risolve le stesse equazioni su una singola cella
+attraverso un modello termodinamico che fa da ponte verso la libreria. L'accordo fra i due percorsi, entro lo 0{,}03--0{,}2\%
 su tutte le curve, verifica l'integrazione del modello nel solver; il confronto
 con le curve di \hyfoam{} estratte dalle figure vettoriali del paper e con le
 temperature di equilibrio ricavate dalla conservazione dell'energia ne verifica
