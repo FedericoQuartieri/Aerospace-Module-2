@@ -115,7 +115,7 @@ temperatura, e l'energia vibro-elettronica, e mette a disposizione del solver
 tre termini sorgente: quello dell'energia vibro-elettronica, la produzione
 chimica di ogni specie e il calore di reazione. Stabilisce cosa il modello deve
 fornire, non come: il modo in cui queste grandezze vengono calcolate è
-l'oggetto della sezione successiva.
+descritto nella sezione~\ref{sec:implementato}.
 
 \subsubsection{Limiti per un modello a due temperature}
 \label{sec:openfoam-limiti}
@@ -176,6 +176,191 @@ passa lo stato del gas e ne riceve le temperature e tutte le grandezze che
 servono al solver. I dati del gas, cioè le costanti delle specie e le
 reazioni, sono letti da una cartella del progetto che contiene i valori del
 lavoro di riferimento.
+
+\subsection{Il modello implementato}
+\label{sec:implementato}
+
+Questa sezione descrive che cosa fa il modello termodinamico ad alta entalpia:
+con quali grandezze descrive il gas, quali termini sorgente calcola, come
+aggira i limiti di \mpp{} e come il solver lo usa a ogni passo.
+
+\subsubsection{Variabili e stato del gas}
+\label{sec:implementato-stato}
+
+In ogni cella il solver non segue le temperature, ma tre grandezze che si
+conservano, come nel lavoro di riferimento: la densità di ciascuna specie,
+l'energia del gas e la sua parte vibro-elettronica. Le temperature si ricavano
+da queste. A ogni passo, dopo che il solver ha aggiornato le energie, il
+modello le consegna a \mpp, che usa il modello a due temperature con la banca
+dati RRHO e restituisce la temperatura traslazionale e quella
+vibro-elettronica; con queste si aggiorna il legame fra pressione e densità.
+All'avvio si fa il percorso inverso: dalle temperature assegnate nel caso,
+\mpp{} calcola le energie iniziali di ogni cella. Nel passaggio va gestita una
+differenza di convenzione: l'energia di OpenFOAM non comprende l'energia
+chimica di formazione delle specie, quella di \mpp{} sì, e il modello la
+aggiunge o la toglie a seconda della direzione. Il modello a polinomi del
+template resta solo per costruire i campi che OpenFOAM si aspetta: tutte le
+grandezze del gas vengono da \mpp, e la temperatura iniziale viene riletta dal
+caso, perché il modello a polinomi l'avrebbe tagliata a 20\,000~K.
+
+\subsubsection{I termini sorgente}
+\label{sec:implementato-sorgenti}
+
+Nel bagno termico le energie e la composizione cambiano solo per effetto dei
+termini sorgente, calcolati cella per cella con le funzioni di \mpp. Il primo
+è lo scambio fra vibrazione e traslazione, descritto dall'equazione di
+Landau--Teller~\cite{landau1936}:
+\[
+  Q_{VT} = \sum_m \rho_m\,
+  \frac{e_{ve,m}(\Ttr) - e_{ve,m}(\Tve)}{\tau_m},
+\]
+dove la somma è sulle molecole, $\rho_m$ è la densità della molecola $m$,
+$e_{ve,m}$ la sua energia vibro-elettronica per unità di massa e $\tau_m$ il
+suo tempo di rilassamento, calcolato da \mpp{} con la correlazione di Millikan
+e White~\cite{millikan1963} e la correzione di Park. In parole: l'energia
+vibrazionale si avvicina al valore che avrebbe alla temperatura
+traslazionale, tanto più in fretta quanto più $\tau_m$ è piccolo. Il secondo è
+la chimica: \mpp{} fornisce la produzione $\dot\omega_s$ di ogni specie, con le
+costanti di Arrhenius del meccanismo valutate alla temperatura di Park
+\[
+  T_P = \Ttr^{\,a}\,\Tve^{\,1-a}, \qquad a = 0{,}7 .
+\]
+Le reazioni entrano poi nei bilanci di energia in due modi. Le molecole che si
+dissociano portano via la loro energia vibro-elettronica e quelle che si
+formano la aggiungono (modello non preferenziale),
+\[
+  Q_{CV} = \sum_s e_{ve,s}(\Tve)\,\dot\omega_s ;
+\]
+inoltre, poiché l'energia di OpenFOAM non comprende quella di formazione,
+l'energia spesa per rompere i legami chimici va tolta a quella del gas con il
+calore di reazione $Q_{ch} = -\sum_s h_{f,s}\,\dot\omega_s$, dove $h_{f,s}$ è
+l'entalpia di formazione della specie $s$. In sintesi: le specie cambiano per
+$\dot\omega_s$, l'energia vibro-elettronica per $Q_{VT} + Q_{CV}$ e l'energia
+del gas, che la comprende, per $Q_{ch}$, così che l'energia totale, compresa
+quella chimica, si conserva.
+
+\subsubsection{Come sono stati aggirati i limiti di \mpp}
+\label{sec:implementato-limiti}
+
+I modelli di \mpp{} non coincidono in tutto con quelli del lavoro di
+riferimento. Le differenze, e il modo in cui sono state trattate, sono queste:
+
+\begin{itemize}[leftmargin=1.6em]
+  \item \textbf{Energia che guida lo scambio V--T.} \mpp{} usa la sola
+    energia vibrazionale, il lavoro di riferimento anche quella elettronica
+    della molecola. Lo scambio è stato riscritto come nel lavoro di
+    riferimento, con le energie e i tempi di rilassamento della libreria;
+    senza livelli elettronici le due forme coincidono.
+  \item \textbf{Temperatura delle dissociazioni.} \mpp{} usa sempre
+    $\sqrt{\Ttr\Tve}$, cioè $a = 0{,}5$, e non si può cambiare. Per ottenere
+    $a = 0{,}7$ si porta per un istante la libreria in uno stato in cui
+    entrambe le temperature valgono $T_P$, si chiedono le velocità di reazione
+    e si ripristina lo stato vero. Il procedimento vale solo per meccanismi
+    fatti di sole dissociazioni, come quello dell'azoto usato qui.
+  \item \textbf{Tempo di rilassamento nelle miscele.} \mpp{} media i tempi
+    relativi ai vari partner di collisione in modo diverso dal lavoro di
+    riferimento. Si è tenuta la versione della libreria, per non riscriverne
+    il modello; l'effetto è discusso insieme ai risultati.
+  \item \textbf{Una sola temperatura vibrazionale.} Nei casi risolti con il
+    solver l'unica molecola presente è l'azoto, e il limite non conta. Il caso
+    con azoto e ossigeno è risolto solo con un programma zero-dimensionale,
+    che tiene separate le due vibrazioni e calcola a parte lo scambio V--V fra
+    di esse.
+  \item \textbf{Accoppiamento chimica-vibrazione.} \mpp{} offre solo il
+    modello non preferenziale, ed è quello usato; il modello CVDV del lavoro
+    di riferimento non è stato riprodotto.
+  \item \textbf{Reazioni inverse.} Il set di reazioni per l'aria contiene due
+    coppie di reazioni irreversibili una inversa dell'altra, che \mpp{} non
+    accetta nello stesso meccanismo: sono state divise in due meccanismi,
+    le cui velocità di reazione vengono sommate.
+\end{itemize}
+
+\subsubsection{Il solver}
+\label{sec:implementato-solver}
+
+Il solver a due temperature è derivato dal modulo density-based di OpenFOAM:
+ne eredita il calcolo dei flussi, della densità, della quantità di moto e della
+pressione, e riscrive la fase dell'energia. In questa fase, a ogni passo:
+
+\begin{enumerate}[leftmargin=1.8em]
+  \item risolve le equazioni delle specie, con la produzione chimica fornita
+    da \mpp, e corregge le frazioni perché la loro somma resti uno;
+  \item risolve l'equazione dell'energia del gas, uguale a quella del modulo
+    originale più il calore di reazione;
+  \item risolve l'equazione dell'energia vibro-elettronica, che per ora
+    contiene solo la variazione nel tempo e i termini sorgente: manca il
+    trasporto con il flusso, che nel bagno termico non serve;
+  \item consegna le energie a \mpp, che restituisce le due temperature, e
+    aggiorna il legame fra pressione e densità.
+\end{enumerate}
+
+\noindent I termini sorgente sono calcolati con lo stato del gas già noto e
+trattati in modo esplicito. La fase dell'energia del modulo originale non
+poteva essere riusata perché, subito dopo aver risolto l'equazione
+dell'energia, ne ricava la temperatura: mancherebbero sia il calore di
+reazione sia l'equazione vibro-elettronica, che deve essere risolta prima di
+convertire le energie in temperature.
+
+\subsection{I programmi di verifica zero-dimensionali}
+\label{sec:programmi0D}
+
+Accanto al solver il progetto comprende quattro piccoli programmi che simulano
+il bagno termico senza OpenFOAM, uno per ogni famiglia di casi del lavoro di
+riferimento: l'azoto puro, la miscela di azoto molecolare e atomico, con o
+senza reazioni, la miscela di azoto e ossigeno e l'aria a cinque specie.
+Ognuno prepara il gas nello stato iniziale della figura da riprodurre, calcola
+le energie contenute nel volume e avanza nel tempo con passi di un
+nanosecondo, come il lavoro di riferimento: a ogni passo calcola i termini
+sorgente, aggiorna l'energia vibro-elettronica e la composizione, e chiede a
+\mpp{} le nuove temperature. L'energia totale, compresa quella chimica, resta
+costante, perché il volume è chiuso e isolato. I termini sorgente sono
+calcolati con le stesse funzioni usate dal solver, ed è questo che rende
+significativo il confronto fra i due percorsi. Nei casi senza reazioni i
+programmi calcolano anche la temperatura finale attesa, cercando la
+temperatura unica alla quale il gas avrebbe la stessa energia dello stato
+iniziale: è il valore verso cui le due temperature devono convergere.
+
+Due programmi si discostano da questo schema. Quello per azoto e ossigeno tiene
+separate le energie vibrazionali delle due molecole, ciascuna con la propria
+temperatura, e aggiunge lo scambio V--V fra di esse con la formulazione di
+Knab \textit{et al.}~\cite{knab1995} usata dal lavoro di riferimento e la
+probabilità di scambio consigliata di $10^{-2}$; la sezione d'urto della coppia
+azoto-ossigeno, che il lavoro di riferimento non riporta, è presa da
+\hyfoam~\cite{hystrath}. Quello per l'aria usa invece una sola temperatura,
+come fa il lavoro di riferimento per questo caso. I programmi sono anche molto
+più rapidi del solver: il caso più lungo, un milione di passi, richiede circa
+un secondo contro quasi mezz'ora.
+
+\subsection{I dati del gas}
+\label{sec:dati}
+
+Le proprietà delle specie usate da \mpp{} sono quelle delle tabelle del lavoro
+di riferimento: temperature caratteristiche di vibrazione, entalpie di
+formazione e livelli elettronici delle cinque specie dell'aria. I parametri del
+rilassamento vibrazionale sono quelli già contenuti in \mpp, tratti da
+Park~\cite{park1993}, che per azoto e ossigeno coincidono con quelli del lavoro
+di riferimento.
+
+L'energia elettronica richiede una scelta. Il lavoro di riferimento la tratta
+esplicitamente solo nella fig.~4, dove confronta i casi con e senza; per le
+altre figure non lo dice, e il testo della fig.~5 parla anzi del contributo
+elettronico dell'azoto atomico. Le temperature finali delle figure, però,
+tornano solo senza livelli elettronici: con i livelli elettronici, la
+temperatura finale della fig.~5 sarebbe di circa 18\,300~K invece dei
+24\,400~K riportati in figura, e quella della fig.~6 di circa 19\,200~K invece
+di 12\,100~K, mentre senza si ottengono 24\,353~K e 12\,133~K. Si è quindi
+seguita la figura: il progetto ha due versioni dei dati, una con i livelli
+elettronici, usata solo per il caso della fig.~4 che li include, e una con il
+solo livello fondamentale, usata in tutti gli altri casi.
+
+Le reazioni sono di due tipi. Per la dissociazione dell'azoto si usa la
+reazione irreversibile $\mathrm{N_2 + N_2 \rightarrow 2\,N + N_2}$ con le
+costanti di Park riportate nel lavoro di riferimento. Per l'aria a cinque
+specie il lavoro di riferimento usa diciannove reazioni irreversibili, quindici
+dissociazioni e quattro scambi, con costanti ricavate dalla teoria
+Quantum-Kinetic~\cite{scanlon2015}, che cita ma non riporta: sono state prese
+dai dati di \hyfoam~\cite{hystrath}. Per confronto è stato usato anche il
+meccanismo per l'aria già presente in \mpp, con le costanti di Park.
 
 % ---------------------------------------------------------------------------
 % Traccia per le prossime sottosezioni (dalla vecchia sezione "Il modello"):

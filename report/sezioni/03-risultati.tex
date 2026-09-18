@@ -1,0 +1,226 @@
+\section{Verifica e risultati}
+\label{sec:risultati}
+
+\subsection{Metodo}
+\label{sec:metodo}
+
+Ogni caso del lavoro di riferimento è stato calcolato con il programma
+zero-dimensionale corrispondente; i casi delle fig.~3a, 3b, 4, 5 e 7 sono
+stati calcolati anche con il solver, su una mesh di una sola cella, con le
+stesse condizioni iniziali, gli stessi dati e lo stesso passo di un
+nanosecondo. I risultati sono sottoposti a tre verifiche:
+
+\begin{enumerate}[leftmargin=1.8em]
+  \item \textbf{solver contro programmi zero-dimensionali}: i due percorsi
+    fanno la stessa fisica, quindi ogni differenza viene dal modo in cui il
+    solver integra il modello; è la verifica dell'implementazione;
+  \item \textbf{programmi zero-dimensionali contro il lavoro di riferimento}:
+    è la verifica della fisica;
+  \item \textbf{temperatura finale contro conservazione dell'energia}: la
+    temperatura raggiunta all'equilibrio deve essere quella calcolata
+    dall'energia iniziale, e quella indicata nel lavoro di riferimento.
+\end{enumerate}
+
+Le curve di \hyfoam{} sono state ricavate direttamente dal pdf dell'articolo.
+Le figure sono disegni vettoriali: ogni curva è memorizzata come una sequenza
+di punti, che è stata letta e riportata in tempo e temperatura usando le tacche
+degli assi. L'incertezza è circa lo spessore della linea, 40--60~K sulle
+temperature. Gli scarti sulle temperature sono dati in percentuale, come
+massimo lungo il transitorio. Le densità delle specie sono disegnate in scala
+logaritmica, e il loro scarto è dato in \emph{decadi}: una decade è un fattore
+10, e 0{,}01 decadi corrispondono a circa il 2{,}3\%. I programmi salvano i
+risultati ogni 10 o 100~ns, e i confronti partono da lì. Nei grafici le linee
+chiare continue sono il lavoro di riferimento (\emph{paper}), quelle
+tratteggiate i programmi zero-dimensionali (\emph{standalone}) e i punti il
+solver (\emph{solver}).
+
+\subsection{Azoto puro}
+\label{sec:risultati-azoto}
+
+Le fig.~3a e 3b del lavoro di riferimento riguardano l'azoto a 1~atm, riscaldato
+nella vibrazione (10\,000~K per la traslazione, 1000~K per la vibrazione) o
+raffreddato (3000~K e 10\,000~K). Nel riscaldamento la temperatura finale è
+7623{,}3~K, esattamente il valore dato nel testo dell'articolo, e le curve
+differiscono al massimo dello 0{,}3\% sulla temperatura traslazionale e
+dell'1{,}5\% su quella vibrazionale. Nel raffreddamento la temperatura finale è
+4973~K contro 4972~K; lo scarto nel transitorio sale al 2{,}8\% e al 5{,}1\%,
+e corrisponde a un piccolo ritardo del rilassamento
+(figura~\ref{fig:azoto-3}).
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{fig3a}
+    \caption{Riscaldamento vibrazionale (fig.~3a).}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{fig3b}
+    \caption{Raffreddamento vibrazionale (fig.~3b).}
+  \end{subfigure}
+  \caption{Azoto puro a 1~atm: temperatura traslazionale ($T_{tr}$) e
+  vibrazionale ($T_v$) nel tempo.}
+  \label{fig:azoto-3}
+\end{figure}
+
+La fig.~4 parte da 30\,000~K e mette a confronto il caso senza e con energia
+elettronica (figura~\ref{fig:azoto-4}). Le temperature finali sono 21\,932~K
+e 17\,650~K, contro i 21{,}9 e 17{,}7~kK indicati in figura: l'energia
+elettronica abbassa la temperatura finale di oltre 4000~K. Gli scarti nel
+transitorio sono dello 0{,}05\% e dello 0{,}8\% senza energia elettronica,
+dello 0{,}3\% e del 4\% con. Questo caso giustifica la scelta di riscrivere lo
+scambio V--T con l'energia vibro-elettronica
+(sezione~\ref{sec:implementato-limiti}): con la forma originale di \mpp, che
+usa la sola energia vibrazionale, la temperatura finale sarebbe la stessa ma
+gli scarti nel transitorio salirebbero al 28\% e al 56\%.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{fig4-noEl}
+    \caption{Senza energia elettronica.}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{fig4-el}
+    \caption{Con energia elettronica.}
+  \end{subfigure}
+  \caption{Azoto puro da 30\,000~K (fig.~4); la linea punteggiata orizzontale
+  è la temperatura finale attesa dalla conservazione dell'energia.}
+  \label{fig:azoto-4}
+\end{figure}
+
+\subsection{Miscele non reagenti}
+\label{sec:risultati-miscele}
+
+La fig.~5 riguarda una miscela di azoto molecolare e atomico, con
+$5\cdot10^{22}$ particelle per metro cubo di ciascuna specie, a 30\,000~K e
+1000~K. La temperatura finale è 24\,353~K contro i 24{,}4~kK della figura, e la
+temperatura traslazionale resta entro il 2{,}5\%; quella vibrazionale, però,
+sale più tardi che nel lavoro di riferimento, con uno scarto che arriva al
+20\% nel tratto più ripido. L'origine più probabile è il tempo di
+rilassamento nelle miscele, che \mpp{} media in modo diverso dal lavoro di
+riferimento (sezione~\ref{sec:implementato-limiti}): il rilassamento
+vibrazionale risulta un po' più lento, mentre lo stato finale è corretto.
+
+La fig.~6 riguarda una miscela di azoto e ossigeno in parti uguali, a 1~atm,
+con la vibrazione molto più calda della traslazione (30\,000~K contro 5000~K),
+calcolata senza e con lo scambio V--V fra le due molecole. La temperatura
+finale è 12\,133~K contro i 12{,}1~kK della figura. Senza scambio V--V gli
+scarti sono del 2{,}7\% sulla temperatura traslazionale, del 2{,}7\% su quella
+vibrazionale dell'azoto e del 6{,}4\% su quella dell'ossigeno; con lo scambio
+scendono al 2{,}0\%, 2{,}5\% e 3{,}4\%. Come nel lavoro di riferimento, lo
+scambio V--V avvicina le due temperature vibrazionali e rende più rapido il
+ritorno all'equilibrio (figura~\ref{fig:miscele}).
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{fig5}
+    \caption{Azoto molecolare e atomico (fig.~5).}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{fig6-VV}
+    \caption{Azoto e ossigeno, con scambio V--V (fig.~6).}
+  \end{subfigure}
+  \caption{Miscele non reagenti. Nella miscela di azoto e ossigeno ogni
+  molecola ha la propria temperatura vibrazionale.}
+  \label{fig:miscele}
+\end{figure}
+
+\subsection{Miscele reagenti}
+\label{sec:risultati-reagenti}
+
+Le fig.~7 e 8 riprendono la miscela di azoto molecolare e atomico, ora con la
+dissociazione dell'azoto. Nella fig.~7, che parte da 30\,000~K e 1000~K, alla
+fine del calcolo le due temperature valgono 8309~K e 8312~K contro 8292~K e
+8281~K del lavoro di riferimento, e le densità dell'azoto molecolare e atomico,
+riferite a quella iniziale, valgono 0{,}138 e 1{,}225 contro 0{,}139 e 1{,}222:
+la composizione segue quella del lavoro di riferimento entro 0{,}006 decadi,
+cioè l'1{,}4\%, per tutto il calcolo (figura~\ref{fig:reagenti}). La
+temperatura traslazionale resta entro il 2{,}3\%; quella vibrazionale mostra
+lo stesso ritardo della fig.~5, fino al 17\% all'inizio. La fig.~8 parte
+invece da 30\,000~K per entrambe le temperature; le temperature finali sono
+12\,121~K e 12\,141~K contro 12\,101~K e 12\,043~K, la composizione è entro
+0{,}01 decadi e le temperature entro il 2\% e il 10\%.
+
+Questi casi confermano anche la scelta dell'esponente della temperatura di
+Park. Con il valore fisso di \mpp{} ($a = 0{,}5$) la composizione della fig.~7
+si allontana dal lavoro di riferimento fino a 0{,}038 decadi (9\%) e la
+temperatura traslazionale fino al 6{,}7\%; con $a = 0{,}7$, come nel lavoro di
+riferimento, gli scarti scendono a 0{,}006 decadi e al 2{,}3\%. La temperatura
+vibrazionale non cambia, perché il suo scarto viene dal rilassamento e non
+dalla chimica.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{fig7}
+    \caption{Temperature.}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{fig7-n}
+    \caption{Densità delle specie riferite a quella iniziale.}
+  \end{subfigure}
+  \caption{Miscela reagente di azoto molecolare e atomico da 30\,000~K e
+  1000~K (fig.~7), con esponente di Park $a = 0{,}7$.}
+  \label{fig:reagenti}
+\end{figure}
+
+\subsection{Aria a cinque specie}
+\label{sec:risultati-aria}
+
+La fig.~9 riguarda aria (79\% di azoto e 21\% di ossigeno in moli) a
+0{,}063~atm e 10\,000~K, con diciannove reazioni e una sola temperatura. Con le
+costanti Quantum-Kinetic la temperatura segue il lavoro di riferimento entro lo
+0{,}7\% (5096~K contro 5074~K alla fine) e le densità delle cinque specie entro
+0{,}06 decadi, quattro su cinque entro 0{,}03 (figura~\ref{fig:aria}). Con il
+meccanismo di Park di \mpp{}, invece, la temperatura si scosta fino all'8{,}9\%
+e le densità di ossigeno molecolare e atomico, azoto atomico e monossido di
+azoto di 0{,}2--0{,}5 decadi, cioè di un fattore fra 1{,}6 e 3: la fig.~9 del
+lavoro di riferimento è stata ottenuta con le costanti Quantum-Kinetic.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{fig9-QK}
+    \caption{Temperatura.}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.49\textwidth}
+    \includegraphics[width=\linewidth]{fig9-QK-n}
+    \caption{Densità delle specie riferite a quella iniziale.}
+  \end{subfigure}
+  \caption{Aria a cinque specie da 10\,000~K con le costanti Quantum-Kinetic
+  (fig.~9).}
+  \label{fig:aria}
+\end{figure}
+
+\subsection{Solver e programmi zero-dimensionali}
+\label{sec:risultati-solver}
+
+La tabella~\ref{tab:solver} riporta lo scarto massimo fra il solver e i
+programmi zero-dimensionali in tutti i casi calcolati con entrambi. Le
+temperature finali coincidono, e le curve restano entro lo 0{,}2\% in tutti i
+casi tranne la fig.~4, dove lo scarto arriva all'1{,}2\% nel rilassamento
+molto rapido dei primi 100~ns. Lì conta di più il modo in cui si avanza nel
+tempo: il solver ripete il calcolo due volte a ogni passo, i programmi
+zero-dimensionali una sola. Anche con le reazioni accese la composizione
+coincide entro lo 0{,}03\%. Il modello è quindi integrato correttamente nel
+solver, chimica compresa.
+
+\begin{table}[ht]
+  \centering
+  \caption{Scarto massimo fra solver e programmi zero-dimensionali.}
+  \label{tab:solver}
+  \small
+  \begin{tabular}{lccc}
+    \toprule
+    Caso & $T_{tr}$ & $T_{v}$ & Composizione \\
+    \midrule
+    fig.~3b, raffreddamento            & 0{,}00\% & 0{,}00\% & -- \\
+    fig.~3a, riscaldamento             & 0{,}03\% & 0{,}21\% & -- \\
+    fig.~4, senza energia elettronica  & 0{,}14\% & 0{,}69\% & -- \\
+    fig.~4, con energia elettronica    & 0{,}51\% & 1{,}18\% & -- \\
+    fig.~5, azoto molecolare e atomico & 0{,}02\% & 0{,}13\% & -- \\
+    fig.~7, con reazioni               & 0{,}03\% & 0{,}18\% & 0{,}03\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}

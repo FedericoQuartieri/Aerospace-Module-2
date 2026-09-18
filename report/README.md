@@ -21,6 +21,9 @@ Serve una installazione TeX Live con `latexmk` e `bibtex`.
 | `sezioni/00-sommario.tex` | sommario |
 | `sezioni/01-introduzione.tex` | introduzione |
 | `sezioni/02-lavoro.tex` | il lavoro svolto |
+| `sezioni/03-risultati.tex` | verifica e risultati |
+| `sezioni/04-discussione.tex` | discussione |
+| `sezioni/05-limiti.tex` | limiti e sviluppi futuri |
 | `bibliografia.bib` | riferimenti |
 
 Le sezioni si aggiungono una alla volta: ogni nuova sezione e' un file in
