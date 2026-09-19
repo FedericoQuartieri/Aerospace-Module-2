@@ -3,9 +3,12 @@
 # (riferimento estratto dal pdf, programma 0D, solver), ma senza titolo, con
 # la legenda in italiano e con nomi che non richiamano la numerazione del paper
 #
-# uso: python3 genera-grafici.py      (scrive i png in questa cartella)
+# uso: python3 genera-grafici.py        (scrive i png in questa cartella)
+#      python3 genera-grafici.py --en   (legenda in inglese, png in ../images-en,
+#                                        per la versione inglese main.tex)
 
 import os
+import sys
 import glob
 import numpy as np
 import matplotlib
@@ -14,6 +17,17 @@ import matplotlib.pyplot as plt
 
 qui = os.path.dirname(os.path.abspath(__file__))
 test = os.path.join(qui, "..", "..", "applications", "test", "nonEqTTv")
+
+# lingua della legenda e cartella di uscita
+inglese = "--en" in sys.argv[1:]
+uscita = os.path.join(qui, "..", "images-en") if inglese else qui
+os.makedirs(uscita, exist_ok=True)
+TESTI = {
+    "riferimento": "reference" if inglese else "riferimento",
+    "programma":   "0D program" if inglese else "programma 0D",
+    "solver":      "solver",
+    "equilibrio":  "equilibrium" if inglese else "equilibrio",
+}
 
 # nome del grafico -> (risultato del progetto, curve del paper, cosa disegnare)
 GRAFICI = {
@@ -69,17 +83,19 @@ for nome, (ris, base, tipo) in GRAFICI.items():
         col = colori[i % len(colori)]
         if c in paper:
             plt.plot(paper[c]["t"], paper[c][c], "-", color=col, lw=2, alpha=0.4,
-                     label="riferimento " + NOMI[c])
+                     label=TESTI["riferimento"] + " " + NOMI[c])
         m = std["t"] > 0
-        plt.plot(std["t"][m], std[c][m], "--", color=col, label="programma 0D " + NOMI[c])
+        plt.plot(std["t"][m], std[c][m], "--", color=col,
+                 label=TESTI["programma"] + " " + NOMI[c])
         if solver is not None and c in solver:
             m = solver["t"] > 0
             plt.plot(solver["t"][m][::5], solver[c][m][::5], "o", color=col, ms=3,
-                     label="solver " + NOMI[c])
+                     label=TESTI["solver"] + " " + NOMI[c])
     Teq = T_equilibrio(os.path.join(test, "output", ris + ".csv"))
     if tipo == "T" and Teq is not None:
         plt.axhline(Teq, color="k", ls=":", lw=1)
-        plt.text(std["t"][1], Teq, " equilibrio: %.0f K" % Teq, va="bottom", fontsize=8)
+        plt.text(std["t"][1], Teq, " %s: %.0f K" % (TESTI["equilibrio"], Teq),
+                 va="bottom", fontsize=8)
     plt.xscale("log")
     if tipo == "n":
         plt.yscale("log")
@@ -88,6 +104,6 @@ for nome, (ris, base, tipo) in GRAFICI.items():
     plt.legend(fontsize=8)
     plt.grid(alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(qui, nome + ".png"), dpi=130)
+    plt.savefig(os.path.join(uscita, nome + ".png"), dpi=130)
     plt.close()
     print("scritto " + nome + ".png")

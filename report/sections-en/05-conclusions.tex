@@ -1,0 +1,69 @@
+\section{Conclusions and future work}
+\label{sec:conclusioni}
+
+\subsection{Conclusions}
+\label{sec:conclusioni-sintesi}
+
+This work has implemented a two-temperature model for reacting hypersonic
+flows in OpenFOAM-13, relying on the \mpp{} library for all the
+thermochemistry. The solver solves the governing equations for the energies,
+which are conserved even across shocks, and obtains the temperatures from
+\mpp. The source-term functions are written only once and shared with
+independent zero-dimensional programs. Where the library's models differ from
+those of the reference work, the corresponding source terms have been
+reimplemented on top of it.
+
+All the zero-dimensional verification cases of Casseau
+\textit{et al.}~\cite{casseau2016} have been reproduced. The solver agrees
+with the zero-dimensional programs to within 0.2\% in almost all cases, and
+never differs by more than 1.2\%, reactions included, which shows that the
+model is correctly integrated. With respect to the reference work, the final
+states agree to within 1\%, the composition of the nitrogen mixture to within
+2.5\% and that of air to within 15\%. The only significant discrepancy is a
+delayed rise of the vibrational temperature in the mixtures containing atomic
+nitrogen, most likely due to the way \mpp{} averages the relaxation times. The
+comparison has also shown how strongly the results depend on choices that the
+paper does not state, such as the inclusion of electronic energy or the rate
+constants used for air, and has made it possible to reconstruct them.
+
+The computational cost, which in this model is almost entirely due to the
+thermochemistry, has been reduced by a factor of $2.2$ by evaluating the source
+terms once rather than once per source term. The gain therefore comes from
+eliminating redundant work, and it leaves the results unchanged.
+
+The model has been verified on heat baths, where there is no flow. Using it in
+realistic configurations requires the developments outlined below.
+
+\subsection{Future work}
+\label{sec:sviluppi}
+
+The first two developments are needed to move from the heat bath to an actual
+flow; the third aims to remove the only significant discrepancy that remains
+with respect to the reference work; the fourth is needed to make cases with a
+realistic mesh computationally affordable.
+
+\begin{enumerate}[leftmargin=1.8em]
+  \item \textbf{Transport of the vibro-electronic energy.} The vibro-electronic
+    energy equation currently contains only the source terms. Convective
+    transport must be added, using the same face fluxes already used for the
+    species, together with heat conduction and appropriate boundary
+    conditions; the source terms should then be evaluated with the updated
+    density. The first test case is the one-dimensional shock tube already
+    included in the template.
+  \item \textbf{Two-temperature viscosity and thermal conductivity.} These are
+    required for viscous flows and for the wall heat flux. \mpp{} already
+    computes them, and splits the conductivity into its translational and
+    vibro-electronic contributions: they only need to be queried cell by cell
+    in the thermophysical model, as is currently done for the energies, and
+    passed to the solver in place of the one-temperature values.
+  \item \textbf{Relaxation times averaged as in the reference work.} Instead of
+    the average provided by \mpp, the relaxation time of each species pair is
+    computed with the constants already available in the library and averaged
+    as in the paper. Repeating the molecular-atomic nitrogen case would then
+    show whether the delay of the vibrational temperature disappears.
+  \item \textbf{Running on realistic meshes.} With a realistic mesh, the
+    domain decomposition already provided by OpenFOAM is the natural route, as
+    it also reduces the cost of the linear solvers. The thermophysical model is
+    already compatible with it: all its computations are local to each cell,
+    and none requires sums across processes.
+\end{enumerate}

@@ -1,0 +1,79 @@
+\section{Introduction}
+\label{sec:introduzione}
+
+\subsection{Thermochemical non-equilibrium in atmospheric entry}
+\label{sec:contesto}
+
+A vehicle entering the atmosphere at hypersonic speed produces a strong shock,
+behind which the temperature rises to tens of thousands of kelvin: the
+vibrational modes become excited, the electronic levels are populated and the
+molecules dissociate. These processes do not reach equilibrium at the same
+rate. Translation and rotation equilibrate within a few molecular collisions,
+vibration requires many more, and the gas behind the shock is therefore in
+thermal non-equilibrium. Park's two-temperature model~\cite{park1990,park1993}
+accounts for this by treating the translational-rotational and the
+vibro-electronic temperatures separately, coupled through a relaxation time.
+Chemistry adds a further coupling: vibrationally excited molecules dissociate
+more readily, and the reactions in turn remove or release vibrational energy.
+How these processes are modelled directly affects the predicted heat loads on
+the vehicle.
+
+\subsection{The one-temperature model and its limitations}
+\label{sec:una-temperatura}
+
+A molecule can store energy in several ways: by moving through space
+(translation), by spinning (rotation), by the oscillation of its atoms
+(vibration) and by the excitation of its electrons. Most CFD simulations,
+including those performed with the standard OpenFOAM solvers, describe the gas
+with a single temperature. The energy received by the gas is assumed to be
+distributed instantly among all these modes in equilibrium proportions, so a
+single number determines the energy stored in each mode, and the same number
+is used to compute the chemical reaction rates. In most applications this is
+an excellent assumption, because molecular collisions are so frequent that the
+energy is redistributed much faster than the flow evolves.
+
+Behind a hypersonic shock this assumption breaks down. The energy goes first
+into the translational motion of the molecules and reaches the vibrational
+modes only after many collisions, over a time comparable to the time the gas
+takes to cross the post-shock region. A one-temperature model cannot capture
+this lag: it predicts a lower temperature than the actual one immediately
+behind the shock, and it misses the region in which the gas gradually relaxes
+towards equilibrium. Chemistry suffers from the same problem: the dissociation
+rate depends both on the collision energy and on the vibrational excitation of
+the molecules, two quantities that a single temperature cannot distinguish.
+The result is an error in the temperature and composition of the gas, and
+consequently in the shock position and in the wall heat flux~\cite{park1990}.
+
+\subsection{The two-temperature model}
+\label{sec:soluzione}
+
+Park's two-temperature model~\cite{park1990,park1993} overcomes these
+limitations by using two temperatures instead of one. The first describes the
+translation and rotation of the molecules, which equilibrate almost
+immediately; the second describes vibration and electronic excitation, which
+lag behind. Just behind the shock the two temperatures can differ by thousands
+of kelvin. Energy is then gradually transferred from one mode to the other,
+faster in hotter and denser gas, until the two temperatures coincide and the
+gas has returned to equilibrium. Chemistry depends on both temperatures:
+dissociation rates are evaluated at an intermediate temperature, so that
+molecules with little vibrational energy dissociate more slowly, and the
+vibrational energy carried away by the dissociating molecules is removed from
+the gas. The model remains an approximation, since the energy within each of
+the two groups of modes is assumed to be in equilibrium, but it captures the
+essential physics without having to track every individual energy level.
+
+\subsection{The reference work}
+\label{sec:riferimento}
+
+The reference work is the paper by Casseau
+\textit{et al.}~\cite{casseau2016}, from the University of Strathclyde, which
+presents \hyfoam, an open-source two-temperature solver for reacting hypersonic
+flows built on OpenFOAM~\cite{hystrath}. The first part of the paper verifies
+the solver on a series of heat baths: small, isolated volumes of gas at rest,
+initialised out of equilibrium and left to evolve, in which each process can
+be studied in isolation. The cases range from pure nitrogen, with and without
+electronic energy, to mixtures of nitrogen with atomic nitrogen and with
+oxygen, and finally to reacting gases and five-species air. The results are
+compared with other CFD codes and with DSMC codes, which simulate the gas by
+tracking the motion and collisions of a large number of particles. These are
+the cases reproduced in the present work.

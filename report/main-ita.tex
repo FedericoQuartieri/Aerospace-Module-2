@@ -1,28 +1,26 @@
 %-----------------------------------------------------------------------------
-%  Aerospace-Module-2 - Project report
+%  Aerospace-Module-2 - Relazione di progetto (versione italiana)
 %
-%  Build:  make        (or: latexmk -pdf main.tex)
-%  The Italian version is main-ita.tex (make ita).
-%  The result figures are not duplicated here: \graphicspath points directly
-%  to the project folders that generate them. The English figures (legends in
-%  English) are in images-en/, produced by
-%  "python3 immagini/genera-grafici.py --en".
+%  Compilazione:  make ita    (oppure: latexmk -pdf main-ita.tex)
+%  La versione principale, in inglese, e' main.tex (make).
+%  Le figure dei risultati non sono duplicate qui dentro: \graphicspath punta
+%  direttamente alle cartelle del progetto che le generano.
 %-----------------------------------------------------------------------------
 \documentclass[11pt,a4paper]{article}
 
-% --- language and fonts ----------------------------------------------------
+% --- lingua e font ---------------------------------------------------------
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
-\usepackage[english]{babel}
+\usepackage[italian]{babel}
 \usepackage{microtype}
 \usepackage{csquotes}
 
-% --- page ------------------------------------------------------------------
+% --- pagina ----------------------------------------------------------------
 \usepackage[margin=2.7cm]{geometry}
 \usepackage{fancyhdr}
 
-% --- mathematics, tables, figures ------------------------------------------
+% --- matematica, tabelle, figure -------------------------------------------
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{graphicx}
@@ -32,39 +30,37 @@
 \usepackage{xcolor}
 \usepackage{enumitem}
 
-% --- diagrams --------------------------------------------------------------
+% --- schemi ----------------------------------------------------------------
 \usepackage{tikz}
 \usetikzlibrary{positioning,arrows.meta}
 
-% --- code ------------------------------------------------------------------
+% --- codice ----------------------------------------------------------------
 \usepackage{listings}
 \usepackage{upquote}
 
-% --- bibliography ----------------------------------------------------------
+% --- bibliografia ----------------------------------------------------------
 \usepackage[numbers,sort&compress]{natbib}
 
-% --- links (last) ----------------------------------------------------------
+% --- collegamenti (per ultimo) ---------------------------------------------
 \usepackage[hidelinks]{hyperref}
 
 %-----------------------------------------------------------------------------
-%  Settings
+%  Impostazioni
 %-----------------------------------------------------------------------------
 
-% figures taken where the project produces them, without copying them into the
-% report; images-en/ comes first, so the English versions take precedence
+% figure prese dove il progetto le produce, senza copiarle nel report
 \graphicspath{%
-  {images-en/}%
   {immagini/}%
   {../applications/test/nonEqTTv/output/}%
   {../explainations/dipendenze/}%
 }
 
-% a little more stretch in lines with long typewriter names
+% un po' di elasticita' in piu' nelle righe con nomi lunghi in carattere macchina
 \setlength{\emergencystretch}{3em}
 
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small\itshape A two-temperature model in OpenFOAM-13 with Mutation++}
+\fancyhead[L]{\small\itshape Modello a due temperature in OpenFOAM-13 con Mutation++}
 \fancyhead[R]{\small\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 
@@ -88,8 +84,9 @@
   captionpos=b,
 }
 \lstset{style=progetto}
+\renewcommand{\lstlistingname}{Listato}
 
-% recurring notation
+% notazione ricorrente
 \newcommand{\Ttr}{T_{tr}}
 \newcommand{\Tve}{T_{ve}}
 \newcommand{\eve}{e_{ve}}
@@ -98,10 +95,10 @@
 \newcommand{\shockThermo}{\texttt{shockThermo}}
 \newcommand{\file}[1]{\texttt{#1}}
 
-% placeholder for sections still to be written
+% segnaposto per le sezioni ancora da scrivere
 \newcommand{\daScrivere}{%
   \par\medskip\noindent
-  \textcolor{gray}{\itshape [section to be written]}\par\medskip
+  \textcolor{gray}{\itshape [sezione da scrivere]}\par\medskip
 }
 
 %-----------------------------------------------------------------------------
@@ -112,17 +109,17 @@
 \vspace*{2cm}
 
 {\Large Politecnico di Milano\par}
-{\large Department of Aerospace Science and Technology\par}
+{\large Dipartimento di Scienze e Tecnologie Aerospaziali\par}
 
 \vfill
 
-{\LARGE\bfseries A two-temperature model\\[0.2em]
-for reacting hypersonic flows\\[0.4em]
-in OpenFOAM-13 and \mpp\par}
+{\LARGE\bfseries Un modello a due temperature\\[0.2em]
+per flussi ipersonici reagenti\\[0.4em]
+in OpenFOAM-13 e \mpp\par}
 
 \vspace{1.2cm}
 
-{\large Reproduction of the zero-dimensional heat baths of\\
+{\large Riproduzione degli heat bath zero-dimensionali di\\
 Casseau \textit{et al.}, \textit{Aerospace} \textbf{3} (2016) 34\par}
 
 \vfill
@@ -139,17 +136,17 @@ Casseau \textit{et al.}, \textit{Aerospace} \textbf{3} (2016) 34\par}
 \tableofcontents
 \clearpage
 
-\input{sections-en/00-summary}
+\input{sezioni/00-sommario}
 
-\input{sections-en/01-introduction}
+\input{sezioni/01-introduzione}
 
-\input{sections-en/02-work}
+\input{sezioni/02-lavoro}
 
-\input{sections-en/03-results}
+\input{sezioni/03-risultati}
 
-\input{sections-en/04-discussion}
+\input{sezioni/04-discussione}
 
-\input{sections-en/05-conclusions}
+\input{sezioni/05-conclusioni}
 
 \clearpage
 
