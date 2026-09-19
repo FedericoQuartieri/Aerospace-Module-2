@@ -34,6 +34,16 @@ License
 // chiamata da foamRun a ogni passo: dopo flussi e velocita', prima della pressione
 void Foam::solvers::shockThermo::thermophysicalPredictor()
 {
+    // ---- tutte le sorgenti in un solo giro sulle celle, allo stato con cui
+    // si entra nel predictor: produzione delle specie (eq. 27), calore di
+    // reazione (eq. 1) e sorgente di eve (eq. 26). Le computeSource* qui sotto
+    // leggono questo risultato invece di rifare il giro ciascuna per conto suo.
+    //
+    // Va chiamata qui e non piu' avanti: le YiEqn risolte poco sotto cambiano
+    // le frazioni in massa una specie alla volta, e le sorgenti vanno valutate
+    // tutte allo stesso stato, come nelle eq. 27 e 30 del paper
+    thermo_.updateSources();
+
     // ---- equazioni delle specie (macchinario OpenFOAM), sorgente chimica da Mutation++
     tmp<fv::convectionScheme<scalar>> mvConvection
     (

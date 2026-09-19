@@ -1,0 +1,66 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  13
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+convertToMeters 1;
+
+vertices
+(
+    (-5 -1 -1)
+    (5 -1 -1)
+    (5 1 -1)
+    (-5 1 -1)
+    (-5 -1 1)
+    (5 -1 1)
+    (5 1 1)
+    (-5 1 1)
+);
+
+// numero di celle, scritto da Allrun in conditions
+#include "$FOAM_CASE/conditions"
+
+blocks
+(
+    // nCells heat bath identici in fila: le patch empty su y e z impongono una
+    // cella sola in quelle direzioni, e in x il campo e' uniforme e il gas
+    // fermo, quindi nessuna cella parla con le vicine
+    hex (0 1 2 3 4 5 6 7) ($nCells 1 1) simpleGrading (1 1 1)
+);
+
+boundary
+(
+    sides
+    {
+        type patch;
+        faces
+        (
+            (1 2 6 5)
+            (0 4 7 3)
+        );
+    }
+    empty
+    {
+        type empty;
+        faces
+        (
+            (0 1 5 4)
+            (5 6 7 4)
+            (3 7 6 2)
+            (0 3 2 1)
+        );
+    }
+);
+
+
+// ************************************************************************* //

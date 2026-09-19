@@ -1,0 +1,35 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  13
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    object      N2;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// frazione in massa di N2, scritta da Allrun in conditions
+#include "$FOAM_CASE/conditions"
+
+dimensions      [0 0 0 0 0 0 0];
+
+internalField   uniform $YN2;
+
+boundaryField
+{
+    sides
+    {
+        type            zeroGradient;
+    }
+    empty
+    {
+        type            empty;
+    }
+}
+
+// ************************************************************************* //

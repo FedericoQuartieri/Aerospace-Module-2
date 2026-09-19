@@ -1,5 +1,6 @@
 EXE_INC = \
     -std=c++17 \
+    -fopenmp \
     -I$(MPP_DIRECTORY)/install/include/mutation++ \
     -I$(MPP_DIRECTORY)/install/include/eigen3 \
     -I$(POLIMI_SRC)/thermophysicalModels/specie/lnInclude \
@@ -10,6 +11,7 @@ EXE_INC = \
     -I$(LIB_SRC)/finiteVolume/lnInclude
 
 LIB_LIBS = \
+    -fopenmp \
     -lfluidThermophysicalModels \
     -lspecie \
     -lfiniteVolume \

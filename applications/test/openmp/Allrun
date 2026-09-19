@@ -1,0 +1,104 @@
+#!/bin/sh
+cd ${0%/*} || exit 1
+
+# Verifica e misura della parallelizzazione OpenMP del thermo.
+#
+# Il caso e' una fila di celle tutte identiche, gas fermo e campo uniforme:
+# ogni cella e' lo stesso heat bath della fig. 7 del paper (N2 + N reagente,
+# il caso piu' caro perche' accende anche la chimica). Questo da' due cose in
+# un colpo solo:
+#
+#  - CORRETTEZZA: le celle non si parlano e il thermo non fa riduzioni, quindi
+#    il risultato con N thread deve coincidere con quello a 1 thread. Non bit a
+#    bit: il Newton di Mutation++ che inverte le energie riparte dalle
+#    temperature dell'ultima cella trattata dal thread, e con N thread quella
+#    cella e' un'altra. Lo scarto atteso e' la tolleranza del Newton, 1e-12.
+#    Con lo scheduling static, che e' il default, ci si aspetta in piu' che due
+#    corse con lo STESSO numero di thread diano gli stessi bit: e' cosi' che si
+#    e' scoperto che Mutation++ teneva i buffer del Newton in variabili static
+#    di funzione, condivise fra tutti i thread (docker/mutationpp-thread-safety.patch).
+#  - COSTO: il tempo al variare di OMP_NUM_THREADS da' lo speedup.
+#
+# Il calcolo gira in $work, sul filesystem locale: se girasse nella cartella
+# del progetto, che su macOS e' un bind mount condiviso con l'host, la
+# scrittura dei campi finali aggiungerebbe qualche secondo uguale per tutte le
+# corse e schiaccerebbe lo speedup misurato.
+#
+# uso: ./Allrun [nCells] [endTime] ["lista thread"]
+#      ./Allrun 20000 2e-7 "1 2 4 8"
+#
+# Lo scheduling e' static, fissato nel thermo. Per provare dynamic,64 (un
+# 10-15% in piu' a 8 thread su CPU con core disuguali, ma risultati non piu'
+# riproducibili bit a bit) va cambiato il pragma in
+# HighEnthalpyMulticomponentThermo.H e ricompilato: OMP_SCHEDULE non serve,
+# il pragma non dice runtime.
+
+nCells=${1:-20000}
+endTime=${2:-2e-7}
+threadList=${3:-"1 2 4 8"}
+
+case=scalingBath
+work=/tmp/scalingBath-run
+here=$(pwd)
+
+# stessi dati Mutation++ dei test 0D (fig. 7: senza livelli elettronici)
+export MPP_DATA_DIRECTORY=$here/../nonEqTTv/mutation-data-noElectronic
+
+# ---- condizioni: quelle della fig. 7
+cat > $case/conditions <<EOF
+// scritte da Allrun: heat bath della fig. 7 replicato in ogni cella
+Ttr           30000;
+Tve           1000;
+p             41419.5;
+YN2           0.6667;
+YN            0.3333;
+mechanism     N2_Park;
+parkExponent  0.7;
+nCells        $nCells;
+endTime       $endTime;
+EOF
+
+rm -rf $case/result-* $case/log.*
+rm -rf $work && cp -r $case $work
+
+( cd $work && blockMesh > log.blockMesh 2>&1 ) \
+    || { tail -20 $work/log.blockMesh; exit 1; }
+
+echo "celle: $nCells   endTime: $endTime   passi: $(python3 -c "print(round($endTime/1e-9))")"
+echo
+
+# ---- una corsa per ogni numero di thread, piu' una ripetuta al massimo:
+# serve a verificare che il risultato sia riproducibile (vedi check.py)
+lastN=$(echo $threadList | awk '{print $NF}')
+runs="$threadList ${lastN}-bis"
+
+first=""
+for label in $runs
+do
+    n=${label%-bis}
+    ( cd $work && rm -rf [1-9]* 0.[0-9]* )
+
+    start=$(python3 -c 'import time; print(time.time())')
+    ( cd $work && OMP_NUM_THREADS=$n foamRun > log.foamRun.$label 2>&1 ) \
+        || { tail -30 $work/log.foamRun.$label; exit 1; }
+    end=$(python3 -c 'import time; print(time.time())')
+
+    # la cartella del tempo finale, comunque si chiami
+    out=$(cd $work && ls -d [1-9]* 0.[0-9]* 2>/dev/null | tail -1)
+    mv $work/$out $case/result-$label
+    cp $work/log.foamRun.$label $case/
+
+    [ -z "$first" ] && first=$(python3 -c "print($end - $start)")
+    python3 -c "
+label = '$label'
+t = $end - $start
+print(f'{label:>7}: {t:7.2f} s   speedup {$first / t:5.2f}x')"
+done
+echo
+
+rm -rf $work
+
+# ---- confronto dei campi finali
+python3 check.py $case "$threadList"
+
+#------------------------------------------------------------------------------

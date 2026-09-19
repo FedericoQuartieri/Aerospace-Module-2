@@ -124,6 +124,13 @@ public:
 
     // sorgenti calcolate da Mutation++ nel bridge (HighEnthalpyMulticomponentThermo.H)
 
+    //- calcola tutte le sorgenti in un solo giro sulle celle, allo stato
+    //  corrente, e le tiene da parte; le computeSource* qui sotto leggono
+    //  quel risultato. Il solver la chiama all'inizio del predictor, cosi'
+    //  tutte le sorgenti sono valutate allo stesso stato, come vogliono le
+    //  equazioni del paper
+    virtual void updateSources() = 0;
+
     //- sorgente dell'energia vibro-elettronica: V-T piu' chimica (eq. 26) [W/m3]
     virtual tmp<volScalarField> computeSourceVe() const = 0;
 

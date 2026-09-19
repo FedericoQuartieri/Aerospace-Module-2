@@ -4,6 +4,11 @@
 //
 // solo funzioni di Mutation++, niente OpenFOAM; lo stato della miscela (rho_s,
 // T, Tv) va impostato prima con mix.setState(...)
+//
+// thread-safety: queste funzioni non hanno stato proprio (i buffer interni sono
+// thread_local), ma Mutation::Mixture si', perche' setState() la muta. Chiamarle
+// da piu' thread e' sicuro solo passando a ogni thread la sua mixture e i suoi
+// vibratori: e' quello che fa il thermo con i MutationWorkspace.
 
 #ifndef mutationSources_H
 #define mutationSources_H
@@ -49,7 +54,11 @@ inline std::vector<Vibrator> makeVibrators(Mutation::Mixture& mix)
 // energia vibrazionale e_v (J/kg) della specie s alla temperatura Tv (eq. 5)
 inline double speciesEv(Mutation::Mixture& mix, const int s, const double Tv)
 {
-    std::vector<double> h_v(mix.nSpecies());
+    // buffer per thread: questa funzione e' chiamata per ogni specie di ogni
+    // cella, e allocarlo sullo heap a ogni chiamata metterebbe i thread OpenMP
+    // in coda sull'allocatore. thread_local lo rende anche thread-safe
+    static thread_local std::vector<double> h_v;
+    h_v.resize(mix.nSpecies());
     // h_v/(R Tv) dipende solo da Tv: tutte le temperature uguali a Tv
     mix.speciesHOverRT(Tv, Tv, Tv, Tv, Tv, nullptr, nullptr, nullptr,
                        h_v.data(), nullptr, nullptr);
@@ -62,7 +71,10 @@ inline double speciesEv(Mutation::Mixture& mix, const int s, const double Tv)
 inline double speciesEve(Mutation::Mixture& mix, const int s, const double Tv)
 {
     const int ns = mix.nSpecies();
-    std::vector<double> h_v(ns), h_el(ns);
+    // come in speciesEv: buffer per thread, niente allocazioni nel ciclo
+    static thread_local std::vector<double> h_v, h_el;
+    h_v.resize(ns);
+    h_el.resize(ns);
     mix.speciesHOverRT(Tv, Tv, Tv, Tv, Tv, nullptr, nullptr, nullptr,
                        h_v.data(), h_el.data(), nullptr);
     return (h_v[s] + h_el[s]) * Mutation::RU * Tv / mix.speciesMw(s);

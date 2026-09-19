@@ -1,0 +1,5 @@
+#!/bin/sh
+cd ${0%/*} || exit 1
+rm -rf scalingBath/result-* scalingBath/[1-9]* scalingBath/0.[0-9]* \
+       scalingBath/constant/polyMesh scalingBath/log.* \
+       scalingBath/conditions scalingBath/postProcessing

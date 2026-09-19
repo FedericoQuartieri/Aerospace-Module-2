@@ -1,0 +1,49 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  13
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      physicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// "type highEnthalpyThermo" carica la termodinamica del progetto (il bridge)
+thermoType
+{
+    type            highEnthalpyThermo;
+    mixture         coefficientWilkeMulticomponentMixture;
+    transport       sutherland;
+    // rrho e' il thermo del template del corso (copia di janaf); il thermo base
+    // non entra nella fisica: T e Tve le ricava Mutation++ nel bridge
+    thermo          rrho;
+    energy          sensibleInternalEnergy;
+    equationOfState perfectGas;
+    specie          specie;
+}
+
+// impostazioni di Mutation++, uguali ai programmi 0D (la cartella dati la
+// sceglie Allrun con MPP_DATA_DIRECTORY); il meccanismo dipende dalla figura
+#include "$FOAM_CASE/conditions"
+
+highEnthalpyMutation
+{
+    mixture                 air_5;
+    stateModel              ChemNonEqTTv;
+    thermodynamicDatabase   RRHO;
+    mechanism               $mechanism;
+    // esponente a della temperatura di Park T^a Tv^(1-a) per la dissociazione
+    parkExponent            $parkExponent;
+}
+
+defaultSpecie N2;
+
+#include "speciesThermo.janaf"
+
+// ************************************************************************* //

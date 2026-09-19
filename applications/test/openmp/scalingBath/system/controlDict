@@ -1,0 +1,59 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  13
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// tempo finale e numero di celle scelti da Allrun
+#include "$FOAM_CASE/conditions"
+
+solver          shockThermo;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         $endTime;
+
+// passo di 1 ns come il paper
+deltaT          1e-9;
+
+// scrive solo alla fine
+writeControl    runTime;
+
+writeInterval   $endTime;
+
+writeFormat     ascii;
+
+writePrecision  16;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   8;
+
+runTimeModifiable true;
+
+adjustTimeStep  no;
+
+maxCo           0.1;
+
+maxDeltaT       1;
+
+// nessuna function: il confronto fra 1 thread e N thread si fa sui campi
+// scritti a fine calcolo (check.py)
+
+// ************************************************************************* //
