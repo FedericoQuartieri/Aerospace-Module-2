@@ -154,7 +154,14 @@ del modello a una temperatura, e il punto in cui una seconda temperatura non
 trova posto: entra una sola energia ed esce una sola temperatura. Il modello
 ad alta entalpia non usa questa funzione ma la sostituisce con la propria:
 consegna a \mpp{} le due energie di ogni cella, ne riceve le due temperature e
-con queste calcola la comprimibilità.
+con queste calcola la comprimibilità
+\[
+  \psi = \frac{\rho(\Ttr, \Tve)}{p},
+\]
+al posto di $\psi = 1/(RT)$ del gas perfetto: qui $\rho$ non viene da
+un'equazione di stato in forma chiusa ma è la densità di miscela restituita da
+\mpp{} dopo aver impostato lo stato con le due temperature e la composizione
+di ogni cella.
 
 \subsubsection{Il modello termodinamico standard}
 \label{sec:openfoam-psimulti}
