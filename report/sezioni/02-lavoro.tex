@@ -295,6 +295,17 @@ $\dot\omega_s$, l'energia vibro-elettronica per $Q_{VT} + Q_{CV}$ e l'energia
 del gas, che la comprende, per $Q_{ch}$, così che l'energia totale, compresa
 quella chimica, si conserva.
 
+Le tre sorgenti vengono da un unico insieme di velocità di reazione: le
+$\dot\omega_s$ di tutte le specie, il calore di reazione e l'accoppiamento
+chimica-vibrazione sono ricavati insieme, in un solo attraversamento del
+dominio, dallo stato con cui si entra nella fase dell'energia. La scelta ha due
+ragioni. La prima è di coerenza: le equazioni del modello valutano tutte le
+$\dot\omega_s$ allo stesso stato del gas, mentre calcolandole una sorgente per
+volta la produzione di una specie finirebbe per essere valutata con le specie
+precedenti già avanzate dalle proprie equazioni, e il calore di reazione con
+tutte avanzate. La seconda è di costo, e si vede nel
+paragrafo~\ref{sec:implementato-costo}.
+
 \subsubsection{Come sono stati aggirati i limiti di \mpp}
 \label{sec:implementato-limiti}
 
@@ -339,6 +350,9 @@ ne eredita il calcolo dei flussi, della densità, della quantità di moto e dell
 pressione, e riscrive la fase dell'energia. In questa fase, a ogni passo:
 
 \begin{enumerate}[leftmargin=1.8em]
+  \item calcola in un solo attraversamento del dominio tutti i termini
+    sorgente allo stato corrente: la produzione chimica di ogni specie, il
+    calore di reazione e la sorgente dell'energia vibro-elettronica;
   \item risolve le equazioni delle specie, con la produzione chimica fornita
     da \mpp, e corregge le frazioni perché la loro somma resti uno;
   \item risolve l'equazione dell'energia del gas, uguale a quella del modulo
@@ -350,12 +364,63 @@ pressione, e riscrive la fase dell'energia. In questa fase, a ogni passo:
     aggiorna il legame fra pressione e densità.
 \end{enumerate}
 
-\noindent I termini sorgente sono calcolati con lo stato del gas già noto e
-trattati in modo esplicito. La fase dell'energia del modulo originale non
+\noindent I termini sorgente sono calcolati una volta sola, con lo stato del gas
+con cui si entra nella fase dell'energia, e trattati in modo esplicito. La fase dell'energia del modulo originale non
 poteva essere riusata perché, subito dopo aver risolto l'equazione
 dell'energia, ne ricava la temperatura: mancherebbero sia il calore di
 reazione sia l'equazione vibro-elettronica, che deve essere risolta prima di
 convertire le energie in temperature.
+
+\subsubsection{Costo di calcolo e parallelizzazione}
+\label{sec:implementato-costo}
+
+Quasi tutto il tempo di calcolo sta nella termochimica, non nella fluidodinamica.
+Su un caso di riferimento di ventimila celle, con l'azoto reagente, la misura dei
+tempi delle singole fasi attribuisce tre quarti del tempo alle chiamate alla
+libreria e il resto a OpenFOAM, cioè ai solutori lineari, alla ricostruzione dei
+flussi e alla scrittura dei campi. Dentro quei tre quarti la voce dominante
+erano le velocità di reazione, che venivano ricalcolate una volta per ogni
+sorgente da costruire: sei volte lo stesso calcolo, pari al 65\% del tempo
+dell'intera simulazione. Valutarle una volta sola, come descritto nel
+paragrafo~\ref{sec:implementato-sorgenti}, riduce il tempo di calcolo di un
+fattore $2{,}2$ senza cambiare i risultati: i casi senza reazioni restano identici cifra per cifra e
+il caso reagente si sposta di un centesimo di grado, perché con un passo di un
+nanosecondo la composizione cambia troppo poco perché l'ordine di valutazione
+conti.
+
+Gli attraversamenti del dominio che restano trattano ogni cella come un
+problema a sé: le celle non si scambiano informazione e non ci sono somme
+globali. Sono quindi stati distribuiti sui nuclei del processore con OpenMP,
+dando a ogni thread la propria copia dello stato della libreria, perché gli
+oggetti di \mpp{} conservano al loro interno lo stato del gas e non possono
+essere usati da più thread contemporaneamente. Questo, da solo, non è bastato:
+la routine della libreria che inverte le energie in temperature teneva i propri
+vettori di lavoro in variabili statiche, condivise da tutto il processo, e con
+più thread produceva temperature sbagliate di ordini di grandezza e diverse a
+ogni esecuzione. È stata corretta con una modifica di tre righe alla libreria,
+applicata alla sua compilazione, che rende quei vettori privati di ciascun
+thread.
+
+Sullo stesso caso di riferimento la parallelizzazione aggiunge, sopra la
+valutazione unica delle sorgenti, un ulteriore fattore $1{,}5$ su otto nuclei: in
+tutto il tempo di calcolo scende a poco meno di un terzo di quello di partenza.
+Il grosso del guadagno viene quindi dalla valutazione unica delle sorgenti, non
+dal parallelismo. Il guadagno della parallelizzazione non cresce oltre i
+quattro thread, e il suo
+tetto è basso per una ragione strutturale: dopo la valutazione unica delle
+sorgenti più della metà del tempo è OpenFOAM, che OpenMP qui non tocca e che
+cresce con il numero di celle esattamente come la parte parallelizzata, così
+che infittire la griglia non cambia il rapporto. Su un caso con una griglia
+vera il parallelismo utile è quello a memoria distribuita di OpenFOAM, che
+suddivide il dominio fra i processi e alleggerisce anche i solutori lineari.
+
+La correttezza della parallelizzazione è verificata su un caso costruito
+appositamente: una fila di celle con lo stesso stato iniziale, gas fermo e campo
+uniforme, in cui ogni cella è il bagno termico dell'azoto reagente. Poiché le
+celle sono indipendenti, il risultato con più thread deve coincidere con quello
+a un thread; lo fa entro la tolleranza con cui la libreria converge le
+temperature, e a parità di thread è riproducibile cifra per cifra. È questo
+controllo che ha reso visibile il difetto della libreria descritto sopra.
 
 \subsection{I programmi di verifica zero-dimensionali}
 \label{sec:programmi0D}

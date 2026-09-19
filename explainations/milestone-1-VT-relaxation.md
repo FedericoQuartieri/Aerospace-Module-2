@@ -49,18 +49,36 @@ serve solo a OpenFOAM per costruire i campi, la sua polinomiale non entra nella 
 dall'energia limitandola a 20000 K, il suo intervallo di validità), poi per ogni
 cella chiede a Mutation++ le energie a `(p, T, Tve)` e riempie `e` ed `eve`.
 
-**Sorgenti** (usate dal solver, calcolate cella per cella con le funzioni di
-`mutationSources.H`, le stesse dei programmi 0D):
+**Sorgenti**: `updateSources()` fa **un solo giro sulle celle** e ne calcola tutte
+e tre, con le funzioni di `mutationSources.H` (le stesse dei programmi 0D):
 
-- `computeSourceVe()`: scambio V-T (eq. 8) più, con la chimica, l'energia
-  vibro-elettronica portata via dalle reazioni (eq. 30);
-- `computeSourceY(i)`: produzione chimica della specie `i` (eq. 27);
-- `computeSourceE()`: calore di reazione per l'energia sensibile, `-Σ hf_s ω_s`.
+- la produzione chimica ω_s di **tutte** le specie (eq. 27);
+- il calore di reazione per l'energia sensibile, `-Σ hf_s ω_s`;
+- la sorgente di `eve`: scambio V-T (eq. 8) più, con la chimica, l'energia
+  vibro-elettronica portata via dalle reazioni (eq. 30).
+
+Le `computeSourceY(i)`, `computeSourceE()` e `computeSourceVe()` che il solver
+chiama non girano più sulle celle: leggono quello che `updateSources()` ha messo
+da parte. `checkSources()` ferma il calcolo se il solver le usa senza aver
+chiamato prima `updateSources()`.
+
+Prima ognuna faceva il proprio giro e ricalcolava `productionRates()`: quattro
+volte per le specie risolte, una per il calore di reazione, una dentro la
+sorgente di `eve`. Sei calcoli della stessa cosa, il **65 % del tempo dell'intera
+corsa** (misurato, vedi `applications/test/openmp/README.md`). Il consolidamento
+è anche più coerente con il modello: prima la sorgente della specie *i* vedeva
+le specie *0…i−1* già avanzate dalle loro `YiEqn`, perché `YiEqn.solve()` sta
+dentro il ciclo sulle specie, e il calore di reazione le vedeva tutte avanzate e
+rinormalizzate; le eq. 27 e 30 valutano tutti gli ω_s allo **stesso** stato.
+L'effetto numerico con il passo di 1 ns è trascurabile: i casi senza chimica non
+cambiano di un bit, la fig. 7 — l'unico reagente — si sposta di 0,011 K su `Tv`
+(0,0002 %) e di 1e-7 sulle densità normalizzate.
 
 **`correct()`**: per ogni cella passa a Mutation++ `ρ(e + Σ Y_s hf_s)` e `ρ eve`
 (`setState` con `vars = 0`), che inverte le energie con un Newton e restituisce
 `T` e `Tve`; poi `updatePsi()` ricalcola `psi = ρ/p` con `p` somma delle pressioni
-parziali (eq. 24), in celle e facce di bordo.
+parziali (eq. 24), in celle e facce di bordo. Alla fine invalida le sorgenti in
+cache, perché lo stato a cui si riferivano non c'è più.
 
 ### 2.2 Le sorgenti — `mutationSources.H`
 
@@ -83,6 +101,7 @@ Funzioni di solo Mutation++ (niente OpenFOAM), condivise fra thermo e programmi 
 ### 2.3 Il solver — `thermophysicalPredictor.C`
 
 ```cpp
+thermo_.updateSources();  // un giro sulle celle: wdot_s, Q_chem, Q_ve
 // specie: sorgente chimica di Mutation++
 YiEqn: ddt(rho, Yi) + div(phi, Yi) + divj(Yi) == wdot_i + fvModels
 // energia sensibile: calore di reazione
@@ -92,8 +111,35 @@ EveEqn: ddt(rho, eve) == Q_ve
 thermo_.correct();   // decode: T, Tve, psi da Mutation++
 ```
 
+`updateSources()` va all'inizio, prima che le `YiEqn` comincino a cambiare le
+frazioni in massa una specie alla volta: così tutte le sorgenti sono valutate
+allo stato con cui si entra nella fase dell'energia.
+
 Le sorgenti sono esplicite. Nell'heat bath con passo di 1 ns è la stessa
 integrazione dei programmi 0D, ed è per questo che i due percorsi coincidono.
+
+### 2.4 La parallelizzazione — OpenMP
+
+I giri sulle celle del thermo (`updateSources()`, `correct()`, `updatePsi()`)
+sono indipendenti cella per cella e sono distribuiti sui thread con OpenMP,
+attraverso un unico `parallelFor()`. Dettagli e misure in
+`applications/test/openmp/README.md`; qui i tre punti che vanno saputi:
+
+- **`Mutation::Mixture` non è thread-safe**: `setState()` muta l'oggetto e tutto
+  quello che si chiede dopo legge quello stato. Ogni thread ha quindi la sua
+  mixture, i suoi vibratori e i suoi buffer, in un `MutationWorkspace` costruito
+  una volta sola in `initMutation()`.
+- **Non basta.** Mutation++ teneva i buffer del Newton che inverte le energie in
+  variabili `static` di funzione, una copia per processo condivisa fra tutte le
+  miscele e tutti i thread: con otto thread ne uscivano temperature sbagliate di
+  ordini di grandezza, diverse a ogni corsa. Serve la patch
+  `docker/mutationpp-thread-safety.patch`, che l'ambiente applica in fase di
+  build. **Senza quella patch il solver parallelo dà numeri sbagliati.**
+- **Guadagno**: 3,3× rispetto al punto di partenza su 20000 celle e 8 core
+  (2,2× dal consolidamento delle sorgenti, 1,5× da OpenMP sopra di esso). Il
+  tetto è basso perché dopo il consolidamento più della metà del tempo è
+  OpenFOAM — solutori lineari, flussi, scrittura dei campi — che OpenMP non
+  tocca. La leva successiva è MPI su un caso con una mesh vera.
 
 ---
 
@@ -146,5 +192,6 @@ programma 0D coincidono entro 0.03-0.2 % su tutte le curve, chimica compresa.
 
 ## 6. Cosa viene dopo
 
-- **Milestone 3** — trasporto di `eve` e chimica nel tubo d'urto 1D.
+- **Milestone 3** — trasporto di `eve` e chimica nel tubo d'urto 1D; è il primo
+  caso con una mesh vera, e quindi il primo dove conviene MPI invece di OpenMP.
 - **Milestone 4** — 2D/3D (blunted cone Mach 11, cylinder Mach 20 del paper Part Two).

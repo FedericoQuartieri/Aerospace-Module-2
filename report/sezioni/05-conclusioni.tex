@@ -24,15 +24,28 @@ vibrazionale nelle miscele con azoto atomico, con ogni probabilità dovuto al
 modo in cui \mpp{} media i tempi di rilassamento. Il confronto ha anche
 mostrato quanto i risultati dipendano da scelte che l'articolo non dichiara,
 come l'uso dell'energia elettronica o le costanti di velocità per l'aria, e ha
-permesso di ricostruirle. Il modello è verificato sul bagno termico, dove non
+permesso di ricostruirle.
+
+Il costo di calcolo, che in questo modello sta quasi tutto nella termochimica,
+è stato ridotto a poco meno di un terzo: un fattore $2{,}2$ viene dal valutare i
+termini sorgente una volta sola invece di una per ogni sorgente da costruire, e
+un ulteriore fattore $1{,}5$ dalla distribuzione dei calcoli di cella sugli otto
+nuclei del processore. Il grosso del guadagno sta dunque nell'eliminare lavoro
+ripetuto, non nel parallelismo. La
+verifica del calcolo parallelo ha anche fatto emergere un difetto della
+libreria, che teneva i vettori di lavoro dell'inversione delle energie in
+variabili condivise da tutto il processo, corretto con una modifica minima
+applicata alla sua compilazione.
+
+Il modello è verificato sul bagno termico, dove non
 c'è flusso: per usarlo in casi reali servono gli sviluppi che seguono.
 
 \subsection{Sviluppi futuri}
 \label{sec:sviluppi}
 
-I primi due sviluppi servono per passare dal bagno termico a un flusso vero;
-il terzo per eliminare l'unica differenza rilevante rimasta rispetto al lavoro
-di riferimento.
+I primi due sviluppi servono per passare dal bagno termico a un flusso vero; il
+terzo per eliminare l'unica differenza rilevante rimasta rispetto al lavoro di
+riferimento; il quarto per rendere trattabili i casi con una griglia vera.
 
 \begin{enumerate}[leftmargin=1.8em]
   \item \textbf{Trasporto dell'energia vibro-elettronica.} Oggi la sua
@@ -53,4 +66,11 @@ di riferimento.
     media come nell'articolo; ripetendo il caso della miscela di azoto
     molecolare e atomico si verifica se il ritardo della temperatura
     vibrazionale scompare.
+  \item \textbf{Parallelismo a memoria distribuita.} Con una griglia vera il
+    parallelismo utile non è più quello a memoria condivisa usato qui, il cui
+    tetto è fissato dalla parte di OpenFOAM che non tocca, ma la suddivisione
+    del dominio fra processi già offerta da OpenFOAM, che alleggerisce anche i
+    solutori lineari. Il modello termodinamico è già scritto in modo
+    compatibile: tutti i suoi calcoli sono locali alla cella e nessuno richiede
+    somme fra processi.
 \end{enumerate}

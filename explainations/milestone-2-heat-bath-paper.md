@@ -32,6 +32,13 @@ modello nel solver è corretta. Gli scarti più grandi (fig. 4) sono nei primi 1
 del rilassamento a 30000 K, dove il solver fa due correttori PIMPLE per passo e il
 programma 0D un solo Eulero esplicito.
 
+> **Tabella riverificata** dopo la parallelizzazione OpenMP del thermo e il
+> consolidamento delle sorgenti in un solo giro sulle celle (vedi
+> `milestone-1-VT-relaxation.md` §2.1 e §2.4): nessuno di questi numeri si muove.
+> I cinque casi senza chimica danno csv identici bit a bit; la fig. 7, l'unico
+> reagente, si sposta di 0,011 K su Tv e di 1e-7 sulle densità normalizzate,
+> cioè sotto la precisione con cui questa tabella è scritta.
+
 ---
 
 ## 2. Confronto con il paper, figura per figura
