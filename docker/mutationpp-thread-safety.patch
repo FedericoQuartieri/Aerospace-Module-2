@@ -1,0 +1,52 @@
+Rende thread-safe l'inversione delle energie di Mutation++.
+
+ChemNonEqTTvStateModel::solveEnergies() e' il Newton che, date le densita'
+parziali e le due densita' di energia, ricava T e Tv: e' quello che chiama
+setState(rho_s, {E, E_ve}, 0), cioe' il decode del solver (thermo::correct()).
+
+Usa tre oggetti Eigen dichiarati "static" dentro la funzione. Non sono per
+istanza di Mixture: sono uno solo per processo, condiviso fra tutte le miscele
+e tutti i thread. Dare a ogni thread la sua Mutation::Mixture quindi non basta,
+i thread continuano a scriversi addosso su yi, ei e ci.
+
+Si vede subito: N celle con lo stesso identico stato, 8 thread, e le
+temperature che ne escono differiscono fra una cella e l'altra di ordini di
+grandezza, e cambiano da una corsa all'altra. A un thread solo sono tutte
+uguali e riproducibili.
+
+"static" serviva solo a non riallocare a ogni chiamata; "static thread_local"
+mantiene quel vantaggio e rende ogni copia privata del thread. Il
+comportamento a un thread solo non cambia.
+
+Verificato su Mutation++ e8edf4f3a7f2bc22b4c62a23060dbe86967f1b3e.
+
+Nota: restano altri static di funzione in MultiPhaseEquilSolver.cpp, sullo
+stesso schema. Non sono su questo percorso (servono al solutore di equilibrio,
+non allo stateModel ChemNonEqTTv), ma avrebbero lo stesso problema.
+
+diff --git a/src/thermo/ChemNonEqTTvStateModel.cpp b/src/thermo/ChemNonEqTTvStateModel.cpp
+index 3a30acc..c67ac29 100644
+--- a/src/thermo/ChemNonEqTTvStateModel.cpp
++++ b/src/thermo/ChemNonEqTTvStateModel.cpp
+@@ -264,15 +264,18 @@ public:
+         const int    imax = 100;
+ 
+         Map<const VectorXd> rhoi(p_rhoi, m_thermo.nSpecies());
+         const double density = rhoi.sum();
+ 
+-        static VectorXd yi; yi = rhoi / density;
++        // thread_local e non solo static: questi buffer sono unici per
++        // processo, e senza thread_local due thread che invertono le energie
++        // in due celle diverse se li sovrascrivono a vicenda
++        static thread_local VectorXd yi; yi = rhoi / density;
+         const Vector2d emix = Map<const Vector2d>(p_rhoe) / density;
+ 
+-        static Matrix<double, Dynamic, Dynamic, RowMajor> ei;
+-        static Matrix<double, Dynamic, Dynamic, RowMajor> ci;
++        static thread_local Matrix<double, Dynamic, Dynamic, RowMajor> ei;
++        static thread_local Matrix<double, Dynamic, Dynamic, RowMajor> ci;
+         ei.resize(2, m_thermo.nSpecies());
+         ci.resize(2, m_thermo.nSpecies());
+ 
+         getEnergiesMass(ei.data());
+ 

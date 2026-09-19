@@ -1,4 +1,7 @@
 linux64GccDPInt32Opt/
+# build nel container arm64 (Apple Silicon)
+linuxArm64GccDPInt32Opt/
+platforms/
 thirdParty/Mutationpp
 .claude
 
@@ -26,3 +29,11 @@ applications/test/nonEqTTv/solverHeatBath/postProcessing/
 applications/test/nonEqTTv/solverHeatBath/processor*/
 applications/test/nonEqTTv/solverHeatBath/log.*
 
+
+# test OpenMP — risultati e mesh rigenerati da applications/test/openmp/Allrun
+applications/test/openmp/scalingBath/conditions
+applications/test/openmp/scalingBath/result-*/
+applications/test/openmp/scalingBath/[1-9]*/
+applications/test/openmp/scalingBath/0.[0-9]*/
+applications/test/openmp/scalingBath/constant/polyMesh/
+applications/test/openmp/scalingBath/log.*
