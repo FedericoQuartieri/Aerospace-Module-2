@@ -49,7 +49,10 @@ inline std::vector<Vibrator> makeVibrators(Mutation::Mixture& mix)
 // energia vibrazionale e_v (J/kg) della specie s alla temperatura Tv (eq. 5)
 inline double speciesEv(Mutation::Mixture& mix, const int s, const double Tv)
 {
-    std::vector<double> h_v(mix.nSpecies());
+    // buffer riusato: questa funzione e' chiamata per ogni specie di ogni
+    // cella, e allocarlo sullo heap a ogni chiamata costerebbe piu' del conto
+    static std::vector<double> h_v;
+    h_v.resize(mix.nSpecies());
     // h_v/(R Tv) dipende solo da Tv: tutte le temperature uguali a Tv
     mix.speciesHOverRT(Tv, Tv, Tv, Tv, Tv, nullptr, nullptr, nullptr,
                        h_v.data(), nullptr, nullptr);
@@ -62,7 +65,10 @@ inline double speciesEv(Mutation::Mixture& mix, const int s, const double Tv)
 inline double speciesEve(Mutation::Mixture& mix, const int s, const double Tv)
 {
     const int ns = mix.nSpecies();
-    std::vector<double> h_v(ns), h_el(ns);
+    // come in speciesEv: buffer riusato, niente allocazioni nel ciclo
+    static std::vector<double> h_v, h_el;
+    h_v.resize(ns);
+    h_el.resize(ns);
     mix.speciesHOverRT(Tv, Tv, Tv, Tv, Tv, nullptr, nullptr, nullptr,
                        h_v.data(), h_el.data(), nullptr);
     return (h_v[s] + h_el[s]) * Mutation::RU * Tv / mix.speciesMw(s);
