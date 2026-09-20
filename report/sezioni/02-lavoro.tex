@@ -61,48 +61,19 @@ fasi che cambiano.
 \label{sec:openfoam-thermo}
 
 Il solver non sa nulla delle proprietà del gas: le chiede a un
-\emph{modello termodinamico}, scelto in un file di testo del caso componendo
-pezzi indipendenti: come si mescolano le specie, come si calcolano viscosità e
-conducibilità, come si calcola l'energia di ogni specie in funzione della
-temperatura, quale forma di energia risolve il solver e quale equazione di
-stato lega pressione, densità e temperatura. Nel solver per flussi
-compressibili, dopo che l'equazione dell'energia è stata risolta, il modello
-ricava la temperatura di ogni cella con un metodo iterativo, e da questa la
-comprimibilità $\psi = 1/(RT)$ del gas perfetto, con cui si aggiorna la
-pressione. Per i gas ad alta temperatura OpenFOAM usa i polinomi JANAF: il
-calore specifico di ogni specie è un polinomio della temperatura, con
-coefficienti ricavati da tabelle termochimiche e validi in un intervallo
+\emph{modello termodinamico}, che il caso compone da pezzi indipendenti scelti
+in un file di testo: come si mescolano le specie, come si calcolano viscosità e
+conducibilità, come dipende dalla temperatura l'energia di ogni specie e quale
+equazione di stato si usa. Nel solver per flussi compressibili, dopo che
+l'equazione dell'energia è stata risolta, il modello ricava la temperatura di
+ogni cella con un metodo iterativo e da questa la comprimibilità con cui si
+aggiorna la pressione. I modelli disponibili per i gas esprimono il calore
+specifico come un polinomio della temperatura, valido in un intervallo
 dichiarato; se la temperatura ne esce, viene riportata al limite
-dell'intervallo con un avviso. Internamente un modello termodinamico è
-costruito a strati, ognuno dei quali aggiunge un pezzo: le grandezze di base
-(temperatura, energia, pressione), la comprimibilità, le specie chimiche. Ogni
-combinazione ammessa viene iscritta con il proprio nome nell'elenco dei modelli
-disponibili, così che il caso possa sceglierla per nome come spiegato nella
-sezione~\ref{sec:approccio}.
-
-\subsubsection{Il modello RRHO}
-\label{sec:openfoam-rrho}
-
-Il modello RRHO (\emph{rigid rotor, harmonic oscillator}) calcola l'energia di
-un gas a partire dalle costanti delle sue molecole, modo per modo: la
-traslazione come quella di un gas ideale, la rotazione come quella di un
-rotore rigido, la vibrazione come quella di un oscillatore armonico con la sua
-temperatura caratteristica, e i livelli elettronici con le loro energie e
-degenerazioni. Proprio perché costruisce l'energia un modo alla volta, permette
-di assegnare a ciascun modo una temperatura diversa, ed è quindi la base
-naturale di un modello a due temperature. OpenFOAM non lo offre: per i gas
-mette a disposizione i polinomi JANAF e due modelli a calore specifico
-costante. Il template da cui parte il progetto introduce un modello
-termodinamico apposito, chiamato RRHO, predisposto per portare questo modello in
-OpenFOAM: i dati delle specie che lo accompagnano contengono già, accanto ai
-coefficienti dei polinomi, tutte le costanti che il modello richiede
-(temperature caratteristiche di rotazione e di vibrazione, livelli elettronici,
-entalpia di formazione). Nella versione attuale calcola le proprietà delle
-specie con i polinomi JANAF, e nel progetto è il modello di base su cui si
-appoggia il modello ad alta entalpia (sezione~\ref{sec:openfoam-highenthalpy}):
-fornisce i campi che OpenFOAM si aspetta, mentre le energie dei singoli modi,
-calcolate proprio con il modello RRHO e con i dati del lavoro di riferimento,
-vengono da \mpp{} (sezione~\ref{sec:mutation}).
+dell'intervallo con un avviso. Internamente ogni modello è costruito a strati,
+e ogni combinazione ammessa viene iscritta con il proprio nome nell'elenco dei
+modelli disponibili, così che il caso possa sceglierla per nome come spiegato
+nella sezione~\ref{sec:approccio}.
 
 \subsubsection{Il modello termodinamico ad alta entalpia}
 \label{sec:openfoam-highenthalpy}
@@ -111,7 +82,7 @@ Il punto di aggancio per il modello a due temperature è un modello
 termodinamico ad alta entalpia, costruito sullo stesso schema di quello
 standard di OpenFOAM per le miscele di gas compressibili: stessa struttura a
 strati con uno strato in più in cima, stesse combinazioni disponibili, a cui si
-aggiungono quelle con il modello RRHO, e un proprio nome con cui il caso lo
+aggiungono quelle fornite dal template, e un proprio nome con cui il caso lo
 sceglie. Per il solver è quindi un modello termodinamico come gli altri.
 Rispetto a quello standard aggiunge due campi, la temperatura
 vibro-elettronica, il cui valore iniziale si assegna nel caso come per la
@@ -177,8 +148,8 @@ combinazioni ammesse, con una chiamata per ogni tipo di miscela, usando macro
 già pronte di OpenFOAM. I file del modello ad alta entalpia seguono la stessa
 struttura, e confrontandoli si vede esattamente che cosa aggiungono: i due
 campi della temperatura e dell'energia vibro-elettronica, le tre funzioni per i
-termini sorgente, lo strato in più in cima, le combinazioni con il modello
-RRHO e il nome con cui il caso lo sceglie.
+termini sorgente, lo strato in più in cima, le combinazioni aggiuntive e il
+nome con cui il caso lo sceglie.
 
 \subsubsection{Limiti per un modello a due temperature}
 \label{sec:openfoam-limiti}
@@ -188,7 +159,7 @@ modello a una temperatura descritto nella sezione~\ref{sec:una-temperatura}:
 
 \begin{itemize}[leftmargin=1.6em]
   \item ogni cella ha una sola temperatura, ricavata da una sola energia; i
-    polinomi JANAF danno l'energia totale di una specie in equilibrio e non
+    polinomi danno l'energia totale di una specie in equilibrio e non
     dicono quanta ne stia nella vibrazione, quindi non c'è modo di definire una
     seconda temperatura;
   \item i polinomi valgono fino alla temperatura massima dichiarata, nei dati
@@ -219,10 +190,10 @@ calcolare da solo: termodinamiche, di trasporto, chimiche e di scambio di
 energia fra i modi, dai flussi subsonici a quelli ipersonici, anche per gas
 ionizzati. Il gas è descritto dalle specie che lo compongono, dal numero di
 temperature, una oppure due come nel modello di Park, da una banca dati
-termodinamica, che può essere anche il modello RRHO, e dall'elenco delle
-reazioni. Date le densità delle specie e le temperature, oppure le energie, la
-libreria restituisce tutte le altre grandezze; nel secondo caso ricava lei
-stessa le temperature.
+termodinamica e dall'elenco delle reazioni. Lo stato si può dare in tre modi:
+densità e temperature, densità ed energie, oppure frazioni in massa con
+pressione e temperature. Da ognuno la libreria ricava tutto il resto, e dalle
+energie trova da sé le temperature.
 
 \subsubsection{Il collegamento con il progetto}
 \label{sec:mutation-collegamento}
@@ -230,7 +201,7 @@ stessa le temperature.
 \mpp{} non fa parte di OpenFOAM: è compilata a parte, insieme al progetto, come
 libreria dinamica, e il modello termodinamico ad alta entalpia descritto nella
 sezione~\ref{sec:openfoam-highenthalpy} e i programmi zero-dimensionali di
-verifica ne chiamano direttamente le funzioni. All'avvio di una simulazione il
+verifica ne chiamano le funzioni; il solver ci arriva attraverso il modello. All'avvio di una simulazione il
 modello termodinamico legge nel caso la descrizione del gas -- specie, numero
 di temperature, banca dati termodinamica, reazioni --, crea il gas
 corrispondente in \mpp{} e associa ogni specie di OpenFOAM alla specie di

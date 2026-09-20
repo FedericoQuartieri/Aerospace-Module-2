@@ -30,7 +30,7 @@ right table, after which OpenFOAM uses it like any of its built-in models.
 \label{sec:openfoam}
 
 This section describes the parts of OpenFOAM on which the project relies, and
-explains why OpenFOAM, out of the box, cannot handle a two-temperature model.
+explains why, out of the box, it cannot handle a two-temperature model.
 
 \subsubsection{Code organisation and modular solvers}
 \label{sec:openfoam-moduli}
@@ -54,49 +54,19 @@ overriding only the stages that need to change.
 \subsubsection{Thermophysical models}
 \label{sec:openfoam-thermo}
 
-The solver has no knowledge of the gas properties: it obtains them from a
+The solver knows nothing about the gas properties: it obtains them from a
 \emph{thermophysical model}, which the case assembles from independent
-components specified in a text file: the mixing rule for the species, the
-models for viscosity and thermal conductivity, the energy of each species as a
-function of temperature, the form of energy the solver solves for, and the
-equation of state relating pressure, density and temperature. In the
-compressible solver, once the energy equation has been solved, the model
-computes the temperature of each cell iteratively, and from it the
-perfect-gas compressibility $\psi = 1/(RT)$, which is then used to update the
-pressure. For high-temperature gases OpenFOAM uses the JANAF polynomials: the
-specific heat of each species is a polynomial in temperature, with
-coefficients fitted to thermochemical tables and valid over a stated range. If
-the temperature leaves this range, it is clipped to the nearest limit and a
-warning is issued. Internally, a thermophysical model is built as a stack of
-layers, each adding a set of features: the basic quantities (temperature,
-energy, pressure), the compressibility, and the chemical species. Every
-permitted combination is registered under its own name in the table of
-available models, so that the case can select it by name, as described in
-Section~\ref{sec:approccio}.
-
-\subsubsection{The RRHO model}
-\label{sec:openfoam-rrho}
-
-The RRHO (\emph{rigid rotor, harmonic oscillator}) model computes the energy of
-a gas from its molecular constants, one mode at a time: translation as for an
-ideal gas, rotation as for a rigid rotor, vibration as for a harmonic
-oscillator with its characteristic temperature, and electronic excitation from
-the energies and degeneracies of the electronic levels. Because it builds the
-energy mode by mode, it allows a different temperature to be assigned to each
-mode, which makes it the natural basis for a two-temperature model. OpenFOAM
-does not provide it: for gases it offers only the JANAF polynomials and two
-constant-specific-heat models. The course template on which the project is
-based introduces a dedicated thermophysical model, named RRHO, intended to
-bring this model into OpenFOAM: the accompanying species data already contain,
-alongside the polynomial coefficients, all the constants the model requires
-(characteristic rotational and vibrational temperatures, electronic levels,
-enthalpy of formation). In its current version, however, it still computes the
-species properties with the JANAF polynomials. In the project it serves as the
-base model underneath the high-enthalpy model
-(Section~\ref{sec:openfoam-highenthalpy}): it provides the fields that OpenFOAM
-expects, while the energies of the individual modes, computed with the actual
-RRHO model and with the data of the reference work, are obtained from \mpp{}
-(Section~\ref{sec:mutation}).
+components chosen in a text file: how the species mix, how viscosity and
+thermal conductivity are computed, how the energy of each species depends on
+temperature, and the equation of state. In the compressible solver, once the
+energy equation has been solved, the model recovers the temperature of each
+cell iteratively and from it the compressibility used to update the pressure.
+The models available for gases express the specific heat as a polynomial in
+temperature, fitted over a stated range; if the temperature leaves that range
+it is clipped to the nearest limit and a warning is issued. Internally each
+model is built as a stack of layers, and every permitted combination is
+registered under its own name in the table of available models, so that the
+case can select it by name, as described in Section~\ref{sec:approccio}.
 
 \subsubsection{The high-enthalpy thermophysical model}
 \label{sec:openfoam-highenthalpy}
@@ -105,7 +75,8 @@ The two-temperature model is plugged into OpenFOAM through a high-enthalpy
 thermophysical model. It follows the same design as the standard OpenFOAM
 model for mixtures of compressible gases: the same layered structure with one
 additional layer on top, the same set of available combinations extended with
-those using the RRHO model, and a name of its own by which the case selects it.
+those provided by the template, and a name of its own by which the case
+selects it.
 From the solver's point of view it is therefore a thermophysical model like any
 other. Compared with the standard model it adds two fields, the
 vibro-electronic temperature, whose initial value is set in the case like that
@@ -169,9 +140,8 @@ registers every permitted combination in the table of available models, with
 one call per mixture type, using predefined OpenFOAM macros. The files of the
 high-enthalpy model follow the same structure, and a side-by-side comparison
 shows exactly what they add: the vibro-electronic temperature and energy
-fields, the three source-term functions, the additional top layer, the
-combinations using the RRHO model, and the name by which the case selects the
-model.
+fields, the three source-term functions, the additional top layer, the extra
+combinations, and the name by which the case selects the model.
 
 \subsubsection{Limitations for a two-temperature model}
 \label{sec:openfoam-limiti}
@@ -181,7 +151,7 @@ one-temperature description of Section~\ref{sec:una-temperatura}:
 
 \begin{itemize}[leftmargin=1.6em]
   \item each cell has a single temperature, derived from a single energy; the
-    JANAF polynomials give the total energy of a species in equilibrium but not
+    polynomials give the total energy of a species in equilibrium but not
     the fraction stored in vibration, so a second temperature cannot be
     defined;
   \item the polynomials are valid only up to the stated maximum temperature,
@@ -204,33 +174,31 @@ in the project, and how the project is coupled to it.
 \label{sec:mutation-cosa}
 
 \mpp~\cite{scoggins2020} is an open-source C++ library originally developed at
-the von Karman Institute for Fluid Dynamics; the project uses version 1.1.3. It
+the von Karman Institute for Fluid Dynamics. It
 is designed specifically to be coupled with CFD codes: it does not solve flow
 equations, but, given the local state of a gas, it computes the properties that
-a flow solver cannot obtain on its own, namely thermodynamic and transport
-properties, chemical rates and inter-mode energy exchange, for regimes ranging
-from subsonic to hypersonic and including ionised gases. The gas is defined by
+a flow solver cannot obtain on its own: thermodynamic, transport, chemical and
+inter-mode energy exchange. The gas is defined by
 its constituent species, the number of temperatures (one, or two as in Park's
-model), a thermodynamic database, which may be the RRHO model, and a list of
-reactions. Given the species densities and either the temperatures or the
-energies, the library returns all other quantities; in the latter case it
-computes the temperatures itself.
+model), a thermodynamic database, and a list of
+reactions. The state can be given in three ways: 
+densities with the temperatures, densities with the energies, or mass fractions 
+with pressure and temperatures. From any of them the library returns everything 
+else, and from the energies it finds the temperatures itself.
 
 \subsubsection{Coupling with the project}
 \label{sec:mutation-collegamento}
 
 \mpp{} is not part of OpenFOAM: it is compiled separately as a dynamic library,
-alongside the project, and both the high-enthalpy thermophysical model of
-Section~\ref{sec:openfoam-highenthalpy} and the zero-dimensional verification
-programs call its functions directly. At the start of a simulation the
+alongside the project. The thermophysical model and the zero-dimensional
+verification programs call its functions; the solver reaches it through the
+model. At the start of a simulation the
 thermophysical model reads the description of the gas from the case (species,
 number of temperatures, thermodynamic database, reactions), creates the
 corresponding gas in \mpp{} and maps each OpenFOAM species to the \mpp{}
 species with the same name. From then on, in every cell and at every time step,
 it passes the gas state to the library and receives the temperatures and all
-the other quantities the solver needs. The gas data, i.e.\ the species
-constants and the reactions, are read from a project directory containing the
-values of the reference work.
+the other quantities the solver needs.
 
 \subsection{The implemented model}
 \label{sec:implementato}
