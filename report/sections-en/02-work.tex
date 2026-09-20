@@ -375,6 +375,68 @@ temperature immediately after solving the energy equation: this would leave
 out both the heat of reaction and the vibro-electronic energy equation, which
 must be solved before the energies are converted into temperatures.
 
+\subsubsection{Governing equations: general form and the heat-bath case}
+\label{sec:implementato-equazioni}
+
+Section~\ref{sec:implementato-sorgenti} gave the source terms; this section
+states the conservation equations they enter, first in the general form that
+\texttt{shockFluid} and \shockThermo{} are written to solve on an arbitrary
+mesh, and then in the reduced form that is actually integrated in the
+heat-bath cases used for verification (Section~\ref{sec:programmi0D} and the
+corresponding \shockThermo{} cases of Section~\ref{sec:implementato-costo}).
+
+On a generic mesh, mass and momentum are solved unchanged from the original
+\texttt{shockFluid} module,
+\[
+  \frac{\partial \rho}{\partial t} + \nabla\cdot(\rho\mathbf{U}) = 0 ,
+  \qquad
+  \frac{\partial (\rho\mathbf{U})}{\partial t}
+  + \nabla\cdot(\rho\mathbf{U}\mathbf{U}) + \nabla p = \nabla\cdot\tau ,
+\]
+with the Newtonian viscous stress $\tau = \mu\left[\nabla\mathbf{U} +
+(\nabla\mathbf{U})^{T} - \tfrac{2}{3}(\nabla\cdot\mathbf{U})\mathbf{I}\right]$,
+$\mu$ being the dynamic viscosity. The energy equation solved by
+\shockThermo{} adds the heat of reaction to the original module,
+\[
+  \frac{\partial (\rho e)}{\partial t} + \nabla\cdot(\boldsymbol\phi_p)
+  + \frac{\partial (\rho K)}{\partial t}
+  = Q_{ch} + \nabla\cdot(\tau\cdot\mathbf{U}) + \nabla\cdot(\kappa\nabla T) ,
+\]
+where $K = \tfrac{1}{2}|\mathbf{U}|^2$ is the kinetic energy per unit mass,
+$\kappa$ the thermal conductivity, and $\boldsymbol\phi_p$ the convective flux
+of energy across each face, including the flow work of pressure, reconstructed
+with the same Kurganov--Tadmor scheme used for mass and momentum. By analogy,
+a general, non-heat-bath form of the vibro-electronic equation would add a
+convective and a diffusive term of the same kind,
+\[
+  \frac{\partial (\rho\eve)}{\partial t} + \nabla\cdot(\phi\,\eve)
+  = Q_{VT} + Q_{CV} + \nabla\cdot(\kappa_{ve}\nabla\Tve) ,
+\]
+but, as noted in Section~\ref{sec:implementato-solver}, only the time
+derivative and the source terms are currently implemented.
+
+None of the transport terms above is exercised by the cases solved in this
+project. Every case is a heat bath: a single computational cell, in which the
+field is spatially uniform, every boundary condition is zero-gradient, and the
+gas is at rest, $\mathbf{U}=0$. Under these conditions $\nabla\mathbf{U}=0$ and $\nabla T=0$
+identically, at every cell and every time step, so
+\[
+  \tau = 0, \qquad \kappa\nabla T = 0, \qquad K = 0, \qquad
+  \boldsymbol\phi_p = 0 ,
+\]
+irrespective of the numerical value of $\mu$ and $\kappa$; mass and momentum
+reduce to the trivial identity $0=0$. What remains, and what is actually
+integrated, is
+\[
+  \frac{\partial (\rho e)}{\partial t} = Q_{ch} ,
+  \qquad
+  \frac{\partial (\rho \eve)}{\partial t} = Q_{VT} + Q_{CV} .
+\]
+This is the same pair of ordinary differential equations advanced in time by
+the zero-dimensional programs of Section~\ref{sec:programmi0D}, which is what
+makes the comparison between the two implementations a genuine check of the
+solver rather than of the mesh or the discretisation.
+
 \subsubsection{Computational cost}
 \label{sec:implementato-costo}
 
@@ -475,4 +537,5 @@ was also used.
 %  - chemistry: law of mass action (eq. 27), Arrhenius (eq. 28),
 %    Park temperature T^a Tv^(1-a) (eq. 29)
 %  - chemistry-vibration coupling: non-preferential model (eq. 30-31)
-%  - summary of the system solved in the heat bath (eq. 22, 25, 26)
+%  - [done, see sec:implementato-equazioni] summary of the system solved in
+%    the heat bath (eq. 22, 25, 26)

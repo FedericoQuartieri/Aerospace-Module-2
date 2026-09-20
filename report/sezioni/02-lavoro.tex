@@ -378,6 +378,71 @@ dell'energia, ne ricava la temperatura: mancherebbero sia il calore di
 reazione sia l'equazione vibro-elettronica, che deve essere risolta prima di
 convertire le energie in temperature.
 
+\subsubsection{Le equazioni risolte: forma generale e caso del bagno termico}
+\label{sec:implementato-equazioni}
+
+La Sezione~\ref{sec:implementato-sorgenti} ha dato i termini sorgente; questa
+sezione riporta le equazioni di conservazione in cui entrano, prima nella
+forma generale per cui \texttt{shockFluid} e \shockThermo{} sono scritti, valida
+su una mesh qualunque, poi nella forma ridotta che viene effettivamente
+integrata nei casi a bagno termico usati per la verifica
+(Sezione~\ref{sec:programmi0D} e i casi \shockThermo{} corrispondenti della
+Sezione~\ref{sec:implementato-costo}).
+
+Su una mesh generica, massa e quantità di moto sono risolte senza modifiche
+rispetto al modulo originale \texttt{shockFluid},
+\[
+  \frac{\partial \rho}{\partial t} + \nabla\cdot(\rho\mathbf{U}) = 0 ,
+  \qquad
+  \frac{\partial (\rho\mathbf{U})}{\partial t}
+  + \nabla\cdot(\rho\mathbf{U}\mathbf{U}) + \nabla p = \nabla\cdot\tau ,
+\]
+con lo sforzo viscoso newtoniano $\tau = \mu\left[\nabla\mathbf{U} +
+(\nabla\mathbf{U})^{T} - \tfrac{2}{3}(\nabla\cdot\mathbf{U})\mathbf{I}\right]$,
+dove $\mu$ è la viscosità dinamica. L'equazione dell'energia risolta da
+\shockThermo{} aggiunge il calore di reazione a quella del modulo originale,
+\[
+  \frac{\partial (\rho e)}{\partial t} + \nabla\cdot(\boldsymbol\phi_p)
+  + \frac{\partial (\rho K)}{\partial t}
+  = Q_{ch} + \nabla\cdot(\tau\cdot\mathbf{U}) + \nabla\cdot(\kappa\nabla T) ,
+\]
+dove $K = \tfrac{1}{2}|\mathbf{U}|^2$ è l'energia cinetica per unità di massa,
+$\kappa$ la conducibilità termica, e $\boldsymbol\phi_p$ il flusso convettivo
+di energia attraverso ciascuna faccia, comprensivo del lavoro di pressione,
+ricostruito con lo stesso schema di Kurganov--Tadmor usato per massa e
+quantità di moto. Per analogia, una forma generale (non a bagno termico)
+dell'equazione vibro-elettronica aggiungerebbe un termine convettivo e uno
+diffusivo dello stesso tipo,
+\[
+  \frac{\partial (\rho\eve)}{\partial t} + \nabla\cdot(\phi\,\eve)
+  = Q_{VT} + Q_{CV} + \nabla\cdot(\kappa_{ve}\nabla\Tve) ,
+\]
+ma, come notato nella Sezione~\ref{sec:implementato-solver}, sono
+attualmente implementati solo la variazione nel tempo e i termini sorgente.
+
+Nessuno dei termini di trasporto qui sopra è mai attraversato dai casi
+risolti in questo progetto. Ogni caso è un bagno termico: una singola cella
+di calcolo, con campo uniforme nello spazio, ogni condizione al contorno a
+gradiente nullo e il gas fermo, $\mathbf{U}=0$.
+In queste condizioni $\nabla\mathbf{U}=0$ e $\nabla T=0$ identicamente, in
+ogni cella e a ogni passo temporale, quindi
+\[
+  \tau = 0, \qquad \kappa\nabla T = 0, \qquad K = 0, \qquad
+  \boldsymbol\phi_p = 0 ,
+\]
+indipendentemente dal valore numerico di $\mu$ e $\kappa$; massa e quantità
+di moto si riducono all'identità banale $0=0$. Quello che resta, ed è ciò
+che viene effettivamente integrato, è
+\[
+  \frac{\partial (\rho e)}{\partial t} = Q_{ch} ,
+  \qquad
+  \frac{\partial (\rho \eve)}{\partial t} = Q_{VT} + Q_{CV} .
+\]
+Sono le stesse due equazioni differenziali ordinarie avanzate nel tempo dai
+programmi 0D della Sezione~\ref{sec:programmi0D}, ed è questo che rende il
+confronto fra le due implementazioni un vero controllo del solver, e non
+della mesh o della discretizzazione.
+
 \subsubsection{Costo di calcolo}
 \label{sec:implementato-costo}
 
@@ -474,4 +539,5 @@ meccanismo per l'aria già presente in \mpp, con le costanti di Park.
 %  - chimica: legge di azione di massa (eq. 27), Arrhenius (eq. 28),
 %    temperatura di Park T^a Tv^(1-a) (eq. 29)
 %  - accoppiamento chimica-vibrazione: modello non preferenziale (eq. 30-31)
-%  - riepilogo del sistema risolto nel bagno termico (eq. 22, 25, 26)
+%  - [fatto, vedi sec:implementato-equazioni] riepilogo del sistema risolto
+%    nel bagno termico (eq. 22, 25, 26)
