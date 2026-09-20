@@ -30,27 +30,28 @@ c'è flusso: per usarlo in casi reali servono gli sviluppi che seguono.
 \subsection{Sviluppi futuri}
 \label{sec:sviluppi}
 
-I primi due sviluppi servono per passare dal bagno termico a un flusso vero;
-il terzo per eliminare l'unica differenza rilevante rimasta rispetto al lavoro
-di riferimento.
+Gli sviluppi proposti riguardano il calcolo su più celle, il trasporto
+dell'energia e i flussi viscosi. Il primo è quello decisivo e si appoggia agli
+altri due.
 
 \begin{enumerate}[leftmargin=1.8em]
-  \item \textbf{Trasporto dell'energia vibro-elettronica.} Oggi la sua
-    equazione contiene solo le sorgenti. Vanno aggiunti il trasporto, con gli
-    stessi flussi alle facce già usati per le specie, la conduzione del calore
-    e le condizioni al contorno; le sorgenti vanno calcolate con la densità
-    appena aggiornata. Il primo caso di prova è il tubo d'urto
-    monodimensionale già presente nel progetto.
+  \item \textbf{Calcolo su una griglia vera.} Finora tutto è stato verificato
+    su una sola cella: è questo il passo che rende il modello utilizzabile su
+    un flusso vero. Che cosa serve è descritto nella
+    sezione~\ref{sec:discussione-multicella}: condizioni al contorno per i due
+    campi nuovi, sorgenti calcolate con la densità del passo corrente e i
+    termini di trasporto del punto successivo. Per il resto non ci sono
+    ostacoli, perché tutti i calcoli del modello termodinamico sono locali
+    alla cella.
+  \item \textbf{Trasporto dell'energia vibro-elettronica.} È la parte del
+    punto precedente che si può sviluppare e provare per conto suo. I flussi
+    alle facce che servono per il trasporto sono quelli già calcolati per le
+    specie, mentre la conduzione usa la conducibilità vibro-elettronica del
+    punto successivo.
   \item \textbf{Viscosità e conducibilità a due temperature.} Servono per i
     flussi viscosi e per il calore che raggiunge la parete. \mpp{} le calcola
     già, e divide la conducibilità fra la parte traslazionale e quella
     vibro-elettronica: basta chiederle cella per cella nel modello
     termodinamico, come oggi le energie, e passarle al solver al posto di
     quelle del modello a una temperatura.
-  \item \textbf{Tempi di rilassamento mediati come nel lavoro di
-    riferimento.} Invece del valore medio di \mpp, si calcola il tempo di ogni
-    coppia di specie con le costanti già contenute nella libreria e lo si
-    media come nel lavoro di riferimento; ripetendo il caso della miscela di azoto
-    molecolare e atomico si verifica se il ritardo della temperatura
-    vibrazionale scompare.
 \end{enumerate}

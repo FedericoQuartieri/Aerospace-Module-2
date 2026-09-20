@@ -39,10 +39,10 @@ Reproducing the reference results required reconstructing modelling choices
 that the reference study leaves unspecified or describes only partially.
 These include the treatment of electronic energy, the energy used in the
 relaxation source term, the exponent in Park's dissociation temperature and
-the reaction-rate constants for air. The sensitivity comparisons in
-Section~\ref{sec:risultati} show that these choices can produce deviations
-larger than the residual differences: up to 56\% in vibrational temperature,
-a factor of 3 in air species densities and approximately 25\% in final
+the reaction-rate constants for air. The comparisons collected in
+Section~\ref{sec:risultati-sensibilita} show that these choices can produce
+deviations larger than the residual differences: up to 56\% in vibrational
+temperature, a factor of 3 in air species densities and 25\% in final
 temperature. The reference study also illustrates this sensitivity by
 attributing its difference from LeMANS for molecular-atomic nitrogen to a
 different convention in Park's correction.
@@ -56,3 +56,20 @@ solver and zero-dimensional programs share the source-term functions, their
 agreement alone cannot exclude errors in those functions; the reference
 curves and equilibrium checks provide complementary
 evidence.
+
+\subsection{From a single cell to a full mesh}
+\label{sec:discussione-multicella}
+
+The results presented here come from a single cell with no flow. A real
+simulation has many cells, and the gas moves from one to the next; three
+additions are needed. First, the vibro-electronic energy equation, which now
+contains only the source terms, must gain a convective term, built with the
+same face fluxes already used for the species, and a conduction term. Second,
+the two new fields need boundary conditions: the vibro-electronic temperature
+is read from the case and already has them, whereas the vibro-electronic
+energy is obtained from the temperature only inside the domain, so its values
+on the boundary faces must be obtained in the same way; walls and inlets also
+need a rule for the vibro-electronic temperature, which a closed heat bath
+does not require. Third, the source terms use the density left by the previous
+pressure update, which is exact at constant volume but should be replaced by
+the density of the current step once the gas can compress.

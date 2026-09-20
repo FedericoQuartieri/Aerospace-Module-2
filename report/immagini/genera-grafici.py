@@ -29,18 +29,26 @@ TESTI = {
     "equilibrio":  "equilibrium" if inglese else "equilibrio",
 }
 
-# nome del grafico -> (risultato del progetto, curve del paper, cosa disegnare)
+# nome del grafico -> (risultato, curve del paper, cosa disegnare, variante)
+# la variante, se c'e', e' (altro risultato, etichetta del primo, etichetta della
+# variante): le due curve finiscono nello stesso grafico e il solver non si disegna
 GRAFICI = {
     "nitrogen-heating":   ("fig3a",     "fig3a", "T"),
     "nitrogen-cooling":  ("fig3b",     "fig3b", "T"),
     "nitrogen-hot-no-electronic": ("fig4-noEl", "fig4-noEl", "T"),
     "nitrogen-hot-electronic":   ("fig4-el",   "fig4-el", "T"),
     "nitrogen-atomic":         ("fig5",      "fig5", "T"),
+    "nitrogen-oxygen-no-vv":  ("fig6-noVV", "fig6-noVV", "T"),
     "nitrogen-oxygen-vv":     ("fig6-VV",   "fig6-VV", "T"),
-    "reacting-temperatures":  ("fig7",      "fig7", "T"),
-    "reacting-densities":      ("fig7",      "fig7", "n"),
+    "reacting-noneq-temperatures": ("fig7", "fig7", "T"),
+    "reacting-noneq-densities":    ("fig7", "fig7", "n"),
+    "reacting-eq-temperatures":    ("fig8", "fig8", "T"),
+    "reacting-eq-densities":       ("fig8", "fig8", "n"),
     "air-temperature":      ("fig9-QK",   "fig9", "T"),
     "air-densities":          ("fig9-QK",   "fig9", "n"),
+    "park-exponent-densities": ("fig7", "fig7", "n",
+                                ("fig7-park05", "$a = 0.7$", "$a = 0.5$")),
+    "air-densities-park-rates": ("fig9-park", "fig9", "n"),
 }
 
 NOMI = {
@@ -68,10 +76,17 @@ def T_equilibrio(path):
 
 colori = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
-for nome, (ris, base, tipo) in GRAFICI.items():
+for nome, voce in GRAFICI.items():
+    ris, base, tipo = voce[:3]
+    variante = voce[3] if len(voce) > 3 else None
+    if variante and not inglese:
+        # virgola decimale nelle etichette della versione italiana
+        variante = (variante[0], variante[1].replace(".", "{,}"),
+                    variante[2].replace(".", "{,}"))
     std = carica(os.path.join(test, "output", ris + ".csv"))
+    alt = carica(os.path.join(test, "output", variante[0] + ".csv")) if variante else None
     p_solver = os.path.join(test, "output", ris + "-solver.csv")
-    solver = carica(p_solver) if os.path.exists(p_solver) else None
+    solver = carica(p_solver) if os.path.exists(p_solver) and not variante else None
     paper = {}
     for pre in (base, base + "a", base + "b"):
         for p in sorted(glob.glob(os.path.join(test, "paper-data", pre + "-*.csv"))):
@@ -84,9 +99,14 @@ for nome, (ris, base, tipo) in GRAFICI.items():
         if c in paper:
             plt.plot(paper[c]["t"], paper[c][c], "-", color=col, lw=2, alpha=0.4,
                      label=TESTI["riferimento"] + " " + NOMI[c])
+        suff = " (" + variante[1] + ")" if variante else ""
         m = std["t"] > 0
         plt.plot(std["t"][m], std[c][m], "--", color=col,
-                 label=TESTI["programma"] + " " + NOMI[c])
+                 label=TESTI["programma"] + " " + NOMI[c] + suff)
+        if alt is not None and c in alt:
+            m = alt["t"] > 0
+            plt.plot(alt["t"][m], alt[c][m], ":", color=col,
+                     label=TESTI["programma"] + " " + NOMI[c] + " (" + variante[2] + ")")
         if solver is not None and c in solver:
             m = solver["t"] > 0
             plt.plot(solver["t"][m][::5], solver[c][m][::5], "o", color=col, ms=3,

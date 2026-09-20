@@ -22,6 +22,10 @@ stesso passo di un nanosecondo. I risultati sono sottoposti a tre verifiche:
     dall'energia iniziale, e quella indicata nel lavoro di riferimento.
 \end{enumerate}
 
+In più, le scelte di modello che il lavoro di riferimento non dichiara sono
+state esaminate rifacendo i casi che ne dipendono con l'alternativa
+(sezione~\ref{sec:risultati-sensibilita}).
+
 Le curve di \hyfoam{} sono state ricavate direttamente dal pdf del lavoro di riferimento.
 Le figure sono disegni vettoriali: ogni curva è memorizzata come una sequenza
 di punti, che è stata letta e riportata in tempo e temperatura usando le tacche
@@ -66,10 +70,7 @@ senza e con energia elettronica (figura~\ref{fig:azoto-4}). In entrambi i casi
 la temperatura finale coincide con quella indicata nel lavoro di riferimento entro lo
 0{,}3\%, e l'energia elettronica la abbassa di circa il 20\%. Gli scarti nel
 transitorio sono dello 0{,}05\% e dello 0{,}8\% senza energia elettronica,
-dello 0{,}3\% e del 4\% con. Questo caso giustifica la scelta di riscrivere lo
-scambio V--T con l'energia vibro-elettronica: con la forma originale di \mpp, che
-usa la sola energia vibrazionale, la temperatura finale sarebbe la stessa ma
-gli scarti nel transitorio salirebbero al 28\% e al 56\%.
+dello 0{,}3\% e del 4\% con.
 
 \begin{figure}[ht]
   \centering
@@ -90,7 +91,8 @@ gli scarti nel transitorio salirebbero al 28\% e al 56\%.
 \label{sec:risultati-miscele}
 
 Il primo caso è una miscela in parti uguali di azoto molecolare e atomico, con
-la traslazione molto calda e la vibrazione fredda. La temperatura finale
+la traslazione molto calda e la vibrazione fredda
+(figura~\ref{fig:azoto-atomico}). La temperatura finale
 coincide con quella del lavoro di riferimento entro lo 0{,}2\%, e la temperatura
 traslazionale resta entro il 2{,}5\%; quella vibrazionale, però, sale più tardi
 che nel lavoro di riferimento, con uno scarto che arriva al 20\% nel tratto
@@ -98,68 +100,94 @@ più ripido. L'origine più probabile è il tempo di rilassamento nelle miscele,
 che \mpp{} media in modo diverso dal lavoro di riferimento: il rilassamento vibrazionale risulta
 un po' più lento, mentre lo stato finale è corretto.
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.62\textwidth]{nitrogen-atomic}
+  \caption{Miscela in parti uguali di azoto molecolare e atomico; la linea
+  punteggiata orizzontale è la temperatura finale attesa dalla conservazione
+  dell'energia.}
+  \label{fig:azoto-atomico}
+\end{figure}
+
 Il secondo è una miscela di azoto e ossigeno in parti uguali, a pressione
-atmosferica, con la vibrazione molto più calda della traslazione, calcolata
-senza e con lo scambio V--V fra le due molecole. La temperatura finale coincide
-con quella del lavoro di riferimento entro lo 0{,}3\%. Senza scambio V--V gli scarti sono
+atmosferica, con la vibrazione molto più calda della traslazione; ogni
+molecola ha la propria temperatura vibrazionale e il caso è stato calcolato
+senza e con lo scambio V--V fra le due (figura~\ref{fig:azoto-ossigeno}). In
+entrambi i casi la temperatura finale coincide con quella del lavoro di
+riferimento entro lo 0{,}3\%. Senza scambio V--V gli scarti sono
 del 2{,}7\% sulla temperatura traslazionale, del 2{,}7\% su quella
 vibrazionale dell'azoto e del 6{,}4\% su quella dell'ossigeno; con lo scambio
 scendono al 2{,}0\%, 2{,}5\% e 3{,}4\%. Come nel lavoro di riferimento, lo
 scambio V--V avvicina le due temperature vibrazionali e rende più rapido il
-ritorno all'equilibrio (figura~\ref{fig:miscele}).
+ritorno all'equilibrio.
 
 \begin{figure}[ht]
   \centering
   \begin{subfigure}[t]{0.49\textwidth}
-    \includegraphics[width=\linewidth]{nitrogen-atomic}
-    \caption{Azoto molecolare e atomico.}
+    \includegraphics[width=\linewidth]{nitrogen-oxygen-no-vv}
+    \caption{Senza scambio V--V.}
   \end{subfigure}\hfill
   \begin{subfigure}[t]{0.49\textwidth}
     \includegraphics[width=\linewidth]{nitrogen-oxygen-vv}
-    \caption{Azoto e ossigeno, con scambio V--V.}
+    \caption{Con scambio V--V.}
   \end{subfigure}
-  \caption{Miscele non reagenti. Nella miscela di azoto e ossigeno ogni
-  molecola ha la propria temperatura vibrazionale.}
-  \label{fig:miscele}
+  \caption{Miscela di azoto e ossigeno in parti uguali a pressione
+  atmosferica; la linea punteggiata orizzontale è la temperatura finale attesa
+  dalla conservazione dell'energia.}
+  \label{fig:azoto-ossigeno}
 \end{figure}
 
 \subsection{Miscele reagenti}
 \label{sec:risultati-reagenti}
 
 La miscela di azoto molecolare e atomico è stata calcolata anche con la
-dissociazione dell'azoto, partendo da due stati diversi. Nel primo, fuori
-equilibrio come nel caso senza reazioni, alla fine del calcolo le due
+dissociazione dell'azoto, partendo da due stati diversi. Il primo è lo stato
+fuori equilibrio del caso senza reazioni (figura~\ref{fig:reagenti-noneq}):
+alla fine del calcolo le due
 temperature coincidono con quelle del lavoro di riferimento entro lo 0{,}4\%, e la
-composizione segue quella del lavoro di riferimento entro l'1{,}4\% per tutto
-il calcolo (figura~\ref{fig:reagenti}). La temperatura traslazionale resta
+composizione segue quella del lavoro di riferimento entro l'1{,}5\% per tutto
+il calcolo. La temperatura traslazionale resta
 entro il 2{,}3\%; quella vibrazionale mostra lo stesso ritardo della miscela
-senza reazioni, fino al 17\% all'inizio. Il secondo parte invece con le due
-temperature uguali, cioè in equilibrio termico ma non chimico: le temperature
-finali coincidono con quelle del lavoro di riferimento entro lo 0{,}8\%, la composizione
-resta entro il 2{,}3\% e le temperature nel transitorio entro il 2\% e il
-10\%.
-
-Questi casi confermano anche la scelta dell'esponente della temperatura di
-Park. Con il valore fisso di \mpp{} ($a = 0{,}5$) la composizione del primo
-caso si allontana dal lavoro di riferimento fino al 9\% e la temperatura
-traslazionale fino al 6{,}7\%; con $a = 0{,}7$, come nel lavoro di
-riferimento, gli scarti scendono all'1{,}4\% e al 2{,}3\%. La temperatura
-vibrazionale non cambia, perché il suo scarto viene dal rilassamento e non
-dalla chimica.
+senza reazioni, fino al 17\% all'inizio.
 
 \begin{figure}[ht]
   \centering
   \begin{subfigure}[t]{0.49\textwidth}
-    \includegraphics[width=\linewidth]{reacting-temperatures}
+    \includegraphics[width=\linewidth]{reacting-noneq-temperatures}
     \caption{Temperature.}
   \end{subfigure}\hfill
   \begin{subfigure}[t]{0.49\textwidth}
-    \includegraphics[width=\linewidth]{reacting-densities}
+    \includegraphics[width=\linewidth]{reacting-noneq-densities}
     \caption{Densità delle specie riferite a quella iniziale.}
   \end{subfigure}
   \caption{Miscela reagente di azoto molecolare e atomico che parte fuori
   equilibrio, con esponente di Park $a = 0{,}7$.}
-  \label{fig:reagenti}
+  \label{fig:reagenti-noneq}
+\end{figure}
+
+Il secondo parte con le due temperature uguali, cioè in equilibrio termico ma
+non chimico (figura~\ref{fig:reagenti-eq}). La dissociazione comincia subito e
+raffredda il gas, e la temperatura vibrazionale scende più lentamente di
+quella traslazionale. Le temperature finali coincidono con quelle del lavoro
+di riferimento entro lo 0{,}8\%, la composizione resta entro il 2{,}3\% e le
+temperature nel transitorio entro il 2{,}0\% e il 10\%. Anche qui la
+temperatura vibrazionale resta sopra la curva del lavoro di riferimento, come
+nelle altre miscele che contengono azoto atomico.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{reacting-eq-temperatures}
+    \caption{Temperature.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{reacting-eq-densities}
+    \caption{Densità delle specie riferite a quella iniziale.}
+  \end{subfigure}
+  \caption{Miscela reagente di azoto molecolare e atomico che parte in
+  equilibrio termico alla stessa temperatura alta, con esponente di Park
+  $a = 0{,}7$.}
+  \label{fig:reagenti-eq}
 \end{figure}
 
 \subsection{Aria a cinque specie}
@@ -170,11 +198,7 @@ pressione e alta temperatura, con diciannove reazioni e una sola temperatura.
 Con le costanti Quantum-Kinetic la temperatura segue il lavoro di riferimento
 entro lo 0{,}7\% e alla fine coincide entro lo 0{,}4\%; le densità delle
 cinque specie restano entro il 15\%, e quattro su cinque entro il 7\%
-(figura~\ref{fig:aria}). Con il meccanismo di Park di \mpp{}, invece, la
-temperatura si scosta fino all'8{,}9\% e le densità di ossigeno molecolare e
-atomico, azoto atomico e monossido di azoto di un fattore fra 1{,}6 e 3: i
-risultati del lavoro di riferimento per questo caso sono stati ottenuti con le costanti
-Quantum-Kinetic.
+(figura~\ref{fig:aria}).
 
 \begin{figure}[ht]
   \centering
@@ -185,9 +209,84 @@ Quantum-Kinetic.
   \begin{subfigure}[t]{0.49\textwidth}
     \includegraphics[width=\linewidth]{air-densities}
     \caption{Densità delle specie riferite a quella iniziale.}
+    \label{fig:aria-densita}
   \end{subfigure}
   \caption{Aria a cinque specie con le costanti Quantum-Kinetic.}
   \label{fig:aria}
+\end{figure}
+
+\subsection{Quanto pesano le scelte di modello}
+\label{sec:risultati-sensibilita}
+
+Quattro delle scelte usate finora non sono dichiarate nel lavoro di
+riferimento e sono state fissate confrontando i risultati con le sue curve.
+La tabella~\ref{tab:sensibilita} le raccoglie, insieme all'alternativa
+scartata e allo scarto che questa produce. Ogni scelta adottata riproduce il
+lavoro di riferimento entro gli scarti visti nelle sottosezioni precedenti,
+mentre ogni alternativa produce scarti almeno doppi, e quasi sempre molto più
+grandi.
+
+Le due scelte che riguardano la chimica sono mostrate nella
+figura~\ref{fig:sensibilita}. L'esponente della temperatura di Park decide
+quanto una vibrazione fredda rallenta la dissociazione: con il valore fisso di
+\mpp{} la miscela comincia a dissociarsi prima che nel lavoro di riferimento,
+mentre la composizione finale non cambia. Le costanti di velocità dell'aria
+agiscono invece per tutto il transitorio e cambiano anche le densità finali.
+Le quattro scelte si dividono quindi in due gruppi, e questo aiuta a
+riconoscerne gli effetti: il trattamento dell'energia elettronica e le
+costanti dell'aria spostano lo stato finale, e sono perciò vincolate dalla
+temperatura di equilibrio e dalla composizione finale, mentre l'energia che
+guida lo scambio V--T e l'esponente della temperatura di Park cambiano solo il
+cammino che porta a quello stato.
+
+\begin{table}[H]
+  \centering
+  \caption{Scelte di modello non dichiarate nel lavoro di riferimento, e
+  effetto dell'alternativa scartata sullo scarto massimo rispetto ai suoi
+  risultati.}
+  \label{tab:sensibilita}
+  \small
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{1.9cm}>{\raggedright\arraybackslash}p{7.1cm}@{}}
+    \toprule
+    Scelta & Adottata & Alternativa & Effetto dell'alternativa \\
+    \midrule
+    Energia elettronica nelle miscele & solo livello fondamentale & tutti i
+      livelli &
+      temperatura finale più bassa del 25\% per azoto molecolare e atomico e
+      più alta del 59\% per azoto e ossigeno, invece dello 0{,}3\% \\[2pt]
+    \midrule
+    Energia che guida lo scambio V--T & vibro-elettronica & solo
+      vibrazionale &
+      nell'azoto ad alta temperatura, scarti nel transitorio del 28\% su
+      $\Ttr$ e del 56\% su $\Tve$, invece dello 0{,}3\% e del 4\% \\[2pt]
+    \midrule
+    Esponente della temperatura di Park & $a = 0{,}7$ & $a = 0{,}5$ &
+      nella miscela reagente, la composizione si scosta fino al 9\% invece
+      che dell'1{,}5\% e $\Ttr$ del 6{,}7\% invece che del 2{,}3\% \\[2pt]
+    \midrule
+    Costanti di velocità per l'aria & Quantum-Kinetic & Park &
+      la temperatura si scosta fino all'8{,}9\% invece che dello 0{,}7\%, e le
+      densità delle specie di un fattore fino a 3 invece che del 15\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{park-exponent-densities}
+    \caption{Miscela reagente di azoto con i due esponenti della temperatura
+    di Park.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\linewidth]{air-densities-park-rates}
+    \caption{Aria con le costanti di Park, da confrontare con la
+    figura~\ref{fig:aria-densita}.}
+  \end{subfigure}
+  \caption{Effetto sulle densità delle specie delle due scelte di modello che
+  riguardano la chimica; in (a) le linee punteggiate sono il risultato
+  ottenuto con l'altro esponente.}
+  \label{fig:sensibilita}
 \end{figure}
 
 \subsection{Solver e programmi zero-dimensionali}

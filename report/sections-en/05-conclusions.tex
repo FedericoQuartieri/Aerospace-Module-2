@@ -33,26 +33,28 @@ outlined below.
 \subsection{Future work}
 \label{sec:sviluppi}
 
-The proposed extensions address energy transport, viscous-flow modelling and
-the remaining discrepancy in vibrational relaxation.
+The proposed extensions address multi-cell operation, the transport of energy
+and viscous-flow modelling. The first is the decisive one and relies on the
+other two.
 
 \begin{enumerate}[leftmargin=1.8em]
-  \item \textbf{Transport of the vibro-electronic energy.} The vibro-electronic
-    energy equation currently contains only the source terms. Convective
-    transport must be added, using the same face fluxes already used for the
-    species, together with heat conduction and appropriate boundary
-    conditions; the source terms should then be evaluated with the updated
-    density. The one-dimensional shock tube already included in the project
-    provides an initial test case for this extension.
+  \item \textbf{Running on a real mesh.} Everything has been verified on a
+    single cell, and this is the step that makes the model usable on a real
+    flow. What it requires is described in
+    Section~\ref{sec:discussione-multicella}: boundary conditions for the two
+    new fields, the source terms evaluated with the density of the current
+    step, and the transport terms of the next point. Nothing else stands in
+    the way, since every computation of the thermophysical model is local to
+    the cell.
+  \item \textbf{Transport of the vibro-electronic energy.} This is the part
+    of the previous point that can be developed and tested on its own. The
+    face fluxes needed for the convective term are those already computed for
+    the species, while the conductive term uses the vibro-electronic
+    conductivity of the next point.
   \item \textbf{Two-temperature viscosity and thermal conductivity.} These are
-    required for viscous-flow simulations and wall heat-flux predictions.
-    \mpp{} provides these properties and separates thermal conductivity into
-    translational and vibro-electronic contributions. The thermophysical
-    model must evaluate them in each cell and supply them to the solver in
-    place of the one-temperature transport properties.
-  \item \textbf{Relaxation-time averaging used in the reference study.}
-    Pairwise relaxation times should be evaluated using \mpp{} coefficients
-    and averaged as in the reference study. Repeating the molecular-atomic
-    nitrogen case would test whether this change accounts for the observed
-    delay in vibrational heating.
+    required for viscous flows and for the wall heat flux. \mpp{} already
+    computes them, and splits the conductivity into its translational and
+    vibro-electronic contributions: they only need to be queried cell by cell
+    in the thermophysical model, as is currently done for the energies, and
+    passed to the solver in place of the one-temperature values.
 \end{enumerate}
