@@ -10,21 +10,18 @@ the conservation equations cell by cell and advances the solution in time.
 \mpp~\cite{scoggins2020} is a thermochemistry library: given the state of a
 gas, it computes the energy stored in each mode, the vibrational relaxation
 times and the reaction rates, and it can also perform the inverse operation,
-recovering the temperatures from the energies. Each program is used for what it
-does best: OpenFOAM solves the equations of the two-temperature model, and
+recovering the temperatures from the energies. OpenFOAM solves the equations of the two-temperature model, and
 \mpp{} supplies every thermochemical quantity that appears in them. In
 particular, the solver does not transport the two temperatures directly but the
 corresponding energies, which remain correctly conserved across shocks; at
 every time step it passes them to \mpp, which returns the temperatures.
 
 OpenFOAM is extended without modifying its source code, through \emph{dynamic
-libraries}. A dynamic library is compiled code that is not part of a program
-but is loaded by it at run time, much like a plug-in added to an installed
-application. OpenFOAM is designed around this mechanism: the solver, the
+libraries}. So it is designed around this mechanism: the solver, the
 thermophysical model, the boundary conditions and many other components are
 not hard-coded in the executable but selected by name in the text files of the
 case. When a library is loaded, it registers the components it contains in
-internal tables of OpenFOAM; OpenFOAM reads the requested name from the case,
+internal tables of OpenFOAM; which then reads the requested name from the case,
 looks it up in the corresponding table and constructs the component. Adding a
 new model therefore amounts to compiling a library that registers it in the
 right table, after which OpenFOAM uses it like any of its built-in models.
