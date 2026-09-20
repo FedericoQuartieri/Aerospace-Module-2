@@ -297,17 +297,6 @@ the rate $\dot\omega_s$, the vibro-electronic energy at the rate
 $Q_{VT} + Q_{CV}$, and the energy of the gas, which includes it, at the rate
 $Q_{ch}$, so that the total energy, chemical energy included, is conserved.
 
-All three sources derive from a single set of reaction rates: the
-$\dot\omega_s$ of all species, the heat of reaction and the
-chemistry-vibration coupling are computed together, in a single sweep over the
-domain, from the state at the beginning of the energy stage. There are two
-reasons for this choice. The first is consistency: the model equations
-evaluate all the $\dot\omega_s$ at the same gas state, whereas computing the
-sources one at a time would evaluate the production rate of each species with
-the preceding species already advanced by their own equations, and the heat of
-reaction with all of them advanced. The second is cost, as discussed in
-Section~\ref{sec:implementato-costo}.
-
 \subsubsection{Working around the limitations of \mpp}
 \label{sec:implementato-limiti}
 
@@ -354,9 +343,6 @@ it inherits the computation of the fluxes, density, momentum and pressure, and
 overrides the energy stage. At each time step this stage:
 
 \begin{enumerate}[leftmargin=1.8em]
-  \item computes all source terms at the current state in a single sweep over
-    the domain: the chemical production rate of each species, the heat of
-    reaction and the source of vibro-electronic energy;
   \item solves the species equations, with the chemical production rates
     provided by \mpp, and corrects the mass fractions so that they sum to one;
   \item solves the energy equation of the gas, identical to that of the
@@ -368,8 +354,8 @@ overrides the energy stage. At each time step this stage:
     updates the relation between pressure and density.
 \end{enumerate}
 
-\noindent The source terms are computed only once, from the gas state at the
-beginning of the energy stage, and treated explicitly. The energy stage of the
+\noindent The source terms are computed from the gas state already known, and
+treated explicitly. The energy stage of the
 original module could not be reused because it converts the energy into
 temperature immediately after solving the energy equation: this would leave
 out both the heat of reaction and the vibro-electronic energy equation, which
@@ -383,7 +369,7 @@ states the conservation equations they enter, first in the general form that
 \texttt{shockFluid} and \shockThermo{} are written to solve on an arbitrary
 mesh, and then in the reduced form that is actually integrated in the
 heat-bath cases used for verification (Section~\ref{sec:programmi0D} and the
-corresponding \shockThermo{} cases of Section~\ref{sec:implementato-costo}).
+corresponding \shockThermo{} cases).
 
 On a generic mesh, mass and momentum are solved unchanged from the original
 \texttt{shockFluid} module,
@@ -436,30 +422,6 @@ This is the same pair of ordinary differential equations advanced in time by
 the zero-dimensional programs of Section~\ref{sec:programmi0D}, which is what
 makes the comparison between the two implementations a genuine check of the
 solver rather than of the mesh or the discretisation.
-
-\subsubsection{Computational cost}
-\label{sec:implementato-costo}
-
-Almost all of the computing time is spent in the thermochemistry rather than
-in the fluid dynamics. On a reference case of twenty thousand cells with
-reacting nitrogen, profiling the individual stages attributes three quarters
-of the run time to calls to the library and the remainder to OpenFOAM, namely
-the linear solvers, the flux reconstruction and the output of the fields.
-Within those three quarters, the largest contribution came from the reaction
-rates, which were recomputed for each source term to be assembled: the same
-computation was repeated six times, accounting for 65\% of the total run time.
-Evaluating them only once, as described in
-Section~\ref{sec:implementato-sorgenti}, reduces the computing time by a
-factor of $2.2$ without affecting the results: the non-reacting cases remain
-identical to the last digit, and the reacting case changes by one hundredth of
-a kelvin, because with a time step of one nanosecond the composition changes
-too little for the evaluation order to matter.
-
-Beyond this point the remaining margin is limited for a structural reason:
-once the source evaluation has been consolidated, more than half of the run
-time is spent in OpenFOAM — the linear solvers, the flux reconstruction and
-the output of the fields — and it grows with the number of cells exactly as
-the thermochemistry does, so refining the mesh does not change the ratio.
 
 \subsection{Zero-dimensional verification programs}
 \label{sec:programmi0D}

@@ -302,17 +302,6 @@ $\dot\omega_s$, l'energia vibro-elettronica per $Q_{VT} + Q_{CV}$ e l'energia
 del gas, che la comprende, per $Q_{ch}$, così che l'energia totale, compresa
 quella chimica, si conserva.
 
-Le tre sorgenti vengono da un unico insieme di velocità di reazione: le
-$\dot\omega_s$ di tutte le specie, il calore di reazione e l'accoppiamento
-chimica-vibrazione sono ricavati insieme, in un solo attraversamento del
-dominio, dallo stato con cui si entra nella fase dell'energia. La scelta ha due
-ragioni. La prima è di coerenza: le equazioni del modello valutano tutte le
-$\dot\omega_s$ allo stesso stato del gas, mentre calcolandole una sorgente per
-volta la produzione di una specie finirebbe per essere valutata con le specie
-precedenti già avanzate dalle proprie equazioni, e il calore di reazione con
-tutte avanzate. La seconda è di costo, e si vede nel
-paragrafo~\ref{sec:implementato-costo}.
-
 \subsubsection{Come sono stati aggirati i limiti di \mpp}
 \label{sec:implementato-limiti}
 
@@ -357,9 +346,6 @@ ne eredita il calcolo dei flussi, della densità, della quantità di moto e dell
 pressione, e riscrive la fase dell'energia. In questa fase, a ogni passo:
 
 \begin{enumerate}[leftmargin=1.8em]
-  \item calcola in un solo attraversamento del dominio tutti i termini
-    sorgente allo stato corrente: la produzione chimica di ogni specie, il
-    calore di reazione e la sorgente dell'energia vibro-elettronica;
   \item risolve le equazioni delle specie, con la produzione chimica fornita
     da \mpp, e corregge le frazioni perché la loro somma resti uno;
   \item risolve l'equazione dell'energia del gas, uguale a quella del modulo
@@ -371,8 +357,8 @@ pressione, e riscrive la fase dell'energia. In questa fase, a ogni passo:
     aggiorna il legame fra pressione e densità.
 \end{enumerate}
 
-\noindent I termini sorgente sono calcolati una volta sola, con lo stato del gas
-con cui si entra nella fase dell'energia, e trattati in modo esplicito. La fase dell'energia del modulo originale non
+\noindent I termini sorgente sono calcolati con lo stato del gas già noto e
+trattati in modo esplicito. La fase dell'energia del modulo originale non
 poteva essere riusata perché, subito dopo aver risolto l'equazione
 dell'energia, ne ricava la temperatura: mancherebbero sia il calore di
 reazione sia l'equazione vibro-elettronica, che deve essere risolta prima di
@@ -386,8 +372,7 @@ sezione riporta le equazioni di conservazione in cui entrano, prima nella
 forma generale per cui \texttt{shockFluid} e \shockThermo{} sono scritti, valida
 su una mesh qualunque, poi nella forma ridotta che viene effettivamente
 integrata nei casi a bagno termico usati per la verifica
-(Sezione~\ref{sec:programmi0D} e i casi \shockThermo{} corrispondenti della
-Sezione~\ref{sec:implementato-costo}).
+(Sezione~\ref{sec:programmi0D} e i casi \shockThermo{} corrispondenti).
 
 Su una mesh generica, massa e quantità di moto sono risolte senza modifiche
 rispetto al modulo originale \texttt{shockFluid},
@@ -442,29 +427,6 @@ Sono le stesse due equazioni differenziali ordinarie avanzate nel tempo dai
 programmi 0D della Sezione~\ref{sec:programmi0D}, ed è questo che rende il
 confronto fra le due implementazioni un vero controllo del solver, e non
 della mesh o della discretizzazione.
-
-\subsubsection{Costo di calcolo}
-\label{sec:implementato-costo}
-
-Quasi tutto il tempo di calcolo sta nella termochimica, non nella fluidodinamica.
-Su un caso di riferimento di ventimila celle, con l'azoto reagente, la misura dei
-tempi delle singole fasi attribuisce tre quarti del tempo alle chiamate alla
-libreria e il resto a OpenFOAM, cioè ai solutori lineari, alla ricostruzione dei
-flussi e alla scrittura dei campi. Dentro quei tre quarti la voce dominante
-erano le velocità di reazione, che venivano ricalcolate una volta per ogni
-sorgente da costruire: sei volte lo stesso calcolo, pari al 65\% del tempo
-dell'intera simulazione. Valutarle una volta sola, come descritto nel
-paragrafo~\ref{sec:implementato-sorgenti}, riduce il tempo di calcolo di un
-fattore $2{,}2$ senza cambiare i risultati: i casi senza reazioni restano identici cifra per cifra e
-il caso reagente si sposta di un centesimo di grado, perché con un passo di un
-nanosecondo la composizione cambia troppo poco perché l'ordine di valutazione
-conti.
-
-Oltre questo punto il margine residuo è limitato da una ragione strutturale:
-una volta consolidata la valutazione delle sorgenti, più della metà del tempo
-è OpenFOAM — solutori lineari, ricostruzione dei flussi, scrittura dei campi —
-e cresce con il numero di celle esattamente come la parte termochimica, così
-che infittire la griglia non cambia il rapporto.
 
 \subsection{I programmi di verifica zero-dimensionali}
 \label{sec:programmi0D}

@@ -49,36 +49,18 @@ serve solo a OpenFOAM per costruire i campi, la sua polinomiale non entra nella 
 dall'energia limitandola a 20000 K, il suo intervallo di validità), poi per ogni
 cella chiede a Mutation++ le energie a `(p, T, Tve)` e riempie `e` ed `eve`.
 
-**Sorgenti**: `updateSources()` fa **un solo giro sulle celle** e ne calcola tutte
-e tre, con le funzioni di `mutationSources.H` (le stesse dei programmi 0D):
+**Sorgenti** (usate dal solver, calcolate cella per cella con le funzioni di
+`mutationSources.H`, le stesse dei programmi 0D):
 
-- la produzione chimica ω_s di **tutte** le specie (eq. 27);
-- il calore di reazione per l'energia sensibile, `-Σ hf_s ω_s`;
-- la sorgente di `eve`: scambio V-T (eq. 8) più, con la chimica, l'energia
-  vibro-elettronica portata via dalle reazioni (eq. 30).
-
-Le `computeSourceY(i)`, `computeSourceE()` e `computeSourceVe()` che il solver
-chiama non girano più sulle celle: leggono quello che `updateSources()` ha messo
-da parte. `checkSources()` ferma il calcolo se il solver le usa senza aver
-chiamato prima `updateSources()`.
-
-Prima ognuna faceva il proprio giro e ricalcolava `productionRates()`: quattro
-volte per le specie risolte, una per il calore di reazione, una dentro la
-sorgente di `eve`. Sei calcoli della stessa cosa, il **65 % del tempo dell'intera
-corsa**. Il consolidamento
-è anche più coerente con il modello: prima la sorgente della specie *i* vedeva
-le specie *0…i−1* già avanzate dalle loro `YiEqn`, perché `YiEqn.solve()` sta
-dentro il ciclo sulle specie, e il calore di reazione le vedeva tutte avanzate e
-rinormalizzate; le eq. 27 e 30 valutano tutti gli ω_s allo **stesso** stato.
-L'effetto numerico con il passo di 1 ns è trascurabile: i casi senza chimica non
-cambiano di un bit, la fig. 7 — l'unico reagente — si sposta di 0,011 K su `Tv`
-(0,0002 %) e di 1e-7 sulle densità normalizzate.
+- `computeSourceVe()`: scambio V-T (eq. 8) più, con la chimica, l'energia
+  vibro-elettronica portata via dalle reazioni (eq. 30);
+- `computeSourceY(i)`: produzione chimica della specie `i` (eq. 27);
+- `computeSourceE()`: calore di reazione per l'energia sensibile, `-Σ hf_s ω_s`.
 
 **`correct()`**: per ogni cella passa a Mutation++ `ρ(e + Σ Y_s hf_s)` e `ρ eve`
 (`setState` con `vars = 0`), che inverte le energie con un Newton e restituisce
 `T` e `Tve`; poi `updatePsi()` ricalcola `psi = ρ/p` con `p` somma delle pressioni
-parziali (eq. 24), in celle e facce di bordo. Alla fine invalida le sorgenti in
-cache, perché lo stato a cui si riferivano non c'è più.
+parziali (eq. 24), in celle e facce di bordo.
 
 ### 2.2 Le sorgenti — `mutationSources.H`
 
@@ -101,7 +83,6 @@ Funzioni di solo Mutation++ (niente OpenFOAM), condivise fra thermo e programmi 
 ### 2.3 Il solver — `thermophysicalPredictor.C`
 
 ```cpp
-thermo_.updateSources();  // un giro sulle celle: wdot_s, Q_chem, Q_ve
 // specie: sorgente chimica di Mutation++
 YiEqn: ddt(rho, Yi) + div(phi, Yi) + divj(Yi) == wdot_i + fvModels
 // energia sensibile: calore di reazione
@@ -110,10 +91,6 @@ EEqn:  ddt(rho, e) + div(phiEp) + ddt(rho, K) == Q_chem + fvModels
 EveEqn: ddt(rho, eve) == Q_ve
 thermo_.correct();   // decode: T, Tve, psi da Mutation++
 ```
-
-`updateSources()` va all'inizio, prima che le `YiEqn` comincino a cambiare le
-frazioni in massa una specie alla volta: così tutte le sorgenti sono valutate
-allo stato con cui si entra nella fase dell'energia.
 
 Le sorgenti sono esplicite. Nell'heat bath con passo di 1 ns è la stessa
 integrazione dei programmi 0D, ed è per questo che i due percorsi coincidono.
@@ -169,6 +146,5 @@ programma 0D coincidono entro 0.03-0.2 % su tutte le curve, chimica compresa.
 
 ## 6. Cosa viene dopo
 
-- **Milestone 3** — trasporto di `eve` e chimica nel tubo d'urto 1D; è il primo
-  caso con una mesh vera.
+- **Milestone 3** — trasporto di `eve` e chimica nel tubo d'urto 1D.
 - **Milestone 4** — 2D/3D (blunted cone Mach 11, cylinder Mach 20 del paper Part Two).

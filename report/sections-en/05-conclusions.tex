@@ -24,14 +24,8 @@ delayed rise of the vibrational temperature in the mixtures containing atomic
 nitrogen, most likely due to the way \mpp{} averages the relaxation times. The
 comparison has also shown how strongly the results depend on choices that the
 paper does not state, such as the inclusion of electronic energy or the rate
-constants used for air, and has made it possible to reconstruct them.
-
-The computational cost, which in this model is almost entirely due to the
-thermochemistry, has been reduced by a factor of $2.2$ by evaluating the source
-terms once rather than once per source term. The gain therefore comes from
-eliminating redundant work, and it leaves the results unchanged.
-
-The model has been verified on heat baths, where there is no flow. Using it in
+constants used for air, and has made it possible to reconstruct them. The
+model has been verified on heat baths, where there is no flow. Using it in
 realistic configurations requires the developments outlined below.
 
 \subsection{Future work}
@@ -39,8 +33,7 @@ realistic configurations requires the developments outlined below.
 
 The first two developments are needed to move from the heat bath to an actual
 flow; the third aims to remove the only significant discrepancy that remains
-with respect to the reference work; the fourth is needed to make cases with a
-realistic mesh computationally affordable.
+with respect to the reference work.
 
 \begin{enumerate}[leftmargin=1.8em]
   \item \textbf{Transport of the vibro-electronic energy.} The vibro-electronic
@@ -61,9 +54,4 @@ realistic mesh computationally affordable.
     computed with the constants already available in the library and averaged
     as in the paper. Repeating the molecular-atomic nitrogen case would then
     show whether the delay of the vibrational temperature disappears.
-  \item \textbf{Running on realistic meshes.} With a realistic mesh, the
-    domain decomposition already provided by OpenFOAM is the natural route, as
-    it also reduces the cost of the linear solvers. The thermophysical model is
-    already compatible with it: all its computations are local to each cell,
-    and none requires sums across processes.
 \end{enumerate}
