@@ -66,38 +66,29 @@ never talks to the library directly.
 \subsection{\mpp}
 \label{sec:mutation}
 
-This section describes the library that provides all the thermochemistry used
-in the project, and how the project is coupled to it.
+This section introduces the library used for thermochemical modeling and describes its coupling with the solver.
 
 \subsubsection{Purpose and capabilities}
 \label{sec:mutation-cosa}
 
-\mpp~\cite{scoggins2020} is an open-source C++ library originally developed at
-the von Karman Institute for Fluid Dynamics. It
-is designed specifically to be coupled with CFD codes: it does not solve flow
-equations, but, given the local state of a gas, it computes the properties that
-a flow solver cannot obtain on its own: thermodynamic, transport, chemical and
-inter-mode energy exchange. The gas is defined by
-its constituent species, the number of temperatures (one, or two as in Park's
-model), a thermodynamic database, and a list of
-reactions. The state can be given in three ways: 
-densities with the temperatures, densities with the energies, or mass fractions 
-with pressure and temperatures. From any of them the library returns everything 
-else, and from the energies it finds the temperatures itself.
+\mpp~\cite{scoggins2020} is an open-source C++ library originally developed at the von Karman Institute for Fluid Dynamics. It is designed for coupling with CFD solvers and provides thermodynamic and transport properties, chemical kinetics, and energy exchange between internal modes.
 
-\subsubsection{Coupling with the project}
+A gas mixture is defined in terms of its species, thermodynamic database, reaction mechanism, and number of temperatures. In the present work, a two-temperature formulation is used, with separate translational-rotational and vibro-electronic temperatures.
+
+The thermochemical state can be specified using different sets of variables, including species densities and temperatures, species densities and energies, or mass fractions together with pressure and temperatures. Once the state is defined, \mpp{} evaluates the remaining thermodynamic quantities consistently. When the mixture energies are provided, the corresponding temperatures are recovered internally by the library.
+
+\subsubsection{Coupling with the solver}
 \label{sec:mutation-collegamento}
 
-\mpp{} is not part of OpenFOAM: it is compiled separately as a dynamic library,
-alongside the project. The thermophysical model and the zero-dimensional
-verification programs call its functions; the solver reaches it through the
-model. At the start of a simulation the
-thermophysical model reads the description of the gas from the case (species,
-number of temperatures, thermodynamic database, reactions), creates the
-corresponding gas in \mpp{} and maps each OpenFOAM species to the \mpp{}
-species with the same name. From then on, in every cell and at every time step,
-it passes the gas state to the library and receives the temperatures and all
-the other quantities the solver needs.
+\mpp{} is compiled separately from OpenFOAM and linked to the thermophysical model and to the zero-dimensional verification programs. The solver accesses its thermochemical capabilities through the thermophysical model.
+
+The thermochemical description of the gas is entirely handled by \mpp{}. Only the transported variables are advanced by the solver, while temperatures, thermodynamic properties, chemical source terms, and inter-mode energy exchange terms are evaluated from the current mixture state.
+
+During initialization, the thermophysical model reads the mixture configuration from the case and creates the corresponding \mpp{} mixture. A mapping is then constructed between the OpenFOAM and \mpp{} species lists. The initialization fails if a species defined in the OpenFOAM case is not present in the \mpp{} mixture.
+
+During the simulation, the current thermochemical state is transferred to \mpp{} using the partial density $\rho_s$ of each species, the mixture internal energy per unit mass, and its vibro-electronic contribution. From these quantities, \mpp{} reconstructs the translational-rotational and vibro-electronic temperatures, $\Ttr$ and $\Tve$.
+
+Once the state has been set, the solver retrieves the quantities required by the governing equations. These include the temperatures, the thermodynamic relation between pressure and density, the species production rates $\dot{\omega}_s$, and the source terms associated with energy transfer between the internal modes. The state is updated before each evaluation so that all quantities returned by \mpp{} correspond to the current local thermochemical conditions.
 
 \subsection{The implemented model}
 \label{sec:implementato}
