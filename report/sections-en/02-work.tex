@@ -184,6 +184,10 @@ energies just solved,
   \Big(\rho_s,\; \rho\big(e + \textstyle\sum_s Y_s h_{f,s}\big),\; \rho\eve\Big)
   \;\longrightarrow\; (\Ttr,\,\Tve) .
 \]
+The search is a Newton iteration: at each step the two temperatures are
+corrected by the mismatch in energy divided by the corresponding specific
+heats, and it stops when the energies match to within a small tolerance.
+
 With the temperatures and the composition the library also returns the density,
 from which the model updates the link between pressure and density,
 $\psi = \rho(\Ttr,\Tve)/p$, used by the pressure stage that the solver
@@ -229,8 +233,13 @@ recommended exchange probability of $10^{-2}$. The cross section of the
 nitrogen-oxygen pair, which the reference work does not report, is taken from
 \hyfoam~\cite{hystrath}. The air program instead uses a single temperature, as
 the reference work does for this case. The programs are also much faster than
-the solver: the longest case, one million time steps, takes about one second,
-compared with almost half an hour for the solver.
+the solver: the longest case, one million time steps, takes about one
+second, compared with almost half an hour for the solver. The gap is overhead,
+not physics: even with a single cell the solver assembles and solves a matrix
+for every equation, runs the energy stage twice per time step and writes its
+output, and the model queries the library once for every species and every
+source term, whereas the programs do the same arithmetic with a few direct
+function calls.
 
 \subsection{Gas data}
 \label{sec:dati}
@@ -248,10 +257,10 @@ gas with and without electronic energy; for the other cases it does not
 specify, and the discussion of the molecular-atomic nitrogen mixture even
 mentions the electronic contribution of atomic nitrogen. However, the final
 temperatures reported in the paper are recovered only without electronic
-levels. With electronic levels, the final temperature of the molecular-atomic
-nitrogen mixture would be about 18\,300~K instead of the 24\,400~K reported in
-the paper, and that of the nitrogen-oxygen mixture about 19\,200~K instead of
-12\,100~K; without them, the values obtained are 24\,353~K and 12\,133~K. The
+levels. With electronic levels the final temperature would be
+a quarter too low for the molecular-atomic nitrogen mixture and more than half
+too high for the nitrogen-oxygen one; without them, both agree with the paper
+to within 0.3\%. The
 choice was therefore guided by the results: the project uses two data sets,
 one including the electronic levels, used only for the nitrogen case that
 requires them, and one with the ground level only, used for all the other

@@ -197,6 +197,11 @@ risolte,
   \Big(\rho_s,\; \rho\big(e + \textstyle\sum_s Y_s h_{f,s}\big),\; \rho\eve\Big)
   \;\longrightarrow\; (\Ttr,\,\Tve) .
 \]
+La ricerca è un'iterazione di Newton: a ogni passo le due temperature vengono
+corrette con lo scarto di energia diviso per i calori specifici
+corrispondenti, e ci si ferma quando le energie coincidono entro una piccola
+tolleranza.
+
 Con le temperature e la composizione la libreria restituisce anche la densità,
 da cui il modello aggiorna il legame fra pressione e densità,
 $\psi = \rho(\Ttr,\Tve)/p$, usato dalla fase della pressione che il solver
@@ -242,7 +247,12 @@ azoto-ossigeno, che il lavoro di riferimento non riporta, è presa da
 \hyfoam~\cite{hystrath}. Quello per l'aria usa invece una sola temperatura,
 come fa il lavoro di riferimento per questo caso. I programmi sono anche molto
 più rapidi del solver: il caso più lungo, un milione di passi, richiede circa
-un secondo contro quasi mezz'ora.
+un secondo contro quasi mezz'ora. La differenza è sovrastruttura, non fisica:
+anche con una sola cella il solver costruisce e risolve una matrice per ogni
+equazione, ripete la fase dell'energia due volte a ogni passo e scrive i
+risultati, e il modello interroga la libreria una volta per ogni specie e per
+ogni termine sorgente, mentre i programmi fanno gli stessi conti con poche
+chiamate dirette.
 
 \subsection{I dati del gas}
 \label{sec:dati}
@@ -259,11 +269,10 @@ esplicitamente solo nel caso dell'azoto a 30\,000~K, dove confronta il gas con
 e senza; per gli altri casi non lo dice, e il testo che commenta la miscela di
 azoto molecolare e atomico parla anzi del contributo elettronico dell'azoto
 atomico. Le temperature finali riportate nell'articolo, però, tornano solo
-senza livelli elettronici: con i livelli elettronici, la temperatura finale
-della miscela di azoto molecolare e atomico sarebbe di circa 18\,300~K invece
-dei 24\,400~K dell'articolo, e quella della miscela di azoto e ossigeno di
-circa 19\,200~K invece di 12\,100~K, mentre senza si ottengono 24\,353~K e
-12\,133~K. Si sono quindi seguiti i risultati: il progetto ha due versioni dei
+senza livelli elettronici: con i livelli elettronici la temperatura finale sarebbe
+un quarto più bassa per la miscela di azoto molecolare e atomico e più della
+metà più alta per quella di azoto e ossigeno, mentre senza entrambe coincidono
+con l'articolo entro lo 0{,}3\%. Si sono quindi seguiti i risultati: il progetto ha due versioni dei
 dati, una con i livelli elettronici, usata solo per il caso dell'azoto che li
 include, e una con il solo livello fondamentale, usata in tutti gli altri
 casi.
