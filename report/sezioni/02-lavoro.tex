@@ -34,143 +34,37 @@ giusto, e OpenFOAM lo userà come uno dei propri.
 \subsection{OpenFOAM}
 \label{sec:openfoam}
 
-Questa sezione descrive le parti di OpenFOAM su cui il progetto si appoggia e
-i motivi per cui, così com'è, OpenFOAM non basta per un modello a due
-temperature.
-
-\subsubsection{Organizzazione e solver a moduli}
+\subsubsection{Com'è fatto e il suo modello a una temperatura}
 \label{sec:openfoam-moduli}
 
-OpenFOAM risolve le equazioni con il metodo dei volumi finiti: il dominio è
-diviso in celle e ogni grandezza (pressione, velocità, temperatura, frazioni
-delle specie) è un \emph{campo} con un valore per cella. Un caso è una cartella
-di file di testo divisa in tre parti: i valori iniziali e le condizioni al
-contorno, la mesh e le proprietà fisiche, le impostazioni numeriche. In
-OpenFOAM-13 i solver non sono programmi separati: un eseguibile generico carica
-il \emph{modulo solver} indicato nel caso e a ogni passo temporale ne chiama le
-fasi in un ordine fisso: prima il calcolo dei flussi e della densità, poi
-l'equazione della quantità di moto, poi quella dell'energia, infine
-l'aggiornamento della pressione. Per i flussi compressibili ad alta velocità
-OpenFOAM-13 offre un modulo density-based, che ha preso il posto del solver da
-cui è nato \hyfoam: calcola i flussi fra le celle con gli schemi di Kurganov e
-Tadmor~\cite{kurganov2001,greenshields2010}, adatti a catturare gli urti. Un
-nuovo solver si ottiene derivando un modulo esistente e riscrivendo solo le
-fasi che cambiano.
+OpenFOAM è una piattaforma CFD a codice aperto: un insieme di librerie e di
+solver già pronti che discretizzano le equazioni con il metodo dei volumi
+finiti, dividendo il dominio in celle e tenendo un valore di ogni grandezza per
+cella. È scritta in modo che si possa aggiungere fisica nuova senza toccarne il
+nucleo, ed è proprio quello che fa il progetto.
 
-\subsubsection{I modelli termodinamici}
-\label{sec:openfoam-thermo}
+Per i flussi che interessano qui fa già molto. Uno dei suoi solver è fatto
+apposta per i flussi compressibili veloci: gestisce le onde d'urto, trasporta
+le specie chimiche insieme al flusso e risolve un'equazione per l'energia. A chiudere il
+sistema c'è un modello termodinamico: dall'energia di ogni cella ricava una
+temperatura, e da quella la pressione, la viscosità, la conducibilità e le
+velocità di reazione. Tutta la catena, però, poggia su una sola temperatura: è
+il modello a una temperatura della sezione~\ref{sec:una-temperatura}.
 
-Il solver non sa nulla delle proprietà del gas: le chiede a un
-\emph{modello termodinamico}, che il caso compone da pezzi indipendenti scelti
-in un file di testo: come si mescolano le specie, come si calcolano viscosità e
-conducibilità, come dipende dalla temperatura l'energia di ogni specie e quale
-equazione di stato si usa. Nel solver per flussi compressibili, dopo che
-l'equazione dell'energia è stata risolta, il modello ricava la temperatura di
-ogni cella con un metodo iterativo e da questa la comprimibilità con cui si
-aggiorna la pressione. I modelli disponibili per i gas esprimono il calore
-specifico come un polinomio della temperatura, valido in un intervallo
-dichiarato; se la temperatura ne esce, viene riportata al limite
-dell'intervallo con un avviso. Internamente ogni modello è costruito a strati,
-e ogni combinazione ammessa viene iscritta con il proprio nome nell'elenco dei
-modelli disponibili, così che il caso possa sceglierla per nome come spiegato
-nella sezione~\ref{sec:approccio}.
+\subsubsection{Dove si innesta il progetto}
+\label{sec:openfoam-innesto}
 
-\subsubsection{Il modello termodinamico ad alta entalpia}
-\label{sec:openfoam-highenthalpy}
-
-Il punto di aggancio per il modello a due temperature è un modello
-termodinamico ad alta entalpia, costruito sullo stesso schema di quello
-standard di OpenFOAM per le miscele di gas compressibili: stessa struttura a
-strati con uno strato in più in cima, stesse combinazioni disponibili, a cui si
-aggiungono quelle fornite dal template, e un proprio nome con cui il caso lo
-sceglie. Per il solver è quindi un modello termodinamico come gli altri.
-Rispetto a quello standard aggiunge due campi, la temperatura
-vibro-elettronica, il cui valore iniziale si assegna nel caso come per la
-temperatura, e l'energia vibro-elettronica, e mette a disposizione del solver
-tre termini sorgente: quello dell'energia vibro-elettronica, la produzione
-chimica di ogni specie e il calore di reazione. Stabilisce cosa il modello deve
-fornire, non come: il modo in cui queste grandezze vengono calcolate è
-descritto nella sezione~\ref{sec:implementato}.
-
-\subsubsection{Il modulo del solver per flussi compressibili}
-\label{sec:openfoam-shockfluid}
-
-Il solver per flussi compressibili descritto nella
-sezione~\ref{sec:openfoam-moduli} è il modulo \texttt{shockFluid}, e il suo
-codice è diviso in un file per ogni fase del passo temporale. Il file
-\texttt{shockFluid.H} dichiara il modulo e i suoi campi; nell'originale il
-modulo costruisce da sé il proprio modello termodinamico. È l'unico file del
-core che il progetto copia e modifica: la copia accetta un modello
-termodinamico costruito dall'esterno e di tipo più generale, così che il
-solver a due temperature possa passargli il modello ad alta entalpia. Il file
-\texttt{thermophysicalPredictor.C} contiene la fase dell'energia: risolve
-l'equazione dell'energia e ne ricava subito la temperatura, ed è la fase che il
-progetto riscrive. Il file \texttt{pressureCorrector.C} aggiorna la pressione
-dividendo la densità per la comprimibilità: è il punto in cui la
-comprimibilità calcolata con \mpp{} entra nel solver. Le altre fasi, cioè i
-flussi alle facce, la densità e la quantità di moto, sono compilate dai file
-originali senza modifiche.
-
-\subsubsection{Il calcolo della temperatura}
-\label{sec:openfoam-psithermo}
-
-Nel modello a una temperatura il passaggio dall'energia alla temperatura
-avviene nel file \texttt{PsiThermo.C}, nella funzione \texttt{calculate()}, che
-OpenFOAM chiama ogni volta che il solver chiede di aggiornare il modello
-termodinamico. Per ogni cella, e poi per ogni faccia di bordo, la funzione
-prende l'energia appena risolta, cerca con il metodo iterativo descritto nella
-sezione~\ref{sec:openfoam-thermo} la temperatura che la produce e da questa
-calcola la comprimibilità, che il solver userà per la pressione. È il cuore
-del modello a una temperatura, e il punto in cui una seconda temperatura non
-trova posto: entra una sola energia ed esce una sola temperatura. Il modello
-ad alta entalpia non usa questa funzione ma la sostituisce con la propria:
-consegna a \mpp{} le due energie di ogni cella, ne riceve le due temperature e
-con queste calcola la comprimibilità
-\[
-  \psi = \frac{\rho(\Ttr, \Tve)}{p},
-\]
-al posto di $\psi = 1/(RT)$ del gas perfetto: qui $\rho$ non viene da
-un'equazione di stato in forma chiusa ma è la densità di miscela restituita da
-\mpp{} dopo aver impostato lo stato con le due temperature e la composizione
-di ogni cella.
-
-\subsubsection{Il modello termodinamico standard}
-\label{sec:openfoam-psimulti}
-
-Il modello ad alta entalpia della sezione~\ref{sec:openfoam-highenthalpy} è
-costruito a partire dal modello termodinamico standard di OpenFOAM per le
-miscele di gas compressibili, definito nei file
-\texttt{psiMulticomponentThermo.H} e \texttt{psiMulticomponentThermos.C}. Il
-primo descrive come il modello è assemblato: le classi di base da cui eredita,
-una classe che mette insieme i vari strati e l'ordine in cui gli strati sono
-impilati. Il secondo iscrive nell'elenco dei modelli disponibili tutte le
-combinazioni ammesse, con una chiamata per ogni tipo di miscela, usando macro
-già pronte di OpenFOAM. I file del modello ad alta entalpia seguono la stessa
-struttura, e confrontandoli si vede esattamente che cosa aggiungono: i due
-campi della temperatura e dell'energia vibro-elettronica, le tre funzioni per i
-termini sorgente, lo strato in più in cima, le combinazioni aggiuntive e il
-nome con cui il caso lo sceglie.
-
-\subsubsection{Limiti per un modello a due temperature}
-\label{sec:openfoam-limiti}
-
-Così come sono, i modelli termodinamici di OpenFOAM sono pensati per il
-modello a una temperatura descritto nella sezione~\ref{sec:una-temperatura}:
-
-\begin{itemize}[leftmargin=1.6em]
-  \item ogni cella ha una sola temperatura, ricavata da una sola energia; i
-    polinomi danno l'energia totale di una specie in equilibrio e non
-    dicono quanta ne stia nella vibrazione, quindi non c'è modo di definire una
-    seconda temperatura;
-  \item i polinomi valgono fino alla temperatura massima dichiarata, nei dati
-    del progetto 20\,000~K; oltre, la temperatura viene tagliata, mentre
-    diversi casi del lavoro di riferimento partono da 30\,000~K;
-  \item le reazioni chimiche sono calcolate alla sola temperatura della cella,
-    e anche viscosità e conducibilità dipendono da quella sola;
-  \item il solver per flussi compressibili non ha un'equazione per l'energia
-    vibro-elettronica né termini che descrivano lo scambio di energia fra i
-    modi.
-\end{itemize}
+Il progetto si innesta in due punti di questa catena. Il suo solver deriva da quel solver per flussi
+compressibili veloci, lo stesso da cui è nato \hyfoam, e ne riscrive solo la fase dell'energia: lì aggiunge
+l'equazione dell'energia vibro-elettronica e i termini sorgente della chimica,
+mentre flussi, densità, quantità di moto e pressione restano quelli ereditati.
+Il suo modello termodinamico deriva da quello standard per le miscele
+compressibili e aggiunge ciò che serve al modello a due temperature: la
+temperatura e l'energia vibro-elettronica come due campi in più, e tre termini
+sorgente messi a disposizione del solver. Derivando da quello standard, per il
+resto di OpenFOAM è un modello termodinamico come gli altri, e il caso lo
+sceglie per nome come qualunque altro. È anche l'unico punto in cui si chiama
+\mpp: il solver non parla mai direttamente con la libreria.
 
 \subsection{\mpp}
 \label{sec:mutation}
@@ -200,7 +94,7 @@ energie trova da sé le temperature.
 
 \mpp{} non fa parte di OpenFOAM: è compilata a parte, insieme al progetto, come
 libreria dinamica, e il modello termodinamico ad alta entalpia descritto nella
-sezione~\ref{sec:openfoam-highenthalpy} e i programmi zero-dimensionali di
+sezione~\ref{sec:openfoam-moduli} e i programmi zero-dimensionali di
 verifica ne chiamano le funzioni; il solver ci arriva attraverso il modello. All'avvio di una simulazione il
 modello termodinamico legge nel caso la descrizione del gas -- specie, numero
 di temperature, banca dati termodinamica, reazioni --, crea il gas

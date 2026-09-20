@@ -29,140 +29,38 @@ right table, after which OpenFOAM uses it like any of its built-in models.
 \subsection{OpenFOAM}
 \label{sec:openfoam}
 
-This section describes the parts of OpenFOAM on which the project relies, and
-explains why, out of the box, it cannot handle a two-temperature model.
-
-\subsubsection{Code organisation and modular solvers}
+\subsubsection{The framework and its one-temperature model}
 \label{sec:openfoam-moduli}
 
-OpenFOAM solves the governing equations with the finite volume method: the
-domain is divided into cells, and each quantity (pressure, velocity,
-temperature, species fractions) is a \emph{field} with one value per cell. A
-case is a directory of text files organised in three parts: the initial and
-boundary conditions, the mesh and physical properties, and the numerical
-settings. In OpenFOAM-13 solvers are no longer separate programs: a generic
-executable loads the \emph{solver module} specified in the case and, at every
-time step, calls its stages in a fixed order: first the fluxes and the density,
-then the momentum equation, then the energy equation, and finally the pressure
-update. For high-speed compressible flows OpenFOAM-13 provides a density-based
-module, which replaces the solver from which \hyfoam{} originated. It computes
-the inter-cell fluxes with the central schemes of Kurganov and
-Tadmor~\cite{kurganov2001,greenshields2010}, which are well suited to shock
-capturing. A new solver is created by deriving from an existing module and
-overriding only the stages that need to change.
+OpenFOAM is an open-source CFD framework: a collection of libraries and
+ready-made solvers that discretise the governing equations with the finite
+volume method, dividing the domain into cells and storing one value of each
+quantity per cell. It is written so that new physics can be added without
+touching its core, and this is what the project does.
 
-\subsubsection{Thermophysical models}
-\label{sec:openfoam-thermo}
+For the flows of interest here it already does a lot. One of its solvers is
+built for fast compressible flows: it deals with shock waves, carries the
+chemical species along with the flow and solves an equation for the energy. A thermophysical
+model then closes the system: from the energy of each cell it recovers a
+temperature, and from that temperature the pressure, the viscosity, the thermal
+conductivity and the reaction rates. The whole chain, however, rests on a
+single temperature: it is the one-temperature model of
+Section~\ref{sec:una-temperatura}.
 
-The solver knows nothing about the gas properties: it obtains them from a
-\emph{thermophysical model}, which the case assembles from independent
-components chosen in a text file: how the species mix, how viscosity and
-thermal conductivity are computed, how the energy of each species depends on
-temperature, and the equation of state. In the compressible solver, once the
-energy equation has been solved, the model recovers the temperature of each
-cell iteratively and from it the compressibility used to update the pressure.
-The models available for gases express the specific heat as a polynomial in
-temperature, fitted over a stated range; if the temperature leaves that range
-it is clipped to the nearest limit and a warning is issued. Internally each
-model is built as a stack of layers, and every permitted combination is
-registered under its own name in the table of available models, so that the
-case can select it by name, as described in Section~\ref{sec:approccio}.
+\subsubsection{How the project fits in}
+\label{sec:openfoam-innesto}
 
-\subsubsection{The high-enthalpy thermophysical model}
-\label{sec:openfoam-highenthalpy}
-
-The two-temperature model is plugged into OpenFOAM through a high-enthalpy
-thermophysical model. It follows the same design as the standard OpenFOAM
-model for mixtures of compressible gases: the same layered structure with one
-additional layer on top, the same set of available combinations extended with
-those provided by the template, and a name of its own by which the case
-selects it.
-From the solver's point of view it is therefore a thermophysical model like any
-other. Compared with the standard model it adds two fields, the
-vibro-electronic temperature, whose initial value is set in the case like that
-of the temperature, and the vibro-electronic energy. It also provides the
-solver with three source terms: the source of vibro-electronic energy, the
-chemical production rate of each species, and the heat of reaction. This layer
-defines what the model must provide, not how it is computed; the
-implementation is described in Section~\ref{sec:implementato}.
-
-\subsubsection{The compressible-flow solver module}
-\label{sec:openfoam-shockfluid}
-
-The compressible solver introduced in Section~\ref{sec:openfoam-moduli} is the
-\texttt{shockFluid} module, whose code is split into one file per stage of the
-time step. The file \texttt{shockFluid.H} declares the module and its fields;
-in the original version, the module constructs its own thermophysical model.
-This is the only core file that the project copies and modifies: the modified
-copy accepts a thermophysical model constructed externally and of a more
-general type, so that the two-temperature solver can pass it the high-enthalpy
-model. The file \texttt{thermophysicalPredictor.C} contains the energy stage,
-which solves the energy equation and immediately computes the temperature from
-it; this is the stage that the project rewrites. The file
-\texttt{pressureCorrector.C} updates the pressure by dividing the density by
-the compressibility, and is therefore where the compressibility computed by
-\mpp{} enters the solver. The remaining stages, namely the face fluxes, the
-density and the momentum, are compiled unchanged from the original files.
-
-\subsubsection{Computing the temperature}
-\label{sec:openfoam-psithermo}
-
-In the one-temperature model the conversion from energy to temperature takes
-place in the function \texttt{calculate()} in \texttt{PsiThermo.C}, which
-OpenFOAM calls every time the solver requests an update of the thermophysical
-model. For each cell, and then for each boundary face, the function takes the
-newly solved energy, finds the corresponding temperature with the iterative
-method described in Section~\ref{sec:openfoam-thermo}, and from it computes the
-compressibility that the solver uses for the pressure. This function is the
-core of the one-temperature model, and it has no room for a second
-temperature: one energy goes in, one temperature comes out. The high-enthalpy
-model does not use this function but replaces it with its own, which passes the
-two energies of each cell to \mpp, receives the two temperatures, and uses them
-to compute the compressibility as
-\[
-  \psi = \frac{\rho(\Ttr, \Tve)}{p}
-\]
-instead of the perfect-gas relation $\psi = 1/(RT)$. Here $\rho$ is not given by
-a closed-form equation of state: it is the mixture density returned by \mpp{}
-once the state has been set from the two temperatures and the composition of
-the cell.
-
-\subsubsection{The standard thermophysical model}
-\label{sec:openfoam-psimulti}
-
-The high-enthalpy model of Section~\ref{sec:openfoam-highenthalpy} is derived
-from the standard OpenFOAM thermophysical model for mixtures of compressible
-gases, defined in \texttt{psiMulticomponentThermo.H} and
-\texttt{psiMulticomponentThermos.C}. The first file describes how the model is
-assembled: the base classes it inherits from, a class that combines the
-various layers, and the order in which the layers are stacked. The second
-registers every permitted combination in the table of available models, with
-one call per mixture type, using predefined OpenFOAM macros. The files of the
-high-enthalpy model follow the same structure, and a side-by-side comparison
-shows exactly what they add: the vibro-electronic temperature and energy
-fields, the three source-term functions, the additional top layer, the extra
-combinations, and the name by which the case selects the model.
-
-\subsubsection{Limitations for a two-temperature model}
-\label{sec:openfoam-limiti}
-
-As they stand, the OpenFOAM thermophysical models are designed for the
-one-temperature description of Section~\ref{sec:una-temperatura}:
-
-\begin{itemize}[leftmargin=1.6em]
-  \item each cell has a single temperature, derived from a single energy; the
-    polynomials give the total energy of a species in equilibrium but not
-    the fraction stored in vibration, so a second temperature cannot be
-    defined;
-  \item the polynomials are valid only up to the stated maximum temperature,
-    20\,000~K in the project data; above it, the temperature is clipped, whereas
-    several cases in the reference work start at 30\,000~K;
-  \item chemical reaction rates are evaluated at the cell temperature only, and
-    so are viscosity and thermal conductivity;
-  \item the compressible solver has neither an equation for the
-    vibro-electronic energy nor terms describing the energy exchange between
-    the modes.
-\end{itemize}
+The project plugs into two points of this chain. Its solver derives from that solver for fast
+compressible flows, the one from which \hyfoam{} also originated, and rewrites only the energy stage: there it adds
+the equation for the vibro-electronic energy and the chemical source terms,
+while fluxes, density, momentum and pressure are inherited unchanged. Its
+thermophysical model derives from the standard model for compressible mixtures
+and adds what the two-temperature model needs: the vibro-electronic temperature
+and energy as two extra fields, and three source terms made available to the
+solver. Being derived from the standard model, it is treated by the rest of
+OpenFOAM as an ordinary thermophysical model, and the case selects it by name
+like any other. It is also the only place where \mpp{} is called: the solver
+never talks to the library directly.
 
 \subsection{\mpp}
 \label{sec:mutation}
