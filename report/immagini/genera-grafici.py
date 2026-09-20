@@ -31,16 +31,16 @@ TESTI = {
 
 # nome del grafico -> (risultato del progetto, curve del paper, cosa disegnare)
 GRAFICI = {
-    "azoto-riscaldamento":   ("fig3a",     "fig3a", "T"),
-    "azoto-raffreddamento":  ("fig3b",     "fig3b", "T"),
-    "azoto-30000K-senza-el": ("fig4-noEl", "fig4-noEl", "T"),
-    "azoto-30000K-con-el":   ("fig4-el",   "fig4-el", "T"),
-    "azoto-atomico":         ("fig5",      "fig5", "T"),
-    "azoto-ossigeno-VV":     ("fig6-VV",   "fig6-VV", "T"),
-    "reagente-temperature":  ("fig7",      "fig7", "T"),
-    "reagente-densita":      ("fig7",      "fig7", "n"),
-    "aria-temperatura":      ("fig9-QK",   "fig9", "T"),
-    "aria-densita":          ("fig9-QK",   "fig9", "n"),
+    "nitrogen-heating":   ("fig3a",     "fig3a", "T"),
+    "nitrogen-cooling":  ("fig3b",     "fig3b", "T"),
+    "nitrogen-hot-no-electronic": ("fig4-noEl", "fig4-noEl", "T"),
+    "nitrogen-hot-electronic":   ("fig4-el",   "fig4-el", "T"),
+    "nitrogen-atomic":         ("fig5",      "fig5", "T"),
+    "nitrogen-oxygen-vv":     ("fig6-VV",   "fig6-VV", "T"),
+    "reacting-temperatures":  ("fig7",      "fig7", "T"),
+    "reacting-densities":      ("fig7",      "fig7", "n"),
+    "air-temperature":      ("fig9-QK",   "fig9", "T"),
+    "air-densities":          ("fig9-QK",   "fig9", "n"),
 }
 
 NOMI = {

@@ -1,5 +1,5 @@
 \section*{Abstract}
-\addcontentsline{toc}{section}{Summary}
+\addcontentsline{toc}{section}{Abstract}
 
 This report describes the reproduction, in OpenFOAM-13 and with the
 thermochemistry library \mpp, of the zero-dimensional test cases used by
@@ -13,10 +13,10 @@ temperatures and supplies the thermodynamic properties.
 The work follows two independent paths built on the same source-term
 functions. The first is a set of stand-alone zero-dimensional programs that
 integrate the heat-bath equations using \mpp{} alone and cover every figure in
-the verification chapter of the paper. The second is the CFD solver, which
+the verification part of the reference work. The second is the CFD solver, which
 solves the same equations on a single cell through a thermophysical model
-acting as a bridge to the library. The two paths agree to within 0.2\% in
-almost all cases, and never differ by more than 1.2\%, which verifies the
+acting as a bridge to the library. The two paths agree to within 0.3\% in all cases but
+high-temperature nitrogen, where the difference reaches 1.2\%, which verifies the
 integration of the model into the solver. The physics is verified against the
-\hyfoam{} curves extracted from the vector figures of the paper and against
+\hyfoam{} curves extracted from the vector figures of the reference work and against
 the equilibrium temperatures obtained from energy conservation.

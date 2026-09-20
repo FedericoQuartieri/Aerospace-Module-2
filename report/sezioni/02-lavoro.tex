@@ -15,8 +15,8 @@ il proprio mestiere: OpenFOAM risolve le equazioni del modello a due
 temperature, \mpp{} fornisce tutte le grandezze termochimiche che vi
 compaiono. Il solver, in particolare, non segue direttamente le due
 temperature ma le energie corrispondenti, che si conservano correttamente anche
-attraverso un urto, e a ogni passo le consegna a \mpp, che ne ricava le
-temperature.
+attraverso un urto, e a ogni passo il modello termodinamico le consegna a
+\mpp, che ne ricava le temperature.
 
 OpenFOAM è pensato per essere esteso con \emph{librerie dinamiche}: un
 componente nuovo -- un solver, un modello termodinamico, una condizione al
@@ -24,8 +24,8 @@ contorno -- si compila per conto proprio e viene caricato durante
 l'esecuzione, scelto per nome nei file di testo del caso. Il vantaggio è
 l'indipendenza: il codice nuovo sta in un repository suo, l'installazione di
 OpenFOAM resta intatta e si ricompila solo la libreria, non la piattaforma.
-La stessa indipendenza rende poco costoso
-l'aggiornamento: quando esce una nuova versione di OpenFOAM basta ricompilare
+La stessa indipendenza mantiene basso il costo di un
+aggiornamento: quando viene rilasciata una nuova versione di OpenFOAM basta ricompilare
 la libreria e rimettere in riga i pochi punti in cui tocca la piattaforma,
 mentre il modello resta quello che è. Tenere una copia modificata di OpenFOAM
 vorrebbe dire invece riapplicare ogni modifica a ogni nuova versione.
@@ -36,25 +36,28 @@ vorrebbe dire invece riapplicare ogni modifica a ogni nuova versione.
 \subsubsection{Com'è fatto e il suo modello a una temperatura}
 \label{sec:openfoam-moduli}
 
-OpenFOAM è una piattaforma CFD a codice aperto: un insieme di librerie e di
+OpenFOAM~\cite{weller1998} è una piattaforma CFD a codice aperto: un insieme
+di librerie e di
 solver già pronti che discretizzano le equazioni con il metodo dei volumi
 finiti, dividendo il dominio in celle e tenendo un valore di ogni grandezza per
 cella. È scritta in modo che si possa aggiungere fisica nuova senza toccarne il
 nucleo, ed è proprio quello che fa il progetto.
 
-Per i flussi che interessano qui fa già molto. Uno dei suoi solver è fatto
-apposta per i flussi compressibili veloci: gestisce le onde d'urto, trasporta
-le specie chimiche insieme al flusso e risolve un'equazione per l'energia. A chiudere il
+Per i flussi che interessano qui offre già molto di ciò che serve. Uno dei suoi
+solver è fatto per i flussi compressibili veloci e cattura le onde d'urto con
+schemi centrali-upwind~\cite{kurganov2001,greenshields2010}; altri trasportano
+le specie chimiche con il flusso e ne risolvono le reazioni. A chiudere il
 sistema c'è un modello termodinamico: dall'energia di ogni cella ricava una
-temperatura, e da quella la pressione, la viscosità, la conducibilità e le
-velocità di reazione. Tutta la catena, però, poggia su una sola temperatura: è
+temperatura, e da quella la pressione, la viscosità e la conducibilità, mentre
+un modello di chimica separato usa la stessa temperatura per le velocità di
+reazione. Tutta la catena, però, poggia su una sola temperatura: è
 il modello a una temperatura della sezione~\ref{sec:una-temperatura}.
 
-\subsubsection{Dove si innesta il progetto}
+\subsubsection{Punti di innesto del progetto}
 \label{sec:openfoam-innesto}
 
-Il progetto si innesta in due punti di questa catena. Il suo solver deriva da quel solver per flussi
-compressibili veloci, lo stesso da cui è nato \hyfoam, e ne riscrive solo la fase dell'energia: lì aggiunge
+Il progetto interviene in due punti di questa catena. Il suo solver deriva dal modulo per flussi compressibili
+veloci, il successore del solver da cui è nato \hyfoam, e ne riscrive solo la fase dell'energia: lì aggiunge
 l'equazione dell'energia vibro-elettronica e i termini sorgente della chimica,
 mentre flussi, densità, quantità di moto e pressione restano quelli ereditati.
 Il suo modello termodinamico deriva da quello standard per le miscele
@@ -63,46 +66,52 @@ temperatura e l'energia vibro-elettronica come due campi in più, e tre termini
 sorgente messi a disposizione del solver. Derivando da quello standard, per il
 resto di OpenFOAM è un modello termodinamico come gli altri, e il caso lo
 sceglie per nome come qualunque altro. È anche l'unico punto in cui si chiama
-\mpp: il solver non parla mai direttamente con la libreria.
+\mpp: il solver non chiama mai direttamente la libreria.
 
 \subsection{\mpp}
 \label{sec:mutation}
 
-Questa sezione descrive la libreria che fornisce al progetto tutta la
-termochimica e il modo in cui il progetto vi si collega.
+Questa sezione presenta la libreria che fornisce la termochimica e descrive
+come è collegata al solver.
 
 \subsubsection{Che cos'è e a cosa serve}
 \label{sec:mutation-cosa}
 
-\mpp~\cite{scoggins2020} è una libreria scritta in C++, sviluppata
-originariamente al von Karman Institute for Fluid Dynamics e distribuita come
-codice aperto; il progetto ne usa la versione 1.1.3. È pensata proprio per
-essere collegata a un codice CFD: non risolve equazioni di flusso, ma, dato lo
-stato di un gas in un punto, ne calcola le proprietà che un solver non sa
-calcolare da solo: termodinamiche, di trasporto, chimiche e di scambio di
-energia fra i modi, dai flussi subsonici a quelli ipersonici, anche per gas
-ionizzati. Il gas è descritto dalle specie che lo compongono, dal numero di
-temperature, una oppure due come nel modello di Park, da una banca dati
-termodinamica e dall'elenco delle reazioni. Lo stato si può dare in tre modi:
-densità e temperature, densità ed energie, oppure frazioni in massa con
-pressione e temperature. Da ognuno la libreria ricava tutto il resto, e dalle
-energie trova da sé le temperature.
+\mpp~\cite{scoggins2020} è una libreria C++ a codice aperto sviluppata al von
+Karman Institute for Fluid Dynamics. È pensata per essere collegata a un codice
+CFD: non risolve equazioni di flusso, ma restituisce le proprietà che un solver
+non sa calcolare da solo, cioè proprietà termodinamiche e di trasporto,
+cinetiche chimiche e scambio di energia fra i modi interni.
 
-\subsubsection{Il collegamento con il progetto}
+Un gas è definito dalle sue specie, da una banca dati termodinamica, da un
+meccanismo di reazione e dal numero di temperature; qui se ne usano due, una
+traslazionale-rotazionale e una vibro-elettronica. Lo stato si può dare in tre
+modi: densità delle specie con le temperature, densità delle specie con le
+energie, oppure frazioni in massa con la pressione e le temperature. Da ognuno
+di questi la libreria restituisce tutte le altre grandezze, e quando riceve le
+energie ricava lei stessa le temperature.
+
+\subsubsection{Il collegamento con il solver}
 \label{sec:mutation-collegamento}
 
-\mpp{} non fa parte di OpenFOAM: è compilata a parte, insieme al progetto, come
-libreria dinamica, e il modello termodinamico ad alta entalpia descritto nella
-sezione~\ref{sec:openfoam-moduli} e i programmi zero-dimensionali di
-verifica ne chiamano le funzioni; il solver ci arriva attraverso il modello. All'avvio di una simulazione il
-modello termodinamico legge nel caso la descrizione del gas -- specie, numero
-di temperature, banca dati termodinamica, reazioni --, crea il gas
-corrispondente in \mpp{} e associa ogni specie di OpenFOAM alla specie di
-\mpp{} con lo stesso nome. Da quel momento, cella per cella e a ogni passo, gli
-passa lo stato del gas e ne riceve le temperature e tutte le grandezze che
-servono al solver. I dati del gas, cioè le costanti delle specie e le
-reazioni, sono letti da una cartella del progetto che contiene i valori del
-lavoro di riferimento.
+\mpp{} è compilata separatamente da OpenFOAM ed è collegata al modello
+termodinamico e ai programmi zero-dimensionali di verifica; il solver la
+raggiunge solo attraverso il modello.
+
+All'inizializzazione il modello legge nel caso la descrizione del gas -- la
+miscela, il numero di temperature, la banca dati termodinamica e il meccanismo
+di reazione --, crea la miscela corrispondente in \mpp{} e associa ogni specie
+di OpenFOAM alla specie di \mpp{} con lo stesso nome. Se una specie manca dalla
+miscela, la simulazione si ferma.
+
+Durante la simulazione il modello imposta lo stato della libreria con le
+densità parziali $\rho_s$, l'energia totale per unità di volume, che comprende
+l'energia chimica di formazione, e la sua parte vibro-elettronica; da queste
+\mpp{} ricava $\Ttr$ e $\Tve$. Il modello chiede poi le grandezze che servono
+alle equazioni: le temperature, il legame fra pressione e densità, le
+produzioni $\dot\omega_s$ e i termini sorgente dello scambio di energia. Lo
+stato viene reimpostato prima di ogni richiesta, così che ogni grandezza si
+riferisca alle condizioni correnti.
 
 \subsection{Il modello implementato}
 \label{sec:implementato}
@@ -111,20 +120,21 @@ Il solver a due temperature deriva dal modulo density-based di OpenFOAM: ne
 eredita i flussi, la densità, la quantità di moto e l'aggiornamento della
 pressione, e riscrive la fase che si occupa dell'energia. Questa sezione segue
 quella fase passo per passo. In tutte le formule $\rho$ è la densità del gas,
-$Y_s$ la frazione in massa della specie $s$ e $\rho_s = \rho Y_s$ la sua
-densità parziale, $\Ttr$ e $\Tve$ sono le due temperature, $e$ è l'energia del
-gas per unità di massa e $\eve$ la sua parte vibro-elettronica.
+$\mathbf{U}$ la sua velocità, $Y_s$ la frazione in massa della specie $s$ e
+$\rho_s = \rho Y_s$ la sua densità parziale, $\Ttr$ e $\Tve$ sono le due
+temperature, $e$ è l'energia del gas per unità di massa e $\eve$ la sua parte
+vibro-elettronica.
 
-\subsubsection{Avvio: dalle temperature alle energie}
+\subsubsection{Inizializzazione: dalle temperature alle energie}
 \label{sec:implementato-avvio}
 
 Il caso assegna le due temperature, la pressione e la composizione. Prima del
 primo passo il modello chiede a \mpp{} le energie corrispondenti,
-\[
+\begin{equation}
   e = \sum_s Y_s\big(e_s(\Ttr,\Tve) - h_{f,s}\big),
   \qquad
   \eve = \sum_s Y_s\,e_{ve,s}(\Tve) ,
-\]
+\end{equation}
 dove $e_s$ è l'energia della specie $s$ e $h_{f,s}$ la sua entalpia di
 formazione. La sottrazione è una questione di convenzione: l'energia di
 OpenFOAM non comprende l'energia chimica di formazione, quella di \mpp{} sì.
@@ -135,17 +145,19 @@ mai le temperature.
 \label{sec:implementato-specie}
 
 A ogni passo si aggiorna per prima la composizione,
-\[
-  \frac{\partial (\rho Y_s)}{\partial t} + \text{trasporto} = \dot\omega_s ,
-\]
-dove $\dot\omega_s$ è la massa della specie $s$ prodotta per unità di volume e
-di tempo, e ``trasporto'' sta per i termini che portano le specie con il flusso
-e per diffusione, calcolati dalla parte ereditata del solver. \mpp{} fornisce
-$\dot\omega_s$ a partire dal meccanismo di reazione. Le dissociazioni non sono
-calcolate a $\Ttr$ ma alla temperatura di Park,
-\[
+\begin{equation}
+  \frac{\partial (\rho Y_s)}{\partial t}
+  + \nabla\cdot(\rho\,\mathbf{U}\,Y_s)
+  + \nabla\cdot\mathbf{j}_s = \dot\omega_s ,
+\end{equation}
+dove $\mathbf{j}_s$ è il flusso diffusivo della specie $s$ e $\dot\omega_s$ la
+massa della specie $s$ prodotta per unità di volume e di tempo; i termini
+convettivo e diffusivo arrivano invariati dalla parte ereditata del solver.
+\mpp{} fornisce $\dot\omega_s$ a partire dal meccanismo di reazione. Le
+dissociazioni non sono calcolate a $\Ttr$ ma alla temperatura di Park,
+\begin{equation}
   T_P = \Ttr^{\,a}\,\Tve^{\,1-a}, \qquad a = 0{,}7 ,
-\]
+\end{equation}
 così che una molecola che vibra ancora poco si dissoci più lentamente. Le
 frazioni in massa vengono poi riscalate perché la loro somma resti uno.
 
@@ -153,50 +165,59 @@ frazioni in massa vengono poi riscalate perché la loro somma resti uno.
 \label{sec:implementato-energia}
 
 L'equazione dell'energia è quella del modulo originale con un termine in più,
-\[
-  \frac{\partial (\rho e)}{\partial t} + \text{trasporto} = Q_{ch} ,
+\begin{equation}
+  \frac{\partial (\rho e)}{\partial t}
+  + \nabla\cdot\boldsymbol\phi_p
+  + \frac{\partial (\rho K)}{\partial t}
+  = Q_{ch}
+  + \nabla\cdot(\tau\cdot\mathbf{U})
+  + \nabla\cdot(\kappa\nabla\Ttr) ,
   \qquad
-  Q_{ch} = -\sum_s h_{f,s}\,\dot\omega_s .
-\]
-$Q_{ch}$ è il calore di reazione: rompere una molecola immagazzina energia nei
-legami chimici dei prodotti, e quella quota viene tolta a $e$. Poiché $e$
-contiene anche la parte vibro-elettronica, lo scambio fra le due temperature
-qui non compare: sposta energia dentro $e$, non ne aggiunge né toglie.
+  Q_{ch} = -\sum_s h_{f,s}\,\dot\omega_s ,
+\end{equation}
+dove $\boldsymbol\phi_p$ è il flusso convettivo di energia, che comprende il
+lavoro della pressione, $K = |\mathbf{U}|^2/2$ è l'energia cinetica per unità
+di massa, $\tau$ lo sforzo viscoso e $\kappa$ la conducibilità termica; tutti
+ereditati dal modulo originale. Il termine aggiunto $Q_{ch}$ è il calore di
+reazione: rompere una molecola immagazzina energia nei legami chimici dei
+prodotti, e quella quota viene tolta a $e$. Poiché $e$ contiene anche la parte
+vibro-elettronica, lo scambio fra le due temperature qui non compare: sposta
+energia dentro $e$, non ne aggiunge né toglie.
 
 \subsubsection{Energia vibro-elettronica}
 \label{sec:implementato-eve}
 
 È l'equazione che il progetto aggiunge,
-\[
+\begin{equation}
   \frac{\partial (\rho \eve)}{\partial t} = Q_{VT} + Q_{CV} .
-\]
+\end{equation}
 La prima sorgente è lo scambio con il moto di traslazione, scritto come un
-rilassamento verso l'equilibrio,
-\[
+rilassamento verso l'equilibrio~\cite{landau1936},
+\begin{equation}
   Q_{VT} = \sum_m \rho_m\,
   \frac{e_{ve,m}(\Ttr) - e_{ve,m}(\Tve)}{\tau_m} ,
-\]
+\end{equation}
 dove la somma è sulle molecole e $\tau_m$ è il tempo di rilassamento della
 molecola $m$, calcolato da \mpp{} con la correlazione di Millikan e
 White~\cite{millikan1963} e la correzione di Park. Più $\Tve$ si avvicina a
 $\Ttr$, più lo scambio si riduce; più $\tau_m$ è piccolo, più è rapido. La
 seconda sorgente è l'energia che le reazioni portano via o restituiscono,
-\[
+\begin{equation}
   Q_{CV} = \sum_s e_{ve,s}(\Tve)\,\dot\omega_s .
-\]
+\end{equation}
 L'equazione non ha ancora un termine di trasporto: nel bagno termico non
 serve, perché il gas è fermo.
 
-\subsubsection{Ritorno alle temperature}
+\subsubsection{Recupero delle temperature}
 \label{sec:implementato-temperature}
 
 Aggiornate le energie, \mpp{} ne ricava le temperature: cerca la coppia
 $(\Ttr,\Tve)$ alla quale le energie delle specie sommano alle energie appena
 risolte,
-\[
+\begin{equation}
   \Big(\rho_s,\; \rho\big(e + \textstyle\sum_s Y_s h_{f,s}\big),\; \rho\eve\Big)
   \;\longrightarrow\; (\Ttr,\,\Tve) .
-\]
+\end{equation}
 La ricerca è un'iterazione di Newton: a ogni passo le due temperature vengono
 corrette con lo scarto di energia diviso per i calori specifici
 corrispondenti, e ci si ferma quando le energie coincidono entro una piccola
@@ -208,13 +229,14 @@ $\psi = \rho(\Ttr,\Tve)/p$, usato dalla fase della pressione che il solver
 eredita.
 
 Nei casi di questo progetto i termini di trasporto non entrano mai in gioco: il
-bagno termico è una sola cella, ferma e uniforme, quindi quello che viene
-davvero avanzato nel tempo è la coppia
-\[
+bagno termico è una sola cella, ferma e uniforme, quindi $\mathbf{U} = 0$,
+$\nabla\Ttr = 0$ e ogni termine convettivo e diffusivo si annulla. Quello che
+viene davvero avanzato nel tempo è la coppia
+\begin{equation}
   \frac{\partial (\rho e)}{\partial t} = Q_{ch} ,
   \qquad
   \frac{\partial (\rho \eve)}{\partial t} = Q_{VT} + Q_{CV} ,
-\]
+\end{equation}
 cioè le stesse equazioni integrate dai programmi zero-dimensionali della
 sezione~\ref{sec:programmi0D}. È questo che rende il confronto fra i due una
 verifica vera del solver.
@@ -247,8 +269,8 @@ azoto-ossigeno, che il lavoro di riferimento non riporta, è presa da
 \hyfoam~\cite{hystrath}. Quello per l'aria usa invece una sola temperatura,
 come fa il lavoro di riferimento per questo caso. I programmi sono anche molto
 più rapidi del solver: il caso più lungo, un milione di passi, richiede circa
-un secondo contro quasi mezz'ora. La differenza è sovrastruttura, non fisica:
-anche con una sola cella il solver costruisce e risolve una matrice per ogni
+un secondo contro quasi mezz'ora. La differenza viene dalla sovrastruttura, non dalla
+fisica: anche con una sola cella il solver costruisce e risolve una matrice per ogni
 equazione, ripete la fase dell'energia due volte a ogni passo e scrive i
 risultati, e il modello interroga la libreria una volta per ogni specie e per
 ogni termine sorgente, mentre i programmi fanno gli stessi conti con poche
@@ -268,11 +290,11 @@ L'energia elettronica richiede una scelta. Il lavoro di riferimento la tratta
 esplicitamente solo nel caso dell'azoto a 30\,000~K, dove confronta il gas con
 e senza; per gli altri casi non lo dice, e il testo che commenta la miscela di
 azoto molecolare e atomico parla anzi del contributo elettronico dell'azoto
-atomico. Le temperature finali riportate nell'articolo, però, tornano solo
+atomico. Le temperature finali riportate nel lavoro di riferimento, però, tornano solo
 senza livelli elettronici: con i livelli elettronici la temperatura finale sarebbe
 un quarto più bassa per la miscela di azoto molecolare e atomico e più della
 metà più alta per quella di azoto e ossigeno, mentre senza entrambe coincidono
-con l'articolo entro lo 0{,}3\%. Si sono quindi seguiti i risultati: il progetto ha due versioni dei
+con il lavoro di riferimento entro lo 0{,}3\%. Si sono quindi seguiti i risultati: il progetto ha due versioni dei
 dati, una con i livelli elettronici, usata solo per il caso dell'azoto che li
 include, e una con il solo livello fondamentale, usata in tutti gli altri
 casi.

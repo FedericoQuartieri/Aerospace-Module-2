@@ -15,14 +15,14 @@ essa.
 
 Tutti i casi di verifica zero-dimensionali di Casseau
 \textit{et al.}~\cite{casseau2016} sono stati riprodotti. Il solver coincide
-con i programmi zero-dimensionali entro lo 0{,}2\% in quasi tutti i casi e mai
-oltre l'1{,}2\%, reazioni comprese: il modello è integrato correttamente.
+con i programmi zero-dimensionali entro lo 0{,}3\% in tutti i casi tranne
+l'azoto ad alta temperatura, dove arriva all'1{,}2\%, reazioni comprese: il modello è integrato correttamente.
 Rispetto al lavoro di riferimento gli stati finali coincidono entro l'1\%, la
 composizione della miscela di azoto entro il 2{,}5\% e quella dell'aria entro
 il 15\%; l'unica differenza rilevante è un ritardo della temperatura
 vibrazionale nelle miscele con azoto atomico, con ogni probabilità dovuto al
 modo in cui \mpp{} media i tempi di rilassamento. Il confronto ha anche
-mostrato quanto i risultati dipendano da scelte che l'articolo non dichiara,
+mostrato quanto i risultati dipendano da scelte che il lavoro di riferimento non dichiara,
 come l'uso dell'energia elettronica o le costanti di velocità per l'aria, e ha
 permesso di ricostruirle. Il modello è verificato sul bagno termico, dove non
 c'è flusso: per usarlo in casi reali servono gli sviluppi che seguono.
@@ -40,7 +40,7 @@ di riferimento.
     stessi flussi alle facce già usati per le specie, la conduzione del calore
     e le condizioni al contorno; le sorgenti vanno calcolate con la densità
     appena aggiornata. Il primo caso di prova è il tubo d'urto
-    monodimensionale già presente nel template.
+    monodimensionale già presente nel progetto.
   \item \textbf{Viscosità e conducibilità a due temperature.} Servono per i
     flussi viscosi e per il calore che raggiunge la parete. \mpp{} le calcola
     già, e divide la conducibilità fra la parte traslazionale e quella
@@ -50,7 +50,7 @@ di riferimento.
   \item \textbf{Tempi di rilassamento mediati come nel lavoro di
     riferimento.} Invece del valore medio di \mpp, si calcola il tempo di ogni
     coppia di specie con le costanti già contenute nella libreria e lo si
-    media come nell'articolo; ripetendo il caso della miscela di azoto
+    media come nel lavoro di riferimento; ripetendo il caso della miscela di azoto
     molecolare e atomico si verifica se il ritardo della temperatura
     vibrazionale scompare.
 \end{enumerate}

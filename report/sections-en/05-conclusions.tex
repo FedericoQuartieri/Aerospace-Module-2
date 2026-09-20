@@ -15,8 +15,9 @@ reimplemented on top of it.
 
 All the zero-dimensional verification cases of Casseau
 \textit{et al.}~\cite{casseau2016} have been reproduced. The solver agrees
-with the zero-dimensional programs to within 0.2\% in almost all cases, and
-never differs by more than 1.2\%, reactions included, which shows that the
+with the zero-dimensional programs to within 0.3\% in all cases but
+high-temperature nitrogen, where the difference reaches 1.2\%, reactions
+included, which shows that the
 model is correctly integrated. With respect to the reference work, the final
 states agree to within 1\%, the composition of the nitrogen mixture to within
 2.5\% and that of air to within 15\%. The only significant discrepancy is a
@@ -41,8 +42,8 @@ with respect to the reference work.
     transport must be added, using the same face fluxes already used for the
     species, together with heat conduction and appropriate boundary
     conditions; the source terms should then be evaluated with the updated
-    density. The first test case is the one-dimensional shock tube already
-    included in the template.
+    density. The first test case is the one-dimensional shock tube
+    already included in the project.
   \item \textbf{Two-temperature viscosity and thermal conductivity.} These are
     required for viscous flows and for the wall heat flux. \mpp{} already
     computes them, and splits the conductivity into its translational and
@@ -52,6 +53,6 @@ with respect to the reference work.
   \item \textbf{Relaxation times averaged as in the reference work.} Instead of
     the average provided by \mpp, the relaxation time of each species pair is
     computed with the constants already available in the library and averaged
-    as in the paper. Repeating the molecular-atomic nitrogen case would then
+    as in the reference work. Repeating the molecular-atomic nitrogen case would then
     show whether the delay of the vibrational temperature disappears.
 \end{enumerate}

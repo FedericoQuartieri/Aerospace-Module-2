@@ -67,9 +67,10 @@ seguire ogni singolo livello energetico delle molecole.
 
 Il lavoro di riferimento è l'articolo di Casseau
 \textit{et al.}~\cite{casseau2016}, dell'Università di Strathclyde, che
-presenta \hyfoam, un solver a due temperature per flussi ipersonici reagenti
-costruito su OpenFOAM e distribuito come codice aperto~\cite{hystrath}. La
-prima parte dell'articolo verifica il solver su una serie di bagni termici:
+presenta \hyfoam~\cite{hystrath}, un solver a due temperature per flussi
+ipersonici reagenti, a codice aperto, costruito su
+OpenFOAM~\cite{openfoam13}. La
+prima parte del lavoro di riferimento verifica il solver su una serie di bagni termici:
 piccoli volumi di gas fermi e isolati, preparati fuori equilibrio e lasciati
 evolvere, in cui ogni processo si può studiare da solo. I casi vanno dall'azoto
 puro, con e senza energia elettronica, alle miscele di azoto con azoto atomico
@@ -77,3 +78,11 @@ e con ossigeno, fino ai gas che reagiscono e all'aria a cinque specie, e i
 risultati sono confrontati con altri codici CFD e con codici DSMC, che
 simulano il gas seguendo il moto e gli urti di un gran numero di particelle.
 Sono questi i casi che il presente lavoro riproduce.
+
+Il resto della relazione è organizzato così. La
+sezione~\ref{sec:lavoro} descrive i due programmi, il modo in cui sono
+collegati e il modello come è stato implementato; la
+sezione~\ref{sec:risultati} riporta la verifica caso per caso; la
+sezione~\ref{sec:discussione} discute che cosa dicono i risultati e da dove
+vengono le differenze rimaste; la sezione~\ref{sec:conclusioni} trae le
+conclusioni e indica gli sviluppi futuri.

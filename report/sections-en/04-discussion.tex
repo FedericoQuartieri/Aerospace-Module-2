@@ -6,8 +6,8 @@
 
 The comparison between the solver and the zero-dimensional programs shows that
 the model has been correctly integrated into the solver: the two paths, which
-implement the same physics, produce the same curves to within 0.2\% in almost
-all cases, including those with reactions. The comparison with the reference
+implement the same physics, produce the same curves to within 0.3\% in all cases but
+high-temperature nitrogen, reactions included. The comparison with the reference
 work shows that the physics is also correct. In the non-reacting cases the
 final temperatures agree with those imposed by energy conservation and with
 the values of the reference work to within 0.3\%, which is within the
@@ -37,7 +37,7 @@ isolated.
 \subsection{Lessons from the comparison}
 \label{sec:discussione-lezioni}
 
-Much of the work consisted of reconstructing modelling choices that the paper
+Much of the work consisted of reconstructing modelling choices that the reference work
 leaves unstated or describes only partially: whether the electronic energy is
 included, which energy drives the vibrational exchange, which exponent is used
 for the dissociation temperature, and which rate constants are used for air.
@@ -53,7 +53,7 @@ Two tools proved decisive in making these choices. The first is the final
 temperature imposed by energy conservation, which is independent of any
 relaxation model and immediately reveals whether the gas data are correct. The
 second is the set of curves extracted from the vector figures, which turns the
-comparison with the paper from a visual assessment into a quantitative
+comparison with the reference work from a visual assessment into a quantitative
 measurement. Finally, verification along two independent paths separates
 implementation errors from modelling choices: since the solver and the
 programs agree, any remaining difference with respect to the reference work

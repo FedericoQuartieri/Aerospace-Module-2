@@ -67,13 +67,20 @@ essential physics without having to track every individual energy level.
 
 The reference work is the paper by Casseau
 \textit{et al.}~\cite{casseau2016}, from the University of Strathclyde, which
-presents \hyfoam, an open-source two-temperature solver for reacting hypersonic
-flows built on OpenFOAM~\cite{hystrath}. The first part of the paper verifies
+presents \hyfoam~\cite{hystrath}, an open-source two-temperature solver for
+reacting hypersonic flows built on OpenFOAM~\cite{openfoam13}. The first part of the reference work verifies
 the solver on a series of heat baths: small, isolated volumes of gas at rest,
 initialised out of equilibrium and left to evolve, in which each process can
 be studied in isolation. The cases range from pure nitrogen, with and without
 electronic energy, to mixtures of nitrogen with atomic nitrogen and with
 oxygen, and finally to reacting gases and five-species air. The results are
 compared with other CFD codes and with DSMC codes, which simulate the gas by
-tracking the motion and collisions of a large number of particles. These are
-the cases reproduced in the present work.
+tracking the motion and collisions of a large number of particles. These are the cases reproduced in the present work.
+
+The remainder of this report is organised as follows.
+Section~\ref{sec:lavoro} describes the two pieces of software, the way they
+are coupled and the model as implemented; Section~\ref{sec:risultati} reports
+the verification case by case; Section~\ref{sec:discussione} discusses what
+the results show and where the remaining discrepancies come from; and
+Section~\ref{sec:conclusioni} draws the conclusions and outlines the future
+work.
