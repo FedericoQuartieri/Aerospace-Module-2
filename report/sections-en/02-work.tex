@@ -1,31 +1,24 @@
-\section{Work carried out}
+\section{Model formulation and implementation}
 \label{sec:lavoro}
 
 \subsection{General approach}
 \label{sec:approccio}
 
-The work combines two pieces of software with distinct roles.
-OpenFOAM~\cite{openfoam13} is the CFD framework: it handles the mesh, solves
-the conservation equations cell by cell and advances the solution in time.
-\mpp~\cite{scoggins2020} is a thermochemistry library: given the state of a
-gas, it computes the energy stored in each mode, the vibrational relaxation
-times and the reaction rates, and it can also perform the inverse operation,
-recovering the temperatures from the energies. OpenFOAM solves the equations of the two-temperature model, and
-\mpp{} supplies every thermochemical quantity that appears in them. In
-particular, the solver does not transport the two temperatures directly but the
-corresponding energies, which remain correctly conserved across shocks; at every time step the thermophysical
-model passes them to \mpp, which returns the temperatures.
+The implementation combines two software packages with complementary roles.
+OpenFOAM~\cite{openfoam13} provides the CFD framework, including mesh
+management, spatial discretisation of the conservation equations and time
+integration. The thermochemistry library \mpp~\cite{scoggins2020} provides
+the modal energies, vibrational relaxation times and reaction rates, together
+with the inversion from energies to temperatures. The solver advances the
+energy equations, and the thermophysical model uses \mpp{} to recover the
+two temperatures after each energy update.
 
-OpenFOAM is designed to be extended through \emph{dynamic libraries}: a new
-component -- a solver, a thermophysical model, a boundary condition -- is
-compiled on its own and loaded at run time, chosen by name in the text files of
-the case. The advantage is independence: the new code lives in its own
-repository, the OpenFOAM installation is left untouched, and only the library
-has to be recompiled, not the framework. The same independence keeps the cost of an
-upgrade low: when a new version of OpenFOAM is released, it is enough to recompile the
-library and realign the few points where it touches the framework, while the
-model itself stays as it is. Keeping a modified copy of OpenFOAM would instead
-mean re-applying every change at each release.
+The new components are compiled as \emph{dynamic libraries}, loaded at run
+time and selected through the case configuration files. This architecture
+keeps the project separate from the OpenFOAM installation and allows its
+libraries to be compiled independently of the framework. It also confines
+version-dependent changes to the interfaces with OpenFOAM, reducing the
+maintenance required when updating the underlying framework.
 
 \subsection{OpenFOAM}
 \label{sec:openfoam}
@@ -33,135 +26,137 @@ mean re-applying every change at each release.
 \subsubsection{The framework and its one-temperature model}
 \label{sec:openfoam-moduli}
 
-OpenFOAM~\cite{weller1998} is an open-source CFD framework: a collection of
-libraries and
-ready-made solvers that discretise the governing equations with the finite
-volume method, dividing the domain into cells and storing one value of each
-quantity per cell. It is written so that new physics can be added without
-touching its core, and this is what the project does.
+OpenFOAM~\cite{weller1998} is an open-source CFD framework comprising
+libraries and solvers based on the finite volume method. The governing
+equations are discretised over a mesh of control volumes, with the primary
+fields stored at cell centres. Its modular architecture supports additional
+physical models without requiring changes to the core libraries.
 
-For the flows of interest here it already provides much of what is needed. One
-of its solvers is built for fast compressible flows and captures shock waves
-with central-upwind schemes~\cite{kurganov2001,greenshields2010}; others
-transport the chemical species with the flow and solve their reactions. A
-thermophysical model closes the system: from the energy of each cell it
-recovers a temperature, and from that temperature the pressure, the viscosity
-and the thermal conductivity, while a separate chemistry model uses the same
-temperature to evaluate the reaction rates. The whole chain, however, rests on a
-single temperature: it is the one-temperature model of
-Section~\ref{sec:una-temperatura}.
+The framework provides numerical methods relevant to the present application,
+including central-upwind schemes for compressible flows with shock
+waves~\cite{kurganov2001,greenshields2010}, species transport and chemical
+kinetics. In the standard one-temperature formulation, a thermophysical model
+relates the internal energy to temperature and supplies the equation of state
+and transport properties. A separate chemistry model evaluates reaction rates
+at the same temperature. This formulation therefore assumes the thermal
+equilibrium described in Section~\ref{sec:una-temperatura}.
 
-\subsubsection{Where the project intervenes}
+\subsubsection{Extensions to the framework}
 \label{sec:openfoam-innesto}
 
-The project intervenes at two points of this chain. Its solver derives from the module for fast
-compressible flows, the successor of the solver from which \hyfoam{}
-originated, and rewrites only the energy stage: there it adds
-the equation for the vibro-electronic energy and the chemical source terms,
-while fluxes, density, momentum and pressure are inherited unchanged. Its
-thermophysical model derives from the standard model for compressible mixtures
-and adds what the two-temperature model needs: the vibro-electronic temperature
-and energy as two extra fields, and three source terms made available to the
-solver. Being derived from the standard model, it is treated by the rest of
-OpenFOAM as an ordinary thermophysical model, and the case selects it by name
-like any other. It is also the only place where \mpp{} is called: the solver never calls the library directly.
+The implementation extends the solver and the thermophysical model. The solver
+derives from the module for high-speed compressible flows, which succeeds the
+solver on which \hyfoam{} was based. The thermophysical solution stage is
+modified to include the vibro-electronic energy equation and chemical source
+terms, while retaining the existing numerical fluxes and the density,
+momentum and pressure updates.
+
+The thermophysical model extends the standard compressible-mixture model with
+two additional fields, the vibro-electronic temperature and energy, and
+provides the species, chemical-energy and vibro-electronic source terms. It
+retains the standard OpenFOAM interface and is selected through the case
+configuration. All calls to \mpp{} are confined to this model; the solver
+accesses the library through the thermophysical interface.
 
 \subsection{\mpp}
 \label{sec:mutation}
 
-This section introduces the library that supplies the thermochemistry and
-describes how it is coupled to the solver.
+The thermochemical closure is provided by \mpp{}, whose capabilities and
+coupling to the solver are described below.
 
 \subsubsection{Purpose and capabilities}
 \label{sec:mutation-cosa}
 
 \mpp~\cite{scoggins2020} is an open-source C++ library developed at the von
-Karman Institute for Fluid Dynamics. It is meant to be coupled to a CFD code:
-it does not solve flow equations, but returns the properties that a flow solver
-cannot compute on its own, namely thermodynamic and transport properties,
-chemical kinetics and the exchange of energy between the internal modes.
+Karman Institute for Fluid Dynamics. It supplies thermodynamic and transport
+properties, chemical reaction rates and energy-transfer source terms for use
+in flow solvers.
 
-A gas is defined by its species, a thermodynamic database, a reaction mechanism
-and the number of temperatures; the present work uses two, one
-translational-rotational and one vibro-electronic. The state can be given in
-three ways: species densities with the temperatures, species densities with the
-energies, or mass fractions with the pressure and the temperatures. From any of
-them the library returns all the remaining quantities, and when it is given the
-energies it recovers the temperatures itself.
+A gas model is specified by its constituent species, thermodynamic database,
+reaction mechanism and number of temperatures. The two-temperature
+formulation used here distinguishes translational-rotational and
+vibro-electronic energy. The thermodynamic state can be prescribed through
+species densities and temperatures, species densities and energies, or mass
+fractions, pressure and temperatures. The library evaluates the corresponding
+properties and, when energies are prescribed, recovers the temperatures by
+inversion.
 
 \subsubsection{Coupling with the solver}
 \label{sec:mutation-collegamento}
 
-\mpp{} is compiled separately from OpenFOAM and linked to the thermophysical
-model and to the zero-dimensional verification programs; the solver reaches it
-only through the model.
+\mpp{} is compiled separately from OpenFOAM and linked to both the
+thermophysical model and the zero-dimensional verification programs.
 
-At initialisation the model reads the description of the gas from the case --
-the mixture, the number of temperatures, the thermodynamic database and the
-reaction mechanism -- creates the corresponding mixture in \mpp{} and maps each
-OpenFOAM species onto the \mpp{} species with the same name. A species missing
-from the mixture stops the run.
+At initialisation, the thermophysical model reads the mixture definition,
+number of temperatures, thermodynamic database and reaction mechanism from the
+case configuration. It then constructs the corresponding \mpp{} mixture and
+maps the OpenFOAM species to the library species by name. A missing species
+causes initialisation to terminate with an error.
 
-During the simulation the model sets the state of the library from the partial
-densities $\rho_s$, the total energy per unit volume, which includes the
-chemical energy of formation, and its vibro-electronic part; from these \mpp{}
-recovers $\Ttr$ and $\Tve$. The model then asks for the quantities that the
-equations need: the temperatures, the relation between pressure and density,
-the production rates $\dot\omega_s$ and the source terms of the energy
-exchange. The state is set again before each of these requests, so that every
-quantity refers to the current conditions.
+Following each energy update, the model supplies the partial densities
+$\rho_s$, the internal energy per unit volume including the chemical energy
+of formation, and the vibro-electronic energy per unit volume to \mpp{}.
+The library uses these quantities to recover $\Ttr$ and $\Tve$. The
+thermophysical model also evaluates the pressure-density relation, species
+production rates $\dot\omega_s$ and energy-transfer source terms. The library
+state is reset before each property or source-term evaluation to ensure
+consistency with the current cell conditions.
 
-\subsection{The implemented model}
+\subsection{Governing equations and solution procedure}
 \label{sec:implementato}
 
-The two-temperature solver is derived from the density-based OpenFOAM module:
-it inherits the fluxes, the density, the momentum and the pressure update, and
-rewrites the stage that deals with energy. This section follows that stage step
-by step. Throughout, $\rho$ is the density of the gas, $\mathbf{U}$ its
-velocity, $Y_s$ the mass fraction of species $s$ and $\rho_s = \rho Y_s$ its
-partial density, $\Ttr$ and $\Tve$ are the two temperatures, $e$ is the energy
-of the gas per unit mass and $\eve$ its vibro-electronic part.
+The thermophysical solution procedure comprises the species and energy
+updates, followed by the recovery of the two temperatures. In the following,
+$\rho$ denotes the gas density, $\mathbf{U}$ the velocity, $Y_s$ the mass
+fraction of species $s$ and $\rho_s = \rho Y_s$ its partial density. The
+temperatures are denoted by $\Ttr$ and $\Tve$, while $e$ is the specific
+sensible internal energy, excluding the chemical energy of formation, and
+$\eve$ is its vibro-electronic component.
 
 \subsubsection{Initialisation: from temperatures to energies}
 \label{sec:implementato-avvio}
 
-The case gives the two temperatures, the pressure and the composition. Before
-the first time step the model asks \mpp{} for the corresponding energies,
+The initial conditions specify the two temperatures, pressure and composition.
+Before time integration begins, the thermophysical model obtains the
+corresponding specific energies from \mpp{},
 \begin{equation}
   e = \sum_s Y_s\big(e_s(\Ttr,\Tve) - h_{f,s}\big),
   \qquad
   \eve = \sum_s Y_s\,e_{ve,s}(\Tve) ,
 \end{equation}
-where $e_s$ is the energy of species $s$ and $h_{f,s}$ its enthalpy of
-formation. The subtraction is a matter of convention: the OpenFOAM energy does
-not include the chemical energy of formation, while the \mpp{} energy does.
-From here on the solver carries $\rho$, $\rho Y_s$, $\rho e$ and $\rho\eve$,
-never the temperatures.
+where $e_s$ is the specific internal energy of species $s$ and $h_{f,s}$ its
+specific enthalpy of formation. Subtracting $h_{f,s}$ converts the \mpp{}
+energy definition to the sensible-energy convention used by OpenFOAM. The
+species and energy equations are then advanced in terms of $\rho Y_s$,
+$\rho e$ and $\rho\eve$; the temperatures are recovered from the updated
+state.
 
 \subsubsection{Species and chemistry}
 \label{sec:implementato-specie}
 
-At each time step the composition is updated first,
+The thermophysical update begins with the species conservation equations,
 \begin{equation}
   \frac{\partial (\rho Y_s)}{\partial t}
   + \nabla\cdot(\rho\,\mathbf{U}\,Y_s)
   + \nabla\cdot\mathbf{j}_s = \dot\omega_s ,
 \end{equation}
-where $\mathbf{j}_s$ is the diffusive flux of species $s$ and $\dot\omega_s$
-the mass of species $s$ produced per unit volume and time; the convective and
-diffusive terms come unchanged from the inherited part of the solver. \mpp{}
-provides $\dot\omega_s$ from the reaction mechanism. Dissociation rates are not
-evaluated at $\Ttr$ but at Park's temperature,
+where $\mathbf{j}_s$ is the diffusive mass flux of species $s$ and
+$\dot\omega_s$ its mass production rate per unit volume. The convective and
+diffusive operators retain the standard OpenFOAM formulation, while \mpp{}
+evaluates the production rates from the selected reaction mechanism.
+Nitrogen dissociation rates are evaluated at Park's effective temperature,
 \begin{equation}
   T_P = \Ttr^{\,a}\,\Tve^{\,1-a}, \qquad a = 0.7 ,
 \end{equation}
-so that a molecule whose vibration is still cold dissociates more slowly.
-The mass fractions are then rescaled so that they sum to one.
+which accounts for the reduction in dissociation rate when vibrational
+excitation is below its equilibrium value at $\Ttr$. After the species
+update, the mass fractions are normalised to sum to unity.
 
-\subsubsection{Energy of the gas}
+\subsubsection{Sensible internal energy}
 \label{sec:implementato-energia}
 
-The energy equation is the one of the original module with one term added,
+The energy equation retains the formulation of the original module, with an
+additional chemical source term,
 \begin{equation}
   \frac{\partial (\rho e)}{\partial t}
   + \nabla\cdot\boldsymbol\phi_p
@@ -172,151 +167,144 @@ The energy equation is the one of the original module with one term added,
   \qquad
   Q_{ch} = -\sum_s h_{f,s}\,\dot\omega_s ,
 \end{equation}
-where $\boldsymbol\phi_p$ is the convective flux of energy, which includes the
-work of the pressure, $K = |\mathbf{U}|^2/2$ is the kinetic energy per unit
-mass, $\tau$ the viscous stress and $\kappa$ the thermal conductivity; all of
-these are inherited from the original module. The added term $Q_{ch}$ is the
-heat of reaction: breaking a molecule stores energy in the chemical bonds of
-the products, and that share is taken out of $e$. Since $e$ also contains the
-vibro-electronic part, the exchange between the two temperatures does not
-appear here: it moves energy inside $e$, not in or out of it.
+where $\boldsymbol\phi_p$ denotes the convective energy flux including
+pressure work, $K = |\mathbf{U}|^2/2$ the specific kinetic energy, $\tau$ the
+viscous stress and $\kappa$ the thermal conductivity. These terms retain the
+formulation of the original module. The source $Q_{ch}$ accounts for the
+conversion between sensible and chemical energy: during dissociation,
+sensible energy decreases as the chemical energy of the mixture increases.
+Since $e$ includes both translational-rotational and vibro-electronic energy,
+exchange between these modes redistributes energy internally and introduces
+no additional source in this equation.
 
 \subsubsection{Vibro-electronic energy}
 \label{sec:implementato-eve}
 
-This is the equation the project adds,
+The additional vibro-electronic energy equation is
 \begin{equation}
   \frac{\partial (\rho \eve)}{\partial t} = Q_{VT} + Q_{CV} .
 \end{equation}
-The first source is the exchange with the translational motion, written as a
-relaxation towards equilibrium~\cite{landau1936},
+The vibration--translation (V--T) source $Q_{VT}$ describes energy exchange
+with the translational mode through relaxation towards
+equilibrium~\cite{landau1936},
 \begin{equation}
   Q_{VT} = \sum_m \rho_m\,
   \frac{e_{ve,m}(\Ttr) - e_{ve,m}(\Tve)}{\tau_m} ,
 \end{equation}
-where the sum runs over the molecules and $\tau_m$ is the relaxation time of
-molecule $m$, computed by \mpp{} with the Millikan and White
-correlation~\cite{millikan1963} and Park's correction. The closer $\Tve$ gets
-to $\Ttr$, the smaller the exchange; the smaller $\tau_m$, the faster it is.
-The second source is the energy that the reactions take away or give back,
+where the sum extends over the molecular species and $\tau_m$ is the
+relaxation time of species $m$, evaluated by \mpp{} using the Millikan--White
+correlation~\cite{millikan1963} with Park's correction. The energy difference
+provides the driving term, while $\tau_m$ determines the relaxation rate.
+The source $Q_{CV}$ accounts for the vibro-electronic energy removed or added
+by chemical reactions,
 \begin{equation}
   Q_{CV} = \sum_s e_{ve,s}(\Tve)\,\dot\omega_s .
 \end{equation}
-The equation has no transport term yet: it is not needed in the heat bath,
-where the gas is at rest.
+The current implementation includes only these source terms. Spatial
+transport is absent in the homogeneous, stationary heat baths considered
+here; its implementation is required before the model can be applied to
+general flow configurations.
 
 \subsubsection{Recovering the temperatures}
 \label{sec:implementato-temperature}
 
-Once the energies are updated, \mpp{} recovers the temperatures from them: it
-looks for the pair $(\Ttr,\Tve)$ at which the species energies add up to the
-energies just solved,
+After the energy update, \mpp{} recovers the pair $(\Ttr,\Tve)$ that
+reproduces the specified mixture energies,
 \begin{equation}
   \Big(\rho_s,\; \rho\big(e + \textstyle\sum_s Y_s h_{f,s}\big),\; \rho\eve\Big)
   \;\longrightarrow\; (\Ttr,\,\Tve) .
 \end{equation}
-The search is a Newton iteration: at each step the two temperatures are
-corrected by the mismatch in energy divided by the corresponding specific
-heats, and it stops when the energies match to within a small tolerance.
+The inversion uses a Newton iteration based on the energy residuals and
+corresponding heat capacities, terminating when the convergence tolerance is
+satisfied.
 
-With the temperatures and the composition the library also returns the density,
-from which the model updates the link between pressure and density,
-$\psi = \rho(\Ttr,\Tve)/p$, used by the pressure stage that the solver
-inherits.
+The thermophysical model then evaluates the density at the current pressure,
+temperatures and composition, and updates the pressure-density coefficient
+$\psi = \rho(\Ttr,\Tve)/p$ used by the pressure solution stage.
 
-In the cases of this project the transport terms never come into play: the heat
-bath is a single cell, at rest and uniform, so that $\mathbf{U} = 0$,
-$\nabla\Ttr = 0$ and every convective and diffusive term vanishes. What is
-actually advanced in time is the pair
+For the verification cases, the gas occupies a single cell and remains
+stationary and spatially uniform. Consequently, $\mathbf{U} = 0$,
+$\nabla\Ttr = 0$ and all convective and diffusive terms vanish. The energy
+equations reduce to
 \begin{equation}
   \frac{\partial (\rho e)}{\partial t} = Q_{ch} ,
   \qquad
   \frac{\partial (\rho \eve)}{\partial t} = Q_{VT} + Q_{CV} ,
 \end{equation}
-the same equations integrated by the zero-dimensional programs of
-Section~\ref{sec:programmi0D}. This is what makes the comparison between the
-two a genuine check of the solver.
+which are also integrated by the zero-dimensional programs described in
+Section~\ref{sec:programmi0D}. Comparing the two computational approaches
+therefore provides a check of the model integration within OpenFOAM under
+heat-bath conditions.
 
 \subsection{Zero-dimensional verification programs}
 \label{sec:programmi0D}
 
-In addition to the solver, the project includes four small programs that
-simulate the heat bath without OpenFOAM, one for each family of cases in the
-reference work: pure nitrogen; the mixture of molecular and atomic nitrogen,
-with or without reactions; the nitrogen-oxygen mixture; and five-species air.
-Each program sets up the gas in the initial state of the figure to be
-reproduced, computes the energies contained in the volume, and advances in
-time with a step of one nanosecond, as in the reference work: at every step it
-computes the source terms, updates the vibro-electronic energy and the
-composition, and asks \mpp{} for the new temperatures. The total energy,
-chemical energy included, remains constant because the volume is closed and
-isolated. The source terms are computed with the same functions used by the
-solver, which is what makes the comparison between the two paths meaningful.
-For the non-reacting cases, the programs also compute the expected final
-temperature, defined as the single temperature at which the gas would have the
-same energy as in its initial state; this is the value towards which both
-temperatures must converge.
+Four stand-alone programs reproduce the heat-bath case families of the
+reference study without invoking OpenFOAM: pure nitrogen; molecular-atomic
+nitrogen mixtures with and without reactions; nitrogen-oxygen mixtures; and
+five-species air. Each program initialises the gas under the prescribed
+conditions, evaluates the initial energies and advances the solution with a
+time step of one nanosecond, as in the reference study. At each step, it
+evaluates the source terms, advances the governing equations and recovers the
+temperatures through \mpp{}. The total
+internal energy, including chemical energy, remains constant in the closed,
+isolated volume. The source-term functions are shared with the CFD solver to
+ensure that both approaches use the same thermochemical formulation.
 
-Two programs depart from this scheme. The nitrogen-oxygen program keeps the
-vibrational energies of the two molecules separate, each with its own
-temperature, and adds the V--V exchange between them using the formulation of
-Knab \textit{et al.}~\cite{knab1995} adopted in the reference work, with the
-recommended exchange probability of $10^{-2}$. The cross section of the
-nitrogen-oxygen pair, which the reference work does not report, is taken from
-\hyfoam~\cite{hystrath}. The air program instead uses a single temperature, as
-the reference work does for this case. The programs are also much faster than
-the solver: the longest case, one million time steps, takes about one
-second, compared with almost half an hour for the solver. The difference comes from overhead rather than
-from the physics: even with a single cell the solver assembles and solves a matrix
-for every equation, runs the energy stage twice per time step and writes its
-output, and the model queries the library once for every species and every
-source term, whereas the programs do the same arithmetic with a few direct
-function calls.
+For non-reacting cases, the programs also calculate the expected equilibrium
+temperature from conservation of the initial internal energy. This provides
+an independent check of the final state reached by time integration.
 
-\subsection{Gas data}
+Two case families require different temperature formulations. The
+nitrogen-oxygen program evolves a separate vibrational energy and temperature
+for each molecular species. It includes vibration--vibration (V--V) exchange
+using the formulation of Knab \textit{et al.}~\cite{knab1995}, as adopted in
+the reference study, with an exchange probability of $10^{-2}$. The
+nitrogen-oxygen collision cross section, which is not reported in that study,
+is taken from the \hyfoam{} data~\cite{hystrath}. The five-species air program
+uses a single temperature, consistent with the corresponding reference case.
+
+For the longest case, comprising one million time steps, the observed runtime
+is approximately one second for the stand-alone program and almost half an
+hour for the CFD solver. This difference reflects the additional operations
+performed by the CFD framework. Even on a single-cell mesh, the solver
+assembles and solves a matrix for each equation, performs two thermophysical
+updates per time step and writes its output. The thermophysical model also
+evaluates the library state separately for each species and source term,
+whereas the stand-alone programs perform the updates through direct function
+calls.
+
+\subsection{Thermochemical data and reaction mechanisms}
 \label{sec:dati}
 
-The species properties used by \mpp{} are taken from the tables of the
-reference work: characteristic vibrational temperatures, enthalpies of
-formation and electronic levels of the five air species. The vibrational
-relaxation parameters are those already included in \mpp, taken from
-Park~\cite{park1993}; for nitrogen and oxygen they coincide with those of the
-reference work.
+The species data supplied to \mpp{} are taken from the reference study:
+characteristic vibrational temperatures, enthalpies of formation and
+electronic energy levels for the five air species. The vibrational relaxation
+parameters are those distributed with \mpp{} and attributed to
+Park~\cite{park1993}; for nitrogen and oxygen, they match the values used in
+the reference study.
 
-The treatment of electronic energy required a decision. The reference work
-addresses it explicitly only for nitrogen at 30\,000~K, where it compares the
-gas with and without electronic energy; for the other cases it does not
-specify, and the discussion of the molecular-atomic nitrogen mixture even
-mentions the electronic contribution of atomic nitrogen. However, the final
-temperatures reported in the reference work are recovered only without electronic
-levels. With electronic levels the final temperature would be
-a quarter too low for the molecular-atomic nitrogen mixture and more than half
-too high for the nitrogen-oxygen one; without them, both agree with the reference work
-to within 0.3\%. The
-choice was therefore guided by the results: the project uses two data sets,
-one including the electronic levels, used only for the nitrogen case that
-requires them, and one with the ground level only, used for all the other
-cases.
+The treatment of electronic energy is specified explicitly in the reference
+study only for nitrogen at 30\,000~K, where calculations with and without
+electronic excitation are compared. Its treatment in the remaining cases is
+not stated explicitly, although the discussion of molecular-atomic nitrogen
+mentions the electronic contribution of atomic nitrogen. For the
+molecular-atomic nitrogen and nitrogen-oxygen mixtures, the reported final
+temperatures are reproduced only when excited electronic levels are excluded.
+Including these levels gives a final temperature approximately one quarter
+below the reference value for molecular-atomic nitrogen and more than one
+half above it for nitrogen-oxygen. Excluding them reduces both discrepancies
+to within 0.3\%. On this basis, two data sets are used: one includes the
+electronic levels and is used for the nitrogen case with electronic
+excitation; the other retains only the ground electronic level and is used
+for the remaining cases. This choice is inferred from the reported results.
 
-Two types of reactions are used. Nitrogen dissociation is modelled by the
-irreversible reaction $\mathrm{N_2 + N_2 \rightarrow 2\,N + N_2}$, with Park's
-rate constants as given in the reference work. For five-species air the
-reference work uses nineteen irreversible reactions, fifteen dissociations and
-four exchange reactions, with rate constants derived from the Quantum-Kinetic
-theory~\cite{scanlon2015}; these constants are cited but not listed in the
-paper and were taken from the \hyfoam{} data~\cite{hystrath}. For comparison,
-the air mechanism already available in \mpp, based on Park's rate constants,
-was also used.
-
-% ---------------------------------------------------------------------------
-% Outline for the next subsections (from the old section "The model"):
-%  - decomposition of the energy into the modes (eq. 1-7 of the paper) and the two T
-%  - conserved variables: rho_s, E, E_ve (eq. 23); why energies and not T
-%  - equation of state: p = sum of the partial pressures (eq. 24)
-%  - V-T exchange: Landau-Teller (eq. 8), Millikan-White + Park tau (eq. 9-17)
-%  - V-V exchange: Knab (eq. 18), only in the N2-O2 case
-%  - chemistry: law of mass action (eq. 27), Arrhenius (eq. 28),
-%    Park temperature T^a Tv^(1-a) (eq. 29)
-%  - chemistry-vibration coupling: non-preferential model (eq. 30-31)
-%  - [done, see sec:implementato-equazioni] summary of the system solved in
-%    the heat bath (eq. 22, 25, 26)
+Nitrogen dissociation is represented by the irreversible reaction
+$\mathrm{N_2 + N_2 \rightarrow 2\,N + N_2}$, using the Park rate constants
+specified in the reference study. For five-species air, the reference
+mechanism comprises nineteen irreversible reactions: fifteen dissociation
+reactions and four exchange reactions. The corresponding Quantum-Kinetic
+rate constants~\cite{scanlon2015} are cited but not tabulated in the study
+and were obtained from the \hyfoam{} data~\cite{hystrath}. The air mechanism
+distributed with \mpp{}, which uses Park rate constants, is also evaluated
+for comparison.

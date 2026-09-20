@@ -1,22 +1,26 @@
 \section*{Abstract}
 \addcontentsline{toc}{section}{Abstract}
 
-This report describes the reproduction, in OpenFOAM-13 and with the
-thermochemistry library \mpp, of the zero-dimensional test cases used by
-Casseau \textit{et al.}~\cite{casseau2016} to validate the two-temperature
-solver \hyfoam. Park's two-temperature model, with a translational-rotational
-temperature $\Ttr$ and a vibro-electronic temperature $\Tve$, has been
-implemented in conservative form: the equations are solved for the energies
-rather than the temperatures, and \mpp{} both converts the energies into
-temperatures and supplies the thermodynamic properties.
+This report presents an implementation in OpenFOAM-13, coupled with the
+thermochemistry library \mpp{}, to reproduce the zero-dimensional test cases
+used by Casseau \textit{et al.}~\cite{casseau2016} to validate the
+two-temperature solver \hyfoam.
+Park's two-temperature model, which distinguishes the
+translational-rotational temperature $\Ttr$ from the vibro-electronic
+temperature $\Tve$, is implemented by advancing the energy equations and
+recovering the temperatures through \mpp{}, which also provides the
+thermodynamic properties.
 
-The work follows two independent paths built on the same source-term
-functions. The first is a set of stand-alone zero-dimensional programs that
-integrate the heat-bath equations using \mpp{} alone and cover every figure in
-the verification part of the reference work. The second is the CFD solver, which
-solves the same equations on a single cell through a thermophysical model
-acting as a bridge to the library. The two paths agree to within 0.3\% in all cases but
-high-temperature nitrogen, where the difference reaches 1.2\%, which verifies the
-integration of the model into the solver. The physics is verified against the
-\hyfoam{} curves extracted from the vector figures of the reference work and against
-the equilibrium temperatures obtained from energy conservation.
+The verification uses two separate computational approaches that share the
+same source-term functions. The first comprises stand-alone zero-dimensional
+programs that integrate the heat-bath equations using \mpp{} alone and
+reproduce all figures in the verification section of the reference study. The
+second uses the CFD solver to integrate the same equations on a single cell,
+with a thermophysical model providing the interface to the library. The two
+approaches agree to within 0.3\% for the cases evaluated with both, except for
+high-temperature nitrogen, where the difference reaches 1.2\%. This
+comparison provides a check of the model's integration into the solver. The
+physical model is assessed
+against the \hyfoam{} curves extracted from the vector figures of the
+reference study and the equilibrium temperatures obtained from energy
+conservation.

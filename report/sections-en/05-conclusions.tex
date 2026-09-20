@@ -4,37 +4,37 @@
 \subsection{Conclusions}
 \label{sec:conclusioni-sintesi}
 
-This work has implemented a two-temperature model for reacting hypersonic
-flows in OpenFOAM-13, relying on the \mpp{} library for all the
-thermochemistry. The solver solves the governing equations for the energies,
-which are conserved even across shocks, and obtains the temperatures from
-\mpp. The source-term functions are written only once and shared with
-independent zero-dimensional programs. Where the library's models differ from
-those of the reference work, the corresponding source terms have been
-reimplemented on top of it.
+This work implemented a two-temperature thermochemical model in OpenFOAM-13
+as a basis for simulations of reacting hypersonic flows. The solver advances
+the energy equations and uses \mpp{} to recover the temperatures and evaluate
+thermochemical properties. The source-term functions are shared with
+stand-alone zero-dimensional programs. Where the library's default
+formulations differ from those of the reference study, customised source
+terms have been implemented using the properties supplied by \mpp.
 
-All the zero-dimensional verification cases of Casseau
-\textit{et al.}~\cite{casseau2016} have been reproduced. The solver agrees
-with the zero-dimensional programs to within 0.3\% in all cases but
-high-temperature nitrogen, where the difference reaches 1.2\%, reactions
-included, which shows that the
-model is correctly integrated. With respect to the reference work, the final
-states agree to within 1\%, the composition of the nitrogen mixture to within
-2.5\% and that of air to within 15\%. The only significant discrepancy is a
-delayed rise of the vibrational temperature in the mixtures containing atomic
-nitrogen, most likely due to the way \mpp{} averages the relaxation times. The
-comparison has also shown how strongly the results depend on choices that the
-paper does not state, such as the inclusion of electronic energy or the rate
-constants used for air, and has made it possible to reconstruct them. The
-model has been verified on heat baths, where there is no flow. Using it in
-realistic configurations requires the developments outlined below.
+All zero-dimensional verification cases reported by Casseau
+\textit{et al.}~\cite{casseau2016} have been reproduced. Across the cases
+computed with both implementations, including reacting cases, the solver
+agrees with the zero-dimensional programs to within 0.3\%, except for
+high-temperature nitrogen, where the maximum difference is 1.2\%.
+Compared with the reference study, final temperatures agree to within 1\%,
+nitrogen-mixture composition to within 2.5\% and air composition to within
+15\%. The largest temperature discrepancy is a delayed rise in vibrational
+temperature in mixtures containing atomic nitrogen. Differences in the
+averaging of relaxation times are a plausible explanation, although this
+hypothesis remains to be tested.
+
+Reproduction of the results required reconstructing incompletely specified
+modelling choices, particularly the treatment of electronic energy and the
+reaction-rate constants for air. Verification remains limited to spatially
+uniform heat baths with no flow; flow applications require the extensions
+outlined below.
 
 \subsection{Future work}
 \label{sec:sviluppi}
 
-The first two developments are needed to move from the heat bath to an actual
-flow; the third aims to remove the only significant discrepancy that remains
-with respect to the reference work.
+The proposed extensions address energy transport, viscous-flow modelling and
+the remaining discrepancy in vibrational relaxation.
 
 \begin{enumerate}[leftmargin=1.8em]
   \item \textbf{Transport of the vibro-electronic energy.} The vibro-electronic
@@ -42,17 +42,17 @@ with respect to the reference work.
     transport must be added, using the same face fluxes already used for the
     species, together with heat conduction and appropriate boundary
     conditions; the source terms should then be evaluated with the updated
-    density. The first test case is the one-dimensional shock tube
-    already included in the project.
+    density. The one-dimensional shock tube already included in the project
+    provides an initial test case for this extension.
   \item \textbf{Two-temperature viscosity and thermal conductivity.} These are
-    required for viscous flows and for the wall heat flux. \mpp{} already
-    computes them, and splits the conductivity into its translational and
-    vibro-electronic contributions: they only need to be queried cell by cell
-    in the thermophysical model, as is currently done for the energies, and
-    passed to the solver in place of the one-temperature values.
-  \item \textbf{Relaxation times averaged as in the reference work.} Instead of
-    the average provided by \mpp, the relaxation time of each species pair is
-    computed with the constants already available in the library and averaged
-    as in the reference work. Repeating the molecular-atomic nitrogen case would then
-    show whether the delay of the vibrational temperature disappears.
+    required for viscous-flow simulations and wall heat-flux predictions.
+    \mpp{} provides these properties and separates thermal conductivity into
+    translational and vibro-electronic contributions. The thermophysical
+    model must evaluate them in each cell and supply them to the solver in
+    place of the one-temperature transport properties.
+  \item \textbf{Relaxation-time averaging used in the reference study.}
+    Pairwise relaxation times should be evaluated using \mpp{} coefficients
+    and averaged as in the reference study. Repeating the molecular-atomic
+    nitrogen case would test whether this change accounts for the observed
+    delay in vibrational heating.
 \end{enumerate}

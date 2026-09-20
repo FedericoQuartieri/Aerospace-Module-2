@@ -1,49 +1,56 @@
 \section{Verification and results}
 \label{sec:risultati}
 
-\subsection{Method}
+\subsection{Verification procedure}
 \label{sec:metodo}
 
-Every case of the reference work was computed with the corresponding
-zero-dimensional program. The pure-nitrogen cases and the molecular-atomic
-nitrogen mixture, both without reactions and with reactions starting from a
-non-equilibrium state, were also computed with the solver, on a single-cell
-mesh, with the same initial conditions, the same data and the same time step of
-one nanosecond. The results are subjected to three checks:
+All test cases from the reference study were reproduced using the corresponding
+zero-dimensional verification programs. The solver was also applied to the
+pure-nitrogen cases and to the molecular-atomic nitrogen mixture, both without
+reactions and with reactions initiated from a thermally non-equilibrium state.
+These solver calculations used a single-cell mesh, with the same initial
+conditions, gas data and time step of one nanosecond as the zero-dimensional
+programs. The verification comprises three comparisons:
 
 \begin{enumerate}[leftmargin=1.8em]
-  \item \textbf{solver against zero-dimensional programs}: the two paths
-    implement the same physics, so any difference can only come from the way
-    the solver integrates the model; this check verifies the implementation;
-  \item \textbf{zero-dimensional programs against the reference work}:
-    this check verifies the physics;
+  \item \textbf{solver against zero-dimensional programs}: both
+    implementations use the same physical model and source-term functions;
+    this comparison assesses the coupling and numerical integration of the
+    model within the solver;
+  \item \textbf{zero-dimensional programs against the reference study}:
+    this comparison assesses consistency with the published thermochemical
+    results;
   \item \textbf{final temperature against energy conservation}: the
-    equilibrium temperature must match both the value obtained from the initial
-    energy and the value reported in the reference work.
+    equilibrium temperature in each non-reacting case is compared with the
+    value calculated from the initial energy and with the value reported in
+    the reference study.
 \end{enumerate}
 
-The \hyfoam{} curves were extracted directly from the PDF of the reference work. The
-figures are vector graphics, in which each curve is stored as a sequence of
-points; these were read and converted to time and temperature using the axis
-ticks. The uncertainty is of the order of the line width, about 1\% on the
-temperatures. Deviations, both on the temperatures and on the species
-densities, are given as percentages and represent the maximum over the
-transient. The programs write their results every 10 or 100~ns, and the
-comparisons are based on these samples. In the plots, the light solid lines
-show the reference work, the dashed lines the zero-dimensional programs, and
-the dots the solver.
+The \hyfoam{} curves were extracted directly from the vector figures in the
+PDF of the reference study. Each curve is stored as a sequence of points,
+which were converted to physical coordinates using the axis ticks. The
+estimated extraction uncertainty is comparable to the line width and
+corresponds to approximately 1\% in temperature. Unless otherwise stated,
+temperature and species-density deviations are reported as percentages and
+denote the maximum over the sampled transient. The programs record results
+every 10 or 100~ns, and the comparisons use these output samples. In the
+figures, light solid lines denote the reference results, dashed lines the
+zero-dimensional results and dots the solver results. The figures retain the
+notation $T_v$ for vibrational temperature; when electronic excitation is
+included, this denotes the common vibro-electronic temperature $\Tve$.
 
 \subsection{Pure nitrogen}
 \label{sec:risultati-azoto}
 
-In the first two cases the nitrogen is at atmospheric pressure, with a
-vibrational temperature initially much lower than the translational one
-(vibrational heating) or much higher (vibrational cooling). In the heating
-case the final temperature matches the value given in the text of the reference work,
-and the curves differ by at most 0.3\% on the translational temperature and
-1.5\% on the vibrational temperature. In the cooling case the final
-temperature differs by 0.03\%; the deviation during the transient rises to
-2.8\% and 5.1\% respectively, reflecting a slightly delayed relaxation
+The first two cases consider nitrogen at atmospheric pressure. The initial
+vibrational temperature is either much lower than the translational
+temperature (vibrational heating) or much higher (vibrational cooling). In
+the heating case, the final temperature agrees with the value stated in the
+reference study, while the maximum transient deviations are 0.3\% for the
+translational temperature and 1.5\% for the vibrational temperature. In the
+cooling case, the final temperature differs by 0.03\%; the corresponding
+transient deviations are 2.8\% and 5.1\%, respectively, indicating slightly
+delayed relaxation
 (Figure~\ref{fig:azoto-3}).
 
 \begin{figure}[ht]
@@ -61,17 +68,19 @@ temperature differs by 0.03\%; the deviation during the transient rises to
   \label{fig:azoto-3}
 \end{figure}
 
-The third case starts from a much higher translational temperature, at which
-the electronic energy is no longer negligible, and compares the gas without and
-with electronic energy (Figure~\ref{fig:azoto-4}). In both cases the final
-temperature matches the value reported in the reference work to within 0.3\%, and the
-electronic energy lowers it by about 20\%. The deviations during the transient
-are 0.05\% and 0.8\% without electronic energy, and 0.3\% and 4\% with it.
-This case justifies the decision to reformulate the V--T exchange in terms of
-the vibro-electronic energy: with the
-original \mpp{} formulation, which uses the vibrational energy only, the final
-temperature would be the same, but the deviations during the transient would
-rise to 28\% and 56\%.
+The third case uses a substantially higher initial translational temperature,
+at which electronic excitation makes a non-negligible contribution to the
+energy. Calculations are performed both with and without this contribution
+(Figure~\ref{fig:azoto-4}). In both configurations, the final temperature
+agrees with the reference value to within 0.3\%. Including electronic energy
+reduces the final temperature by approximately 20\%. The maximum transient
+deviations in the translational and vibro-electronic temperatures are, respectively,
+0.05\% and 0.8\% without electronic energy, and 0.3\% and 4\% with it.
+These results support the reformulation of V--T exchange in terms of
+vibro-electronic energy. Using the original \mpp{} formulation, which includes
+only vibrational energy in this exchange term, leaves the final temperature
+unchanged but increases the maximum transient deviations to 28\% and 56\%,
+respectively.
 
 \begin{figure}[ht]
   \centering
@@ -83,33 +92,36 @@ rise to 28\% and 56\%.
     \includegraphics[width=\linewidth]{nitrogen-hot-electronic}
     \caption{With electronic energy.}
   \end{subfigure}
-  \caption{Pure nitrogen at high temperature. The horizontal dotted line is the
-  final temperature expected from energy conservation.}
+  \caption{Pure nitrogen at high temperature. The horizontal dotted line
+  indicates the equilibrium temperature calculated from energy conservation.}
   \label{fig:azoto-4}
 \end{figure}
 
 \subsection{Non-reacting mixtures}
 \label{sec:risultati-miscele}
 
-The first case is an equimolar mixture of molecular and atomic nitrogen, with
-a very high translational temperature and a low vibrational temperature. The
-final temperature matches that of the reference work to within 0.2\%, and the
-translational temperature remains within 2.5\%. The vibrational temperature,
-however, rises later than in the reference work, with a deviation of up to
-20\% on the steepest part of the curve. The most likely cause is the
-relaxation time in mixtures, which \mpp{} averages differently from the
-reference work: vibrational relaxation
-is somewhat slower, while the final state is correct.
+The first case considers an equimolar mixture of molecular and atomic
+nitrogen, initially at a very high translational temperature and a low
+vibrational temperature. The final temperature agrees with the reference
+value to within 0.2\%, and the maximum translational-temperature deviation is
+2.5\%. The rise in vibrational temperature is delayed relative to the
+reference result, with a deviation of up to 20\% in the steepest portion of
+the curve. The most likely explanation is the different method used by
+\mpp{} to average relaxation times in mixtures. This difference is consistent
+with slower vibrational relaxation while preserving agreement in the final
+state.
 
-The second case is an equimolar nitrogen-oxygen mixture at atmospheric
-pressure, with a vibrational temperature much higher than the translational
-one, computed both without and with V--V exchange between the two molecules.
-The final temperature matches that of the reference work to within 0.3\%. Without V--V
-exchange the deviations are 2.7\% on the translational temperature, 2.7\% on
-the vibrational temperature of nitrogen and 6.4\% on that of oxygen; with the
-exchange they drop to 2.0\%, 2.5\% and 3.4\%. As in the reference work, the
-V--V exchange brings the two vibrational temperatures closer together and
-speeds up the return to equilibrium (Figure~\ref{fig:miscele}).
+The second case considers an equimolar nitrogen-oxygen mixture at atmospheric
+pressure, with an initial vibrational temperature much higher than the
+translational temperature. Calculations are performed with and without V--V
+exchange between the two molecular species. The final temperature agrees
+with the reference value to within 0.3\%. Without V--V exchange, the maximum
+deviations are 2.7\% for the translational temperature, 2.7\% for the nitrogen
+vibrational temperature and 6.4\% for the oxygen vibrational temperature.
+With V--V exchange, these deviations decrease to 2.0\%, 2.5\% and 3.4\%,
+respectively. Consistent with the reference study, V--V exchange reduces the
+difference between the two vibrational temperatures and accelerates
+relaxation towards equilibrium (Figure~\ref{fig:miscele}).
 
 \begin{figure}[ht]
   \centering
@@ -121,33 +133,35 @@ speeds up the return to equilibrium (Figure~\ref{fig:miscele}).
     \includegraphics[width=\linewidth]{nitrogen-oxygen-vv}
     \caption{Nitrogen and oxygen, with V--V exchange.}
   \end{subfigure}
-  \caption{Non-reacting mixtures. In the nitrogen-oxygen mixture each molecule
-  has its own vibrational temperature.}
+  \caption{Non-reacting mixtures. A separate vibrational temperature is assigned
+  to each molecular species in the nitrogen-oxygen mixture.}
   \label{fig:miscele}
 \end{figure}
 
 \subsection{Reacting mixtures}
 \label{sec:risultati-reagenti}
 
-The molecular-atomic nitrogen mixture was also computed with nitrogen
-dissociation, starting from two different initial states. In the first, out of
-equilibrium as in the non-reacting case, the two temperatures at the end of
-the computation match those of the reference work to within 0.4\%, and the composition
-follows that of the reference work to within 1.4\% throughout
-(Figure~\ref{fig:reagenti}). The translational temperature remains within
-2.3\%, while the vibrational temperature shows the same delay as in the
-non-reacting mixture, with deviations of up to 17\% at early times. The second
-case starts with equal temperatures, i.e.\ in thermal but not chemical
-equilibrium: the final temperatures match those of the reference work to within 0.8\%,
-the composition remains within 2.3\%, and the temperatures during the
-transient within 2\% and 10\%.
+The molecular-atomic nitrogen mixture was also simulated with nitrogen
+dissociation, using two initial states. The first uses the same thermally
+non-equilibrium initial state as the non-reacting case. At the end of the
+simulation, both temperatures agree with the reference values to within
+0.4\%, while the species densities agree to within 1.4\% throughout the
+transient (Figure~\ref{fig:reagenti}). The maximum translational-temperature
+deviation is 2.3\%. The vibrational temperature exhibits the same delay as in
+the non-reacting mixture, with deviations of up to 17\% at early times. The
+second case starts from equal temperatures, corresponding to thermal
+equilibrium but chemical non-equilibrium. The final temperatures agree with
+the reference values to within 0.8\%, and the species densities agree to
+within 2.3\%. The maximum transient deviations in the translational and
+vibrational temperatures are 2\% and 10\%, respectively.
 
-These cases also confirm the choice of exponent in Park's temperature. With
-the fixed \mpp{} value ($a = 0.5$), the composition in the first case deviates
-from the reference work by up to 9\% and the translational temperature by up
-to 6.7\%; with $a = 0.7$, as in the reference work, the deviations drop to
-1.4\% and 2.3\%. The vibrational temperature is unaffected, because its
-deviation stems from the relaxation rather than from the chemistry.
+These cases also support the selected exponent in Park's temperature. With
+the fixed \mpp{} value ($a = 0.5$), the species densities in the first case
+deviate from the reference results by up to 9\% and the translational
+temperature by up to 6.7\%. Using $a = 0.7$, as in the reference study,
+reduces these deviations to 1.4\% and 2.3\%, respectively. The
+vibrational-temperature discrepancy remains essentially unchanged,
+consistent with its likely origin in the relaxation model.
 
 \begin{figure}[ht]
   \centering
@@ -159,24 +173,25 @@ deviation stems from the relaxation rather than from the chemistry.
     \includegraphics[width=\linewidth]{reacting-densities}
     \caption{Species number densities normalised by the initial value.}
   \end{subfigure}
-  \caption{Reacting molecular-atomic nitrogen mixture starting out of
-  equilibrium, with Park exponent $a = 0.7$.}
+  \caption{Reacting molecular-atomic nitrogen mixture initialised in thermal
+  non-equilibrium, with Park exponent $a = 0.7$.}
   \label{fig:reagenti}
 \end{figure}
 
 \subsection{Five-species air}
 \label{sec:risultati-aria}
 
-The last case is air (79\% nitrogen and 21\% oxygen by mole) at low pressure
-and high temperature, with nineteen reactions and a single temperature. With
-the Quantum-Kinetic rate constants, the temperature follows the reference work
-to within 0.7\% and its final value matches to within 0.4\%; the densities of
-the five species remain within 15\%, and four of the five within 7\%
-(Figure~\ref{fig:aria}). With the Park mechanism of \mpp, on the other hand,
-the temperature deviates by up to 8.9\%, and the densities of molecular and
-atomic oxygen, atomic nitrogen and nitric oxide differ by factors between 1.6
-and 3. The results reported in the reference work for this case were therefore obtained
-with the Quantum-Kinetic rate constants.
+The final case considers air, initially composed of 79\% nitrogen and 21\%
+oxygen by mole, at low pressure and high temperature. The calculation uses
+nineteen reactions and a single temperature. With the Quantum-Kinetic rate
+constants, the temperature agrees with the reference result to within 0.7\%
+during the transient and 0.4\% at the final time. The densities of all five
+species agree to within 15\%, with four species agreeing to within 7\%
+(Figure~\ref{fig:aria}). Using the Park mechanism available in \mpp{}
+increases the maximum temperature deviation to 8.9\%, while the densities of
+molecular and atomic oxygen, atomic nitrogen and nitric oxide differ from
+the reference values by factors between 1.6 and 3. These comparisons support
+the use of Quantum-Kinetic rate constants to reproduce the reference results.
 
 \begin{figure}[ht]
   \centering
@@ -195,17 +210,19 @@ with the Quantum-Kinetic rate constants.
 \subsection{Solver versus zero-dimensional programs}
 \label{sec:risultati-solver}
 
-Table~\ref{tab:solver} lists the maximum deviation between the solver and the
-zero-dimensional programs for all the cases computed with both. The final
-temperatures coincide, and the curves agree to within 0.3\% in every case except
-high-temperature nitrogen, where the deviation reaches 1.2\% during the
-very rapid relaxation of the first 100~ns. In this regime the time-integration
-scheme matters more: the solver performs two iterations per time step, whereas
-the zero-dimensional programs perform only one. Even with reactions, the
-composition agrees to within 0.03\%. The model is therefore correctly
-integrated into the solver, chemistry included.
+Table~\ref{tab:solver} summarises the maximum deviations between the solver and
+the zero-dimensional programs for all cases evaluated with both
+implementations. The final temperatures coincide, and the transient
+temperature profiles agree to within 0.3\% in every case except
+high-temperature nitrogen. In that case, the deviation reaches 1.2\% during
+the rapid relaxation in the first 100~ns. This regime is more sensitive to
+the time-integration procedure: the solver performs two iterations per time
+step, whereas the zero-dimensional programs perform one. In the reacting
+case, the species densities agree to within 0.03\%. These results support the
+consistency of the solver coupling and numerical integration, including the
+chemical source terms, for the cases examined.
 
-\begin{table}[ht]
+\begin{table}[H]
   \centering
   \caption{Maximum deviation between the solver and the zero-dimensional
   programs.}
@@ -213,7 +230,7 @@ integrated into the solver, chemistry included.
   \small
   \begin{tabular}{lccc}
     \toprule
-    Case & $T_{tr}$ & $T_{v}$ & Composition \\
+    Case & $T_{tr}$ & $T_{ve}$ & Composition \\
     \midrule
     Nitrogen, vibrational cooling                    & 0.00\% & 0.00\% & -- \\
     Nitrogen, vibrational heating                    & 0.03\% & 0.21\% & -- \\

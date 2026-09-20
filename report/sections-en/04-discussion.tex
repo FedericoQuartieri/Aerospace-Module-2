@@ -1,60 +1,58 @@
 \section{Discussion}
 \label{sec:discussione}
 
-\subsection{What the results show}
+\subsection{Interpretation of the results}
 \label{sec:discussione-risultati}
 
-The comparison between the solver and the zero-dimensional programs shows that
-the model has been correctly integrated into the solver: the two paths, which
-implement the same physics, produce the same curves to within 0.3\% in all cases but
-high-temperature nitrogen, reactions included. The comparison with the reference
-work shows that the physics is also correct. In the non-reacting cases the
-final temperatures agree with those imposed by energy conservation and with
-the values of the reference work to within 0.3\%, which is within the
-uncertainty of reading the figures. In the reacting cases the final
-temperatures agree to within 0.8\%, the composition of the nitrogen mixture to
-within 2.5\% and that of air to within 15\%. During the transient, the
-agreement is within a few percent for pure nitrogen, for the nitrogen-oxygen
-mixture and for air. The largest discrepancy concerns the vibrational
-temperature in the molecular-atomic nitrogen mixtures, where it reaches
-10--20\%.
+Agreement between the solver and the zero-dimensional programs supports the
+correct integration of the model into OpenFOAM. Differences remain within
+0.3\% for the cases evaluated with both approaches, including chemical
+reactions, except for high-temperature nitrogen. Comparison with the reference
+study further assesses the thermochemical model. In non-reacting cases, final
+temperatures are consistent with energy conservation and agree with the reference values to
+within 0.3\%, which is within the uncertainty associated with extracting data
+from the figures. In the reacting cases, the final temperatures agree to
+within 0.8\%, the nitrogen-mixture composition to within 2.5\% and the air
+composition to within 15\%. Transient temperature differences remain within
+a few percent for pure nitrogen, the nitrogen-oxygen mixture and air. The
+largest temperature discrepancy occurs in the vibrational temperature of the
+molecular-atomic nitrogen mixtures, with deviations of 10--20\%.
 
 \subsection{Sources of the discrepancies}
 \label{sec:discussione-origine}
 
-The most likely cause of the delayed rise of the vibrational temperature in
-the mixtures is the way \mpp{} averages the relaxation times associated with
-the different collision partners, which differs from the reference work. The
-averaging method matters only when more than one collision partner is present:
-in pure nitrogen the agreement is good, whereas in the mixtures containing
-atomic nitrogen the vibrational temperature rises later. The final state is
-unaffected, since it depends only on the energy. This hypothesis has not been
-verified by implementing the averaging of the reference work, which remains a
-possible future development. For pure nitrogen and for the nitrogen-oxygen
-mixture, small time shifts of a few percent remain, whose origin has not been
-isolated.
+The delayed vibrational heating in molecular-atomic nitrogen is most plausibly
+associated with the averaging of relaxation times over collision partners in
+\mpp, which differs from the reference study. The close agreement for pure
+nitrogen supports this interpretation, since averaging affects only mixtures
+with multiple collision partners. The equilibrium state is unaffected by the
+relaxation-time formulation, as it is determined by the conserved energy and
+the thermodynamic model. This explanation remains a hypothesis; testing it
+requires implementing the averaging procedure used in the reference study.
+For pure nitrogen and the nitrogen-oxygen mixture, temporal shifts of a few
+percent remain, and their origin has not been isolated.
 
-\subsection{Lessons from the comparison}
+\subsection{Methodological implications}
 \label{sec:discussione-lezioni}
 
-Much of the work consisted of reconstructing modelling choices that the reference work
-leaves unstated or describes only partially: whether the electronic energy is
-included, which energy drives the vibrational exchange, which exponent is used
-for the dissociation temperature, and which rate constants are used for air.
-None of these choices is a minor detail: getting any one of them wrong shifts
-the results far more than the remaining discrepancies do. The comparisons in
-Section~\ref{sec:risultati} show deviations of up to 56\% on the vibrational
-temperature, a factor of 3 on the air densities and about 25\% on the final
-temperature. The paper itself provides an example of this sensitivity when it
-attributes the difference from LeMANS, in the molecular-atomic nitrogen case,
-to a different convention in Park's correction.
+Reproducing the reference results required reconstructing modelling choices
+that the reference study leaves unspecified or describes only partially.
+These include the treatment of electronic energy, the energy used in the
+relaxation source term, the exponent in Park's dissociation temperature and
+the reaction-rate constants for air. The sensitivity comparisons in
+Section~\ref{sec:risultati} show that these choices can produce deviations
+larger than the residual differences: up to 56\% in vibrational temperature,
+a factor of 3 in air species densities and approximately 25\% in final
+temperature. The reference study also illustrates this sensitivity by
+attributing its difference from LeMANS for molecular-atomic nitrogen to a
+different convention in Park's correction.
 
-Two tools proved decisive in making these choices. The first is the final
-temperature imposed by energy conservation, which is independent of any
-relaxation model and immediately reveals whether the gas data are correct. The
-second is the set of curves extracted from the vector figures, which turns the
-comparison with the reference work from a visual assessment into a quantitative
-measurement. Finally, verification along two independent paths separates
-implementation errors from modelling choices: since the solver and the
-programs agree, any remaining difference with respect to the reference work
-must come from the model, not from a coding error.
+Two complementary checks guided the selection of these modelling assumptions.
+First, the equilibrium temperature obtained from energy conservation is
+independent of the relaxation model and provides a check on the thermodynamic
+data and energy conventions. Second, the curves extracted from the vector
+figures enable a quantitative comparison with the reference study. Because the
+solver and zero-dimensional programs share the source-term functions, their
+agreement alone cannot exclude errors in those functions; the reference
+curves and equilibrium checks provide complementary
+evidence.
