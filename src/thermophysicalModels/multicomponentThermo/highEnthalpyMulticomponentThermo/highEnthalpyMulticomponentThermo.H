@@ -122,19 +122,19 @@ public:
 
         virtual const volScalarField& eve() const = 0;
 
-    // sorgenti calcolate da Mutation++ nel bridge (HighEnthalpyMulticomponentThermo.H)
+    // sources computed by Mutation++ in the bridge (HighEnthalpyMulticomponentThermo.H)
 
-    //- calcola tutte le sorgenti una volta per correttore, allo stesso stato;
-    //  le funzioni computeSource* sotto restituiscono i valori calcolati qui
+    //- computes all the sources once per corrector, at the same state;
+    //  the computeSource* functions below return the values computed here
     virtual void correctSources() = 0;
 
-    //- sorgente dell'energia vibro-elettronica: V-T piu' chimica (eq. 26) [W/m3]
+    //- source of the vibro-electronic energy: V-T plus chemistry (eq. 26) [W/m3]
     virtual tmp<volScalarField> computeSourceVe() const = 0;
 
-    //- produzione chimica della specie i (eq. 27) [kg/m3/s]
+    //- chemical production of species i (eq. 27) [kg/m3/s]
     virtual tmp<volScalarField> computeSourceY(const label speciei) const = 0;
 
-    //- calore di reazione per l'energia sensibile, -somma hf_s omega_s [W/m3]
+    //- heat of reaction for the sensible energy, -sum hf_s omega_s [W/m3]
     virtual tmp<volScalarField> computeSourceE() const = 0;
 
     //- Destructor
@@ -160,7 +160,7 @@ class highEnthalpyMulticomponentThermo::composite
 private:
 
 protected:
-    // i due campi nuovi del progetto: T_ve ed eve
+    // the two new fields of the project: T_ve and eve
     //- Vibro-electronic temperature [K]
     volScalarField Tve_;
 
@@ -191,7 +191,7 @@ public:
                 mesh,
                 phaseName
             ),
-            // T_ve letta dal file 0/Tve
+            // T_ve read from the file 0/Tve
             Tve_
             (
                 IOobject
@@ -204,7 +204,7 @@ public:
                 ),
                 mesh
             ),
-            // eve non letta da file: parte da zero, la calcola il bridge all'avvio
+            // eve not read from file: it starts from zero and the bridge computes it at start-up
             eve_
             (
                 IOobject

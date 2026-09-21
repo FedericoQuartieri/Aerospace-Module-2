@@ -1,8 +1,8 @@
-// funzioni comuni ai test 0D (heat bath) che usano Mutation++
+// functions shared by the 0D tests (heat bath) that use Mutation++
 //
-// lo stato del gas e' descritto dalle variabili conservate del paper (eq. 23):
-// densita' parziali rho_s, energia totale E ed energia vibro-elettronica E_ve,
-// tutte per unita' di volume; le temperature si ricavano da queste con
+// the gas state is described by the conserved variables of the paper (eq. 23):
+// partial densities rho_s, total energy E and vibro-electronic energy E_ve,
+// all per unit volume; the temperatures are obtained from these with
 // mix.setState(rho_s, {E, E_ve}, 0)
 
 #ifndef heatBath_H
@@ -14,16 +14,16 @@
 #include <cmath>
 #include <vector>
 
-// ---- istanti in cui scrivere il csv: ogni passo all'inizio, poi a passo
-// logaritmico (200 punti per decade) fino all'ultimo passo. Le figure del
-// paper hanno il tempo in scala logaritmica da 1 ns: con una scrittura ogni
-// 10 o 100 passi i primi nanosecondi venivano interpolati fra punti lontani
-// (fra t = 0 e t = 10 ns) e gli scarti in quel tratto erano solo interpolazione
+// ---- instants at which the csv is written: every step at the beginning, then
+// at logarithmic intervals (200 points per decade) up to the last step. The
+// figures of the paper have time on a logarithmic scale from 1 ns: writing every
+// 10 or 100 steps, the first nanoseconds were interpolated between distant points
+// (between t = 0 and t = 10 ns) and the deviations there were only interpolation
 struct OutputSchedule
 {
     double next = 1.0;
 
-    // vero se al passo step (1..nSteps) va scritta una riga
+    // true if a row must be written at step step (1..nSteps)
     bool write(const int step, const int nSteps)
     {
         if (step < next && step != nSteps)
@@ -34,13 +34,13 @@ struct OutputSchedule
         return true;
     }
 };
-// ---- fine istanti di scrittura
+// ---- end of write instants
 
-// energia totale per unita' di volume, E = somma_s rho_s e_s (eq. 1 senza cinetica)
+// total energy per unit volume, E = sum_s rho_s e_s (eq. 1 without the kinetic term)
 inline double totalEnergy(Mutation::Mixture& mix, const std::vector<double>& rho_s)
 {
     const int ns = mix.nSpecies();
-    // e_s[s] energia totale, e_s[ns + s] energia vibro-elettronica (J/kg)
+    // e_s[s] total energy, e_s[ns + s] vibro-electronic energy (J/kg)
     std::vector<double> e_s(2 * ns);
     mix.getEnergiesMass(e_s.data());
 
@@ -52,7 +52,7 @@ inline double totalEnergy(Mutation::Mixture& mix, const std::vector<double>& rho
     return E;
 }
 
-// energia vibro-elettronica per unita' di volume, E_ve = somma_s rho_s e_ve,s (eq. 2)
+// vibro-electronic energy per unit volume, E_ve = sum_s rho_s e_ve,s (eq. 2)
 inline double veEnergy(Mutation::Mixture& mix, const std::vector<double>& rho_s)
 {
     const int ns = mix.nSpecies();
@@ -67,9 +67,9 @@ inline double veEnergy(Mutation::Mixture& mix, const std::vector<double>& rho_s)
     return Eve;
 }
 
-// ---- temperatura di equilibrio dalla conservazione dell'energia
-// cerca per bisezione la T tale che, con T_tr = T_ve = T e composizione fissa,
-// l'energia totale sia uguale a quella iniziale E
+// ---- equilibrium temperature from energy conservation
+// bisection search for the T such that, with T_tr = T_ve = T and fixed
+// composition, the total energy equals the initial energy E
 inline double equilibriumTemperature
 (
     Mutation::Mixture& mix,
@@ -86,7 +86,7 @@ inline double equilibriumTemperature
         const double temps[2] = {T, T};
         mix.setState(rho_s.data(), temps, 1);
 
-        // l'energia cresce con T: se e' troppa, T e' troppo alta
+        // the energy grows with T: if it is too large, T is too high
         if (totalEnergy(mix, rho_s) > E)
         {
             Thigh = T;
@@ -98,6 +98,6 @@ inline double equilibriumTemperature
     }
     return 0.5 * (Tlow + Thigh);
 }
-// ---- fine temperatura di equilibrio
+// ---- end of equilibrium temperature
 
 #endif

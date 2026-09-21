@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# estrae le curve di hy2Foam dalle figure del paper (Casseau et al., Aerospace 2016)
-# e le salva in file csv "t,valore", uno per curva
+# extracts the hy2Foam curves from the figures of the paper (Casseau et al., Aerospace 2016)
+# and saves them in csv files "t,value", one per curve
 #
-# le figure del pdf sono vettoriali: ogni pagina viene convertita in svg con
-# mutool, poi si leggono i tratti (path) delle curve e li si riporta alle
-# coordinate fisiche usando i tick degli assi e le etichette numeriche
+# the figures of the pdf are vector graphics: each page is converted to svg with
+# mutool, then the strokes (paths) of the curves are read and mapped to
+# physical coordinates using the axis ticks and the numeric labels
 #
-# uso: python3 extract-paper-curves.py [fig3a fig3b ...]   (senza argomenti: tutte)
+# usage: python3 extract-paper-curves.py [fig3a fig3b ...]   (without arguments: all)
 
 import os
 import re
@@ -18,17 +18,17 @@ import tempfile
 PDF = os.path.join(os.path.dirname(__file__), "..", "aerospace-03-00034-1.pdf")
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# ---- descrizione delle figure
-# page   : pagina del pdf
-# group  : pannello (gruppo svg con clip-path), trovato guardando il file svg
-# style  : (colore, spessore, tratteggio) dei path di hy2Foam in quel pannello
-# yscale : le etichette dell'asse y sono in K x 10^3 -> moltiplico per 1000
-# curves : nome della curva e valore iniziale atteso, serve per riconoscere
-#          quale tratto e' quale; se due curve partono dallo stesso valore
-#          la prima della lista e' quella con valore medio piu' basso
-# match  : "final" -> le curve si riconoscono dal valore finale, in ordine
-#          decrescente (usato per le densita' numeriche)
-# out    : nome dei file di uscita, se diverso dal nome della figura
+# ---- description of the figures
+# page   : page of the pdf
+# group  : panel (svg group with clip-path), found by looking at the svg file
+# style  : (colour, width, dash pattern) of the hy2Foam paths in that panel
+# yscale : the y-axis labels are in K x 10^3 -> multiply by 1000
+# curves : name of the curve and expected initial value, used to recognise
+#          which stroke is which; if two curves start from the same value
+#          the first in the list is the one with the lower mean value
+# match  : "final" -> the curves are recognised by their final value, in
+#          decreasing order (used for the number densities)
+# out    : name of the output files, if different from the name of the figure
 FIGURES = {
     "fig3a": dict(page=10, group="clip_5", style=("#000000", "5", None),
                   yscale=1000, curves=[("Ttr", 10000), ("Tv", 1000)]),
@@ -40,7 +40,7 @@ FIGURES = {
                     yscale=1000, curves=[("Ttr", 30000), ("Tv", 1000)]),
     "fig5": dict(page=12, group="clip_10", style=("#000000", "12", None),
                  yscale=1000, curves=[("Ttr", 30000), ("Tv", 1000)]),
-    # curva rossa: hy2Foam con la convenzione di LeMANS (n miscela, sigma 1e-20)
+    # red curve: hy2Foam with the LeMANS convention (mixture n, sigma 1e-20)
     "fig5-lemans": dict(page=12, group="clip_10", style=("#ff0000", "5", None),
                         yscale=1000, curves=[("Ttr", 30000), ("Tv", 1000)]),
     "fig6-noVV": dict(page=13, group="clip_4", style=("#000000", "20", None),
@@ -51,7 +51,7 @@ FIGURES = {
                   yscale=1000, curves=[("Ttr", 30000), ("Tv", 1000)]),
     "fig7b": dict(page=14, group="clip_11", style=("#000000", "12", None),
                   yscale=1, match="final", curves=[("N", None), ("N2", None)]),
-    # in fig 8a Ttr e Tv di hy2Foam-Park hanno colori diversi: due voci, stesso file di uscita
+    # in fig 8a Ttr and Tv of hy2Foam-Park have different colours: two entries, same output file
     "fig8a-Ttr": dict(page=15, group="clip_5", style=("#000000", "12", None),
                       yscale=1000, curves=[("Ttr", 30000)], out="fig8a"),
     "fig8a-Tv": dict(page=15, group="clip_5", style=("#0000ff", "12", None),
@@ -64,12 +64,12 @@ FIGURES = {
                   yscale=1, ylog=True, match="final",
                   curves=[("N2", None), ("O", None), ("N", None), ("NO", None), ("O2", None)]),
 }
-# ---- fine descrizione delle figure
+# ---- end of description of the figures
 
 
 def parse_path(d):
-    # legge l'attributo d di un path svg (solo M, L, H, V, Z e lineto impliciti)
-    # e ritorna una lista di sottopercorsi, ognuno lista di punti (x, y)
+    # reads the d attribute of an svg path (only M, L, H, V, Z and implicit lineto)
+    # and returns a list of subpaths, each a list of points (x, y)
     toks = re.findall(r"[MLHVZ]|-?[\d.]+(?:e-?\d+)?", d)
     subs = []
     cur = []
@@ -106,14 +106,14 @@ def parse_path(d):
             i += 1
             cur.append((x, y))
         else:
-            raise ValueError("comando svg non gestito in: " + d[:40])
+            raise ValueError("unsupported svg command in: " + d[:40])
     if cur:
         subs.append(cur)
     return subs
 
 
 def page_to_svg(page):
-    # converte una pagina del pdf in svg (in una cartella temporanea)
+    # converts one page of the pdf to svg (in a temporary folder)
     tmp = tempfile.mkdtemp()
     out = os.path.join(tmp, "page%d.svg")
     subprocess.run(["mutool", "draw", "-o", out, "-F", "svg", PDF, str(page)],
@@ -122,7 +122,7 @@ def page_to_svg(page):
 
 
 def read_panel(svg, group):
-    # ritorna la trasformazione del pannello e i suoi path con stile e punti
+    # returns the transformation of the panel and its paths with style and points
     body = svg.split("</defs>", 1)[1]
     groups = dict(re.findall(r'<g clip-path="url\(#(clip_\d+)\)">(.*?)</g>', body, re.S))
     g = groups[group]
@@ -142,7 +142,7 @@ def read_panel(svg, group):
 
 
 def read_words(body):
-    # ricompone le parole dai singoli glifi (data-text) con la loro posizione
+    # rebuilds the words from the individual glyphs (data-text) with their position
     uses = re.findall(
         r'<use data-text="([^"]*)" xlink:href="#font_\d+_\d+" '
         r'transform="matrix\(([^)]*)\)"/>', body)
@@ -152,9 +152,9 @@ def read_words(body):
         a = [float(v) for v in m.split(",")]
         x, y = a[4], a[5]
         size = abs(a[0]) or abs(a[1])
-        # testo ruotato (titolo dell'asse y): a[0] = 0
+        # rotated text (y-axis title): a[0] = 0
         rotated = a[0] == 0
-        # stessa riga e subito dopo la lettera precedente: stessa parola
+        # same line and right after the previous letter: same word
         if cur and abs(y - cur["y"]) < 0.5 and abs(x - cur["xend"]) < size * 1.2:
             cur["text"] += ch
             cur["xend"] = x + size * 0.55
@@ -165,8 +165,8 @@ def read_words(body):
 
 
 def find_frame(paths):
-    # la cornice del grafico e' il rettangolo chiuso piu' grande
-    # ritorna (x0, x1, y0, y1) e lo stile con cui e' disegnata
+    # the frame of the plot is the largest closed rectangle
+    # returns (x0, x1, y0, y1) and the style it is drawn with
     best = None
     for style, subs in paths:
         for sp in subs:
@@ -180,8 +180,8 @@ def find_frame(paths):
 
 
 def major_ticks(paths, frame, frame_style):
-    # tick maggiori: i segmenti piu' lunghi che toccano la cornice,
-    # disegnati con lo stesso tratto della cornice
+    # major ticks: the longest segments that touch the frame,
+    # drawn with the same stroke as the frame
     x0, x1, y0, y1 = frame
     xt = {}
     yt = {}
@@ -202,13 +202,13 @@ def major_ticks(paths, frame, frame_style):
             return []
         lmax = max(t.values())
         return sorted(v for v, l in t.items() if l > 0.75 * lmax)
-    # anche i bordi della cornice possono essere tick maggiori
+    # the edges of the frame can be major ticks too
     return keep_long(xt) + [x0, x1], keep_long(yt) + [y0, y1]
 
 
 def axis_labels(words, tr, frame):
-    # etichette numeriche degli assi, gia' in coordinate locali del pannello
-    # ritorna liste di (valore, coordinata locale, log?) per x e per y
+    # numeric labels of the axes, already in the local coordinates of the panel
+    # returns lists of (value, local coordinate, log?) for x and for y
     sc, e, f = tr[0], tr[4], tr[5]
     x0, x1, y0, y1 = frame
     px0, px1 = e + sc * x0, e + sc * x1
@@ -222,7 +222,7 @@ def axis_labels(words, tr, frame):
             continue
         lab = None
         if t == "10":
-            # etichetta logaritmica: "10" seguito dall'esponente piu' piccolo
+            # logarithmic label: "10" followed by the smaller exponent
             nxt = words[i + 1] if i + 1 < len(words) else None
             if nxt and nxt["size"] < w["size"] and 0 < nxt["x"] - w["x"] < 2 * w["size"]:
                 try:
@@ -241,7 +241,7 @@ def axis_labels(words, tr, frame):
             lab = (val, False)
         xc = w["x"] + width / 2
         yc = w["y"] - 0.35 * w["size"]
-        # a sinistra della cornice e alla sua altezza: asse y; sotto: asse x
+        # left of the frame and within its height: y axis; below it: x axis
         tol = 0.6 * w["size"]
         if w["xend"] < px0 + 2 and py_top - tol < yc < py_bot + tol:
             ylab.append((lab, (f - yc) / sc))
@@ -251,8 +251,8 @@ def axis_labels(words, tr, frame):
 
 
 def calibrate(labels, ticks, name):
-    # associa ogni etichetta al tick maggiore piu' vicino e fa un fit lineare
-    # valore = a + b * coordinata locale (valore = log10 se asse logaritmico)
+    # matches each label to the nearest major tick and makes a linear fit
+    # value = a + b * local coordinate (value = log10 if the axis is logarithmic)
     pts = []
     for (val, is_log), pos in labels:
         near = min(ticks, key=lambda t: abs(t - pos))
@@ -260,7 +260,7 @@ def calibrate(labels, ticks, name):
             pts.append((near, val))
     pts = sorted(set(pts))
     if len(pts) < 2:
-        raise RuntimeError("asse %s: trovate solo %d etichette utili" % (name, len(pts)))
+        raise RuntimeError("axis %s: only %d usable labels found" % (name, len(pts)))
     n = len(pts)
     sx = sum(p[0] for p in pts)
     sy = sum(p[1] for p in pts)
@@ -273,9 +273,9 @@ def calibrate(labels, ticks, name):
 
 
 def chain_subpaths(subs, tol):
-    # unisce i tratti consecutivi in curve continue: il tratto seguente e'
-    # quello che inizia vicino alla fine del tratto corrente e nella stessa
-    # direzione (serve per le curve tratteggiate, spezzate in tanti pezzi)
+    # joins consecutive strokes into continuous curves: the next stroke is the
+    # one that starts close to the end of the current stroke and in the same
+    # direction (needed for dashed curves, broken into many pieces)
     subs = [sp if sp[0][0] <= sp[-1][0] else sp[::-1] for sp in subs]
     subs.sort(key=lambda sp: sp[0][0])
     used = [False] * len(subs)
@@ -287,7 +287,7 @@ def chain_subpaths(subs, tol):
         chain = list(subs[i])
         while True:
             ex, ey = chain[-1]
-            # direzione locale della curva alla sua fine
+            # local direction of the curve at its end
             px, py = chain[-2] if len(chain) > 1 else (ex - 1, ey)
             dx, dy = ex - px, ey - py
             norm = math.hypot(dx, dy) or 1.0
@@ -300,7 +300,7 @@ def chain_subpaths(subs, tol):
                 dist = math.hypot(sx - ex, sy - ey)
                 if dist > tol or sx < ex - 1:
                     continue
-                # distanza dalla retta che prolunga la curva
+                # distance from the straight line that extends the curve
                 dev = abs((sx - ex) * dy - (sy - ey) * dx)
                 score = dev + 0.2 * dist
                 if best is None or score < best[0]:
@@ -310,7 +310,7 @@ def chain_subpaths(subs, tol):
             used[best[1]] = True
             chain.extend(subs[best[1]])
         chains.append(chain)
-    # scarta i pezzi corti: campioni di linea nella legenda
+    # discards the short pieces: line samples in the legend
     return [c for c in chains if c[-1][0] - c[0][0] > 600]
 
 
@@ -322,9 +322,9 @@ def extract(name, cfg):
     xlab, ylab = axis_labels(read_words(body), tr, frame)
     ax, bx, xlog, xpts = calibrate(xlab, xticks, "x")
     ay, by, ylog, ypts = calibrate(ylab, yticks, "y")
-    print("%s: asse x %s, asse y %s" % (name, xpts, ypts))
+    print("%s: x axis %s, y axis %s" % (name, xpts, ypts))
 
-    # tratti delle curve di hy2Foam (stesso stile) uniti in curve continue
+    # strokes of the hy2Foam curves (same style) joined into continuous curves
     subs = [sp for style, ss in paths if style == cfg["style"] for sp in ss if len(sp) >= 2]
     tol = 2.0 if cfg["style"][2] is None else 250.0
     chains = chain_subpaths(subs, tol)
@@ -341,27 +341,27 @@ def extract(name, cfg):
         pts = [to_data(p) for p in ch if frame[0] - 1 <= p[0] <= frame[1] + 1]
         curves.append(pts)
 
-    # ---- riconosce le curve
+    # ---- recognises the curves
     names = [c[0] for c in cfg["curves"]]
     if cfg.get("match") == "final":
-        # ordinate per valore finale decrescente
+        # sorted by decreasing final value
         curves.sort(key=lambda c: -c[-1][1])
         assigned = list(zip(names, curves))
     else:
         assigned = []
         for cname, y0 in cfg["curves"]:
             if not curves:
-                raise RuntimeError("%s: nessuna curva rimasta per %s" % (name, cname))
-            # candidate: curve che partono dal valore iniziale atteso,
-            # altrimenti quella che parte piu' vicino
+                raise RuntimeError("%s: no curve left for %s" % (name, cname))
+            # candidates: curves that start from the expected initial value,
+            # otherwise the one that starts closest to it
             cand = [c for c in curves if abs(c[0][1] - y0) < 0.08 * y0]
             if not cand:
                 cand = [min(curves, key=lambda c: abs(c[0][1] - y0))]
-            # a parita' di partenza, prima quella con valore medio piu' basso
+            # for the same starting value, first the one with the lower mean value
             cand.sort(key=lambda c: sum(p[1] for p in c) / len(c))
             curves.remove(cand[0])
             assigned.append((cname, cand[0]))
-    # ---- fine riconoscimento
+    # ---- end of recognition
 
     for cname, pts in assigned:
         fn = os.path.join(OUT_DIR, "%s-%s.csv" % (cfg.get("out", name), cname))
@@ -369,11 +369,11 @@ def extract(name, cfg):
             f.write("t,%s\n" % cname)
             for x, y in pts:
                 f.write("%.6g,%.6g\n" % (x, y))
-        print("   %-6s %4d punti, da (%.3g, %.5g) a (%.3g, %.5g) -> %s"
+        print("   %-6s %4d points, from (%.3g, %.5g) to (%.3g, %.5g) -> %s"
               % (cname, len(pts), pts[0][0], pts[0][1], pts[-1][0], pts[-1][1],
                  os.path.basename(fn)))
     if curves and cfg.get("match") != "final":
-        print("   attenzione: %d curve con lo stesso stile non assegnate, partono da %s"
+        print("   warning: %d curves with the same style not assigned, starting from %s"
               % (len(curves), [round(c[0][1]) for c in curves]))
 
 

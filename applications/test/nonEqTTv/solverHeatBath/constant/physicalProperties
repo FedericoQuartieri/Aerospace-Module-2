@@ -14,22 +14,22 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// "type highEnthalpyThermo" carica la termodinamica del progetto (il bridge)
+// "type highEnthalpyThermo" loads the project thermodynamics (the bridge)
 thermoType
 {
     type            highEnthalpyThermo;
     mixture         coefficientWilkeMulticomponentMixture;
     transport       sutherland;
-    // rrho e' il thermo del template del corso (copia di janaf); il thermo base
-    // non entra nella fisica: T e Tve le ricava Mutation++ nel bridge
+    // rrho is the thermo of the course template (a copy of janaf); the base thermo
+    // does not enter the physics: T and Tve are obtained by Mutation++ in the bridge
     thermo          rrho;
     energy          sensibleInternalEnergy;
     equationOfState perfectGas;
     specie          specie;
 }
 
-// impostazioni di Mutation++, uguali ai programmi 0D (la cartella dati la
-// sceglie Allrun con MPP_DATA_DIRECTORY); il meccanismo dipende dalla figura
+// Mutation++ settings, the same as the 0D programs (the data folder is chosen
+// by Allrun through MPP_DATA_DIRECTORY); the mechanism depends on the figure
 #include "$FOAM_CASE/conditions"
 
 highEnthalpyMutation
@@ -38,12 +38,12 @@ highEnthalpyMutation
     stateModel              ChemNonEqTTv;
     thermodynamicDatabase   RRHO;
     mechanism               $mechanism;
-    // esponente a della temperatura di Park T^a Tv^(1-a) per la dissociazione
+    // exponent a of Park's temperature T^a Tv^(1-a) for dissociation
     parkExponent            $parkExponent;
-    // modelli del paper (sono anche i default): tau V-T delle eq. 9-17 come
-    // in hy2Foam (mutation per quello di Mutation++) e Q_C-V preferenziale con
-    // alpha = 0.3 (eq. 32, nonPreferential per l'eq. 31), come nel tutorial
-    // heatBath di hy2Foam, che e' il caso della fig. 7
+    // models of the paper (they are also the defaults): V-T tau of eq. 9-17 as
+    // in hy2Foam (mutation for the Mutation++ one) and preferential Q_C-V with
+    // alpha = 0.3 (eq. 32, nonPreferential for eq. 31), as in the hy2Foam
+    // heatBath tutorial, which is the case of fig. 7
     relaxationTime          paper;
     chemistryVibration      preferential;
     preferentialFactor      0.3;

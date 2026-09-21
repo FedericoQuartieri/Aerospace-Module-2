@@ -29,7 +29,7 @@ vertices
 
 blocks
 (
-    // una sola cella: e' un heat bath (test 3a), non un tubo d'urto
+    // single cell: this is a heat bath (test 3a), not a shock tube
     // Single-cell box
     hex (0 1 2 3 4 5 6 7) (1 1 1) simpleGrading (1 1 1)
 );

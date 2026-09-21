@@ -1,6 +1,6 @@
 <!--
-  dissociazione dell'azoto N2 + N2 -> 2N + N2, irreversibile come nel paper
-  (Casseau et al. 2016, tabella 2, costanti di Park 1993); A in cm3/mol/s
+  nitrogen dissociation N2 + N2 -> 2N + N2, irreversible as in the paper
+  (Casseau et al. 2016, table 2, Park 1993 constants); A in cm3/mol/s
 -->
 <mechanism name="N2_Park">
 

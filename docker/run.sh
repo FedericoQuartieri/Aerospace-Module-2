@@ -1,16 +1,16 @@
 #!/bin/sh
-# Apre una shell nel container con il progetto montato su /project.
+# Opens a shell in the container with the project mounted on /project.
 #
-#   ./docker/run.sh                      shell interattiva
-#   ./docker/run.sh ./Allwmake           compila e esce
+#   ./docker/run.sh                      interactive shell
+#   ./docker/run.sh ./Allwmake           compiles and exits
 #
-# Il progetto e' un bind mount: quello che si compila dentro finisce in
-# platforms/ sul Mac, e le modifiche fatte sul Mac si vedono subito dentro.
+# The project is a bind mount: whatever is compiled inside ends up in
+# platforms/ on the Mac, and changes made on the Mac are visible inside at once.
 #
-# /root sta invece in un volume Docker, non sul bind mount: e' li' che OpenFOAM
-# installa le librerie dell'utente ($FOAM_USER_LIBBIN), e senza il volume
-# sparirebbero a ogni --rm, costringendo a ricompilare. Il volume e' anche un
-# filesystem nativo della VM, molto piu' veloce di quello condiviso con macOS.
+# /root instead lives in a Docker volume, not on the bind mount: that is where
+# OpenFOAM installs the user libraries ($FOAM_USER_LIBBIN), and without the
+# volume they would disappear at every --rm, forcing a recompilation. The volume
+# is also a native filesystem of the VM, much faster than the one shared with macOS.
 cd ${0%/*}/.. || exit 1
 
 if [ -t 0 ]; then tty="-it"; else tty=""; fi

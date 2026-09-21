@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# raccoglie i probe del solver (una colonna per grandezza, una riga per tempo)
-# nel file ../output/<figura>-solver.csv con le stesse colonne del programma 0D
+# collects the solver probes (one column per quantity, one row per time)
+# into the file ../output/<figure>-solver.csv with the same columns as the 0D program
 #
-# uso: python3 probes-to-csv.py <figura>
+# usage: python3 probes-to-csv.py <figure>
 
 import os
 import sys
@@ -14,7 +14,7 @@ probes = os.path.join(here, "postProcessing", "probes", "0")
 
 
 def load(field):
-    # file probe: "# commenti" poi "tempo valore"
+    # probe file: "# comments" then "time value"
     data = np.loadtxt(os.path.join(probes, field), comments="#", ndmin=2)
     return data[:, 0], data[:, 1]
 
@@ -23,7 +23,7 @@ t, T = load("T")
 t, Tve = load("Tve")
 columns = [("t", t), ("Ttr", T), ("Tv", Tve)]
 
-# con la chimica servono anche le densita' numeriche normalizzate n/n0
+# with chemistry the normalised number densities n/n0 are also needed
 if fig.startswith("fig7"):
     t, rho = load("rho")
     NA = 6.02214076e23
@@ -34,8 +34,8 @@ if fig.startswith("fig7"):
     n0 = n["N2"][0] + n["N"][0]
     columns += [("N2", n["N2"] / n0), ("N", n["N"] / n0)]
 
-# righe da tenere: ogni passo all'inizio, poi 200 punti per decade (stessa
-# regola di OutputSchedule nei programmi 0D), sempre l'ultima
+# rows to keep: every step at the beginning, then 200 points per decade (same
+# rule as OutputSchedule in the 0D programs), always the last one
 keep = []
 nextStep = 1.0
 for i, ti in enumerate(t):
@@ -49,4 +49,4 @@ with open(out, "w") as f:
     f.write(",".join(name for name, _ in columns) + "\n")
     for i in keep:
         f.write(",".join("%.8g" % col[i] for _, col in columns) + "\n")
-print("scritto " + os.path.relpath(out, here))
+print("written " + os.path.relpath(out, here))

@@ -2,22 +2,22 @@
 
 cd ${0%/*} || exit 1
 
-# heat bath in una sola cella con il solver shockThermo, per una figura del
+# heat bath in a single cell with the shockThermo solver, for one figure of the
 # paper: ./Allrun fig3b   (fig3a, fig3b, fig4-noEl, fig4-el, fig5, fig7)
-# secondo argomento opzionale: esponente di Park, es. ./Allrun fig7 0.5
-# le condizioni iniziali finiscono nel file "conditions", incluso dai file
-# del caso; il risultato va in ../output/<figura>-solver.csv
+# optional second argument: Park exponent, e.g. ./Allrun fig7 0.5
+# the initial conditions go into the file "conditions", included by the case
+# files; the result goes to ../output/<figure>-solver.csv
 
 fig=${1:-fig3a}
 
-# ---- condizioni iniziali del paper, figura per figura
-# p e frazioni in massa per N2 + N con 5e22 molecole/m3 ciascuna a 30000 K:
+# ---- initial conditions of the paper, figure by figure
+# p and mass fractions for N2 + N with 5e22 molecules/m3 each at 30000 K:
 # p = n k T = 1e23 * 1.380649e-23 * 30000 = 41419.5 Pa, Y_N2 = 2/3, Y_N = 1/3
-# (M_N2 = 2 M_N, quindi 2/3 e 1/3 sono esatti: scritti con 9 cifre)
-# "every": ogni quanti passi scrivere i probe (1, cioe' ogni ns; 10 nel caso
-# lungo). probes-to-csv.py poi tiene ogni passo all'inizio e 200 punti per
-# decade dopo, come i programmi 0D, cosi' il csv resta corto ma i primi
-# nanosecondi ci sono tutti
+# (M_N2 = 2 M_N, so 2/3 and 1/3 are exact: written with 9 digits)
+# "every": how many steps between probe writes (1, i.e. every ns; 10 in the
+# long case). probes-to-csv.py then keeps every step at the beginning and 200
+# points per decade afterwards, like the 0D programs, so the csv stays short
+# but the first nanoseconds are all there
 case $fig in
     fig3a)     Ttr=10000; Tve=1000;  p=101325;  YN2=1;      YN=0;      endTime=3e-5; every=1;   data=mutation-data-noElectronic; mechanism=none ;;
     fig3b)     Ttr=3000;  Tve=10000; p=101325;  YN2=1;      YN=0;      endTime=1e-4; every=1;   data=mutation-data-noElectronic; mechanism=none ;;
@@ -25,18 +25,18 @@ case $fig in
     fig4-el)   Ttr=30000; Tve=1000;  p=101325;  YN2=1;      YN=0;      endTime=1e-5; every=1;   data=mutation-data;              mechanism=none ;;
     fig5)      Ttr=30000; Tve=1000;  p=41419.5; YN2=0.666666667; YN=0.333333333; endTime=1e-5; every=1;   data=mutation-data-noElectronic; mechanism=none ;;
     fig7)      Ttr=30000; Tve=1000;  p=41419.5; YN2=0.666666667; YN=0.333333333; endTime=1e-3; every=10;  data=mutation-data-noElectronic; mechanism=N2_Park ;;
-    *) echo "figura sconosciuta: $fig"; exit 1 ;;
+    *) echo "unknown figure: $fig"; exit 1 ;;
 esac
-# ---- fine condizioni iniziali
+# ---- end of initial conditions
 
-# stessi dati Mutation++ del programma 0D
+# same Mutation++ data as the 0D program
 export MPP_DATA_DIRECTORY="$(cd .. && pwd)/$data"
 
-# esponente della temperatura di Park (eq. 29): 0.7 come il paper
+# exponent of Park's temperature (eq. 29): 0.7 as in the paper
 parkExponent=${2:-0.7}
 
 cat > conditions <<EOF
-// condizioni iniziali per $fig, scritte da Allrun
+// initial conditions for $fig, written by Allrun
 Ttr           $Ttr;
 Tve           $Tve;
 p             $p;
@@ -53,7 +53,7 @@ EOF
 blockMesh > log.blockMesh 2>&1 || { cat log.blockMesh; exit 1; }
 foamRun > log.foamRun 2>&1 || { tail -30 log.foamRun; exit 1; }
 
-# dai probe al csv usato da compare.py
+# from the probes to the csv used by compare.py
 python3 probes-to-csv.py $fig
 
 #------------------------------------------------------------------------------

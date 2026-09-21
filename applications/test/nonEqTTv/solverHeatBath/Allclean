@@ -2,12 +2,12 @@
 
 cd ${0%/*} || exit 1
 
-# toglie solo quello che viene generato (mesh, risultati, log); tiene 0/ e setup
+# removes only what is generated (mesh, results, logs); keeps 0/ and the setup
 foamListTimes -rm 2>/dev/null
 rm -rf constant/polyMesh postProcessing
 rm -f log.blockMesh log.foamRun
 
-# "conditions" lo scrive Allrun: lo tiene solo quando e' Allrun a chiamare Allclean
+# "conditions" is written by Allrun: it is kept only when Allrun calls Allclean
 [ "$1" = keepConditions ] || rm -f conditions
 
 #------------------------------------------------------------------------------

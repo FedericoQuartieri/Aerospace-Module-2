@@ -2,23 +2,23 @@
 
 cd ${0%/*} || exit 1
 
-# test 0D del capitolo 3 del paper, con confronto con le curve estratte dal pdf
-# (paper-data/) e, dove esiste, con il risultato del solver (output/*-solver.csv)
+# 0D tests of chapter 3 of the paper, compared with the curves extracted from the pdf
+# (paper-data/) and, where it exists, with the solver result (output/*-solver.csv)
 #
-# modelli: quelli del paper, che sono i default dei programmi (tau V-T delle
-# eq. 9-17, Q_C-V preferenziale con alpha = 0.3, esponente di Park 0.7); le
-# varianti -tauMpp, -nonPref e -park05 li cambiano uno alla volta per confronto
+# models: those of the paper, which are the defaults of the programs (V-T tau of
+# eq. 9-17, preferential Q_C-V with alpha = 0.3, Park exponent 0.7); the
+# variants -tauMpp, -nonPref and -park05 change them one at a time for comparison
 
 mkdir -p output
 here=$(pwd)
 
-# ---- senza energia elettronica: fig. 3a, 3b, 4 "without E_el", 5, 6, 7, 8
-# - fig. 3a e 3b: paragrafo 3.1.1 del paper, "Case without Electronic Energy"
-# - fig. 5 e 6: le T di equilibrio scritte sulle figure (24.4 e 12.1 kK) sono
-#   quelle senza energia elettronica; la fig. 5 e' confrontata con dsmcFoam,
-#   che non ha il modo elettronico (paragrafo 3)
-# - fig. 7 e 8: il tutorial heatBath di hy2Foam, che e' il caso della fig. 7,
-#   ha il modo elettronico spento (decoupledCvCoeffs[3] = 0 per tutte le specie)
+# ---- without electronic energy: fig. 3a, 3b, 4 "without E_el", 5, 6, 7, 8
+# - fig. 3a and 3b: section 3.1.1 of the paper, "Case without Electronic Energy"
+# - fig. 5 and 6: the equilibrium T written on the figures (24.4 and 12.1 kK) are
+#   those without electronic energy; fig. 5 is compared with dsmcFoam,
+#   which has no electronic mode (section 3)
+# - fig. 7 and 8: the hy2Foam heatBath tutorial, which is the case of fig. 7,
+#   has the electronic mode switched off (decoupledCvCoeffs[3] = 0 for all species)
 export MPP_DATA_DIRECTORY=$here/mutation-data-noElectronic
 Test-N2  3000 10000 1e-4 output/fig3b.csv
 Test-N2 10000  1000 3e-5 output/fig3a.csv
@@ -28,8 +28,8 @@ Test-N2N 30000  1000 1e-3 N2_Park 0.7 output/fig7.csv
 Test-N2N 30000 30000 1e-4 N2_Park 0.7 output/fig8.csv
 Test-N2O2 off 3e-6 output/fig6-noVV.csv
 Test-N2O2 on  3e-6 output/fig6-VV.csv
-# varianti: un modello alla volta come in Mutation++ (tau, esponente 0.5) o
-# con il Q_C-V non preferenziale (eq. 31)
+# variants: one model at a time as in Mutation++ (tau, exponent 0.5) or
+# with the non-preferential Q_C-V (eq. 31)
 Test-N2N 30000  1000 1e-5 none    0.7 output/fig5-tauMpp.csv  mutation
 Test-N2N 30000  1000 1e-3 N2_Park 0.7 output/fig7-tauMpp.csv  mutation
 Test-N2N 30000  1000 1e-3 N2_Park 0.7 output/fig7-nonPref.csv paper nonPreferential
@@ -38,16 +38,16 @@ Test-N2N 30000 30000 1e-4 N2_Park 0.7 output/fig8-tauMpp.csv  mutation
 Test-N2N 30000 30000 1e-4 N2_Park 0.7 output/fig8-nonPref.csv paper nonPreferential
 Test-N2N 30000 30000 1e-4 N2_Park 0.5 output/fig8-park05.csv
 Test-N2O2 on  3e-6 output/fig6-VV-tauMpp.csv mutation
-# fig 9: una sola temperatura; meccanismo di Park di Mutation++ (air5_Park)
-# e set QK di hyStrath (air5_QK, vedi hystrath-data/README.md)
+# fig 9: a single temperature; Park mechanism of Mutation++ (air5_Park)
+# and QK set of hyStrath (air5_QK, see hystrath-data/README.md)
 Test-air5 air5_Park 1e-3 output/fig9-park.csv
 Test-air5 air5_QK   1e-3 output/fig9-QK.csv  air5_QK_back
 
-# ---- con energia elettronica: fig. 4 "with E_el" (paragrafo 3.1.2)
+# ---- with electronic energy: fig. 4 "with E_el" (section 3.1.2)
 export MPP_DATA_DIRECTORY=$here/mutation-data
 Test-N2 30000  1000 1e-5 output/fig4-el.csv
 
-# ---- confronti
+# ---- comparisons
 for fig in fig3b fig3a fig4-noEl fig4-el fig5 fig5-tauMpp fig6-noVV fig6-VV fig6-VV-tauMpp \
            fig7 fig7-tauMpp fig7-nonPref fig7-park05 fig8 fig8-tauMpp fig8-nonPref fig8-park05 \
            fig9-park fig9-QK

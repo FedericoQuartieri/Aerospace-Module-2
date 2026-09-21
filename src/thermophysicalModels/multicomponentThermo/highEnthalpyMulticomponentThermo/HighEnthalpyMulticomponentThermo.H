@@ -28,11 +28,11 @@ namespace Foam
             Class HighEnthalpyMulticomponentThermo Declaration
 \*---------------------------------------------------------------------------*/
 
-// ponte fra OpenFOAM e Mutation++: in ogni cella lo stato del gas e' dato
-// dalle variabili conservate del paper (eq. 23), densita' parziali rho_s,
-// energia totale ed energia vibro-elettronica; Mutation++ ricava da queste
-// le due temperature, e le sorgenti (V-T e chimica) sono quelle di
-// mutationSources.H, le stesse dei programmi 0D
+// bridge between OpenFOAM and Mutation++: in each cell the gas state is given
+// by the conserved variables of the paper (eq. 23), partial densities rho_s,
+// total energy and vibro-electronic energy; Mutation++ obtains from these
+// the two temperatures, and the sources (V-T and chemistry) are those of
+// mutationSources.H, the same as the 0D programs
 template<class Thermo>
 class HighEnthalpyMulticomponentThermo
 :
@@ -51,11 +51,11 @@ private:
     word mutationThermoDatabase_;
     word mutationMechanism_;
 
-    // esponente a della temperatura di Park T^a Tv^(1-a) (eq. 29)
+    // exponent a of Park's temperature T^a Tv^(1-a) (eq. 29)
     scalar parkExponent_;
 
-    // modelli del paper: tau V-T delle eq. 9-17 (falso: quello di Mutation++)
-    // e Q_C-V preferenziale con fattore alpha (eq. 32; falso: eq. 31)
+    // models of the paper: V-T tau of eq. 9-17 (false: the Mutation++ one)
+    // and preferential Q_C-V with factor alpha (eq. 32; false: eq. 31)
     bool paperTau_;
     bool preferentialCV_;
     scalar alphaCV_;
@@ -63,29 +63,29 @@ private:
     int nMutationSpecies_;
     int nMutationEnergyEqns_;
 
-    // molecole che vibrano, con il loro tempo di rilassamento V-T
+    // vibrating molecules, with their V-T relaxation time
     std::vector<Vibrator> vibrators_;
 
-    // entalpia di formazione di ogni specie di Mutation++ (J/kg): l'energia e
-    // del solver e' sensibile, quella di Mutation++ comprende la formazione
+    // enthalpy of formation of each Mutation++ species (J/kg): the energy e
+    // of the solver is sensible, the Mutation++ one includes the formation
     std::vector<double> hf_;
 
-    // buffer riempiti cella per cella, nell'ordine delle specie di Mutation++
-    mutable std::vector<double> yS_;    // frazioni in massa
-    mutable std::vector<double> rhoS_;  // densita' parziali
-    mutable std::vector<double> eS_;    // energie per specie (totale, poi ve)
-    mutable std::vector<double> wS_;    // produzione delle specie
+    // buffers filled cell by cell, in the order of the Mutation++ species
+    mutable std::vector<double> yS_;    // mass fractions
+    mutable std::vector<double> rhoS_;  // partial densities
+    mutable std::vector<double> eS_;    // energies per species (total, then ve)
+    mutable std::vector<double> wS_;    // species production
 
-    // sorgenti di ogni cella calcolate da correctSources()
-    List<scalarField> wdotCells_;       // produzione di ogni specie di Mutation++
-    scalarField QchemCells_;            // calore di reazione per e
-    scalarField QveCells_;              // sorgente di eve
+    // sources of each cell computed by correctSources()
+    List<scalarField> wdotCells_;       // production of each Mutation++ species
+    scalarField QchemCells_;            // heat of reaction for e
+    scalarField QveCells_;              // source of eve
 
     void initMutation();
 
     void updatePsi();
 
-    // frazioni in massa della cella (o della faccia) nell'ordine di Mutation++
+    // mass fractions of the cell (or of the face) in the Mutation++ order
     template<class Field>
     void fillMassFractions(const Field& Yvalues, const label i) const
     {
@@ -96,7 +96,7 @@ private:
         }
     }
 
-    // energia di formazione media della miscela (J/kg) da yS_
+    // mean energy of formation of the mixture (J/kg) from yS_
     double mixtureHf() const
     {
         double hf = 0.0;
@@ -107,8 +107,8 @@ private:
         return hf;
     }
 
-    // porta Mutation++ nello stato della cella: densita' parziali e le due
-    // temperature (riempie yS_ e rhoS_)
+    // brings Mutation++ to the state of the cell: partial densities and the two
+    // temperatures (fills yS_ and rhoS_)
     void setCellState(const label celli, const scalar rho) const
     {
         fillMassFractions(this->Y(), celli);
@@ -122,7 +122,7 @@ private:
 
 public:
 
-    // ---- avvio: crea Mutation++ e trasforma le temperature iniziali in energie
+    // ---- start-up: creates Mutation++ and turns the initial temperatures into energies
     // Constructors
     HighEnthalpyMulticomponentThermo
     (
@@ -144,15 +144,15 @@ public:
         nMutationSpecies_(0),
         nMutationEnergyEqns_(0)
     {
-        // crea la miscela di Mutation++ (vedi initMutation in fondo)
+        // creates the Mutation++ mixture (see initMutation at the end)
         initMutation();
 
         Mutation::Mixture& mix = *mutationMixturePtr_;
         const int ns = nMutationSpecies_;
 
-        // ---- energie di partenza di ogni cella da p, T e Tve letti dal caso
-        // il thermo base (janaf) ha gia' ricalcolato T dall'energia limitandola
-        // al suo intervallo di validita' (20000 K): rileggo T dal file del caso
+        // ---- initial energies of each cell from p, T and Tve read from the case
+        // the base thermo (janaf) has already recomputed T from the energy, limiting it
+        // to its validity range (20000 K): T is read again from the case file
         {
             volScalarField Tcase
             (
@@ -182,7 +182,7 @@ public:
             const double pTTv[3] = {pCells[celli], TCells[celli], TveCells[celli]};
             mix.setState(yS_.data(), pTTv, 2);
 
-            // eS_[s]: energia totale della specie s, eS_[ns + s]: quella vibro-elettronica
+            // eS_[s]: total energy of species s, eS_[ns + s]: the vibro-electronic one
             mix.getEnergiesMass(eS_.data());
             double e = 0.0;
             double eve = 0.0;
@@ -191,29 +191,29 @@ public:
                 e += yS_[s]*(eS_[s] - hf_[s]);
                 eve += yS_[s]*eS_[ns + s];
             }
-            // e = e_tr + e_ve (eq. 1, 3-7, senza formazione), eve = e_ve (eq. 2)
+            // e = e_tr + e_ve (eq. 1, 3-7, without formation), eve = e_ve (eq. 2)
             eCells[celli] = e;
             eveCells[celli] = eve;
         }
         this->he().correctBoundaryConditions();
         this->eve_.correctBoundaryConditions();
-        // ---- fine energie di partenza
+        // ---- end of initial energies
 
-        // psi coerente con la T riletta (il thermo base l'aveva calcolata a 20000 K)
+        // psi consistent with the T read again (the base thermo had computed it at 20000 K)
         updatePsi();
     }
-    // ---- fine avvio
+    // ---- end of start-up
 
     virtual ~HighEnthalpyMulticomponentThermo() = default;
 
     // Member Functions
 
-    // ---- sorgenti di ogni cella, calcolate UNA volta per correttore (chiamata
-    // all'inizio di thermophysicalPredictor) allo stesso stato: Y, T, Tve e rho
-    // di inizio correttore. Le equazioni delle specie, dell'energia totale e di
-    // eve usano poi le stesse velocita' di produzione, quindi la massa prodotta,
-    // il calore di reazione e Q_C-V sono coerenti fra loro (prima ogni specie
-    // ricalcolava la chimica dopo che le specie precedenti erano gia' avanzate)
+    // ---- sources of each cell, computed ONCE per corrector (called at the
+    // start of thermophysicalPredictor) at the same state: Y, T, Tve and rho at
+    // the start of the corrector. The equations of the species, of the total
+    // energy and of eve then use the same production rates, so the mass produced,
+    // the heat of reaction and Q_C-V are consistent with each other (previously each
+    // species recomputed the chemistry after the previous species had already advanced)
     virtual void correctSources() override
     {
         const label nCells = this->T_.size();
@@ -226,7 +226,7 @@ public:
         QchemCells_ = scalarField(nCells, 0.0);
         QveCells_ = scalarField(nCells, 0.0);
 
-        // tengo vivo il tmp di rho (= psi*p) finche' serve
+        // keeps the tmp of rho (= psi*p) alive as long as it is needed
         const tmp<volScalarField> tRho = this->rho();
         const scalarField& rhoCells = tRho().primitiveField();
 
@@ -237,20 +237,20 @@ public:
         {
             setCellState(celli, rhoCells[celli]);
 
-            // scambio V-T (eq. 8)
+            // V-T exchange (eq. 8)
             double Qve = sourceVT(mix, rhoS_, vibrators_, paperTau_);
 
             if (chemistry)
             {
-                // produzione delle specie alla temperatura di Park (eq. 27-29)
+                // species production at Park's temperature (eq. 27-29)
                 productionRates(mix, rhoS_, parkExponent_, wS_);
 
-                // energia vibro-elettronica portata via dalle reazioni (eq. 30-32)
+                // vibro-electronic energy removed by the reactions (eq. 30-32)
                 Qve += sourceCV(mix, wS_, vibrators_, preferentialCV_, alphaCV_);
 
-                // calore di reazione per l'energia sensibile e: le reazioni
-                // convertono energia sensibile in energia di formazione,
-                // -somma_s hf_s omega_s (eq. 1, ultimo termine)
+                // heat of reaction for the sensible energy e: the reactions
+                // convert sensible energy into energy of formation,
+                // -sum_s hf_s omega_s (eq. 1, last term)
                 double Qchem = 0.0;
                 for (int s = 0; s < nMutationSpecies_; s++)
                 {
@@ -262,20 +262,20 @@ public:
             QveCells_[celli] = Qve;
         }
     }
-    // ---- fine sorgenti
+    // ---- end of sources
 
-    // le tre funzioni sotto restituiscono i valori di correctSources()
+    // the three functions below return the values of correctSources()
     void checkSources() const
     {
         if (QveCells_.size() != this->T_.size())
         {
             FatalErrorInFunction
-                << "chiamare correctSources() prima delle sorgenti"
+                << "call correctSources() before the source terms"
                 << exit(FatalError);
         }
     }
 
-    // sorgente dell'energia vibro-elettronica (eq. 26): V-T piu' Q_C-V [W/m3]
+    // source of the vibro-electronic energy (eq. 26): V-T plus Q_C-V [W/m3]
     virtual tmp<volScalarField> computeSourceVe() const override
     {
         checkSources();
@@ -292,7 +292,7 @@ public:
         return tQ;
     }
 
-    // produzione chimica della specie di OpenFOAM speciei (eq. 27) [kg/m3/s]
+    // chemical production of the OpenFOAM species speciei (eq. 27) [kg/m3/s]
     virtual tmp<volScalarField> computeSourceY(const label speciei) const override
     {
         checkSources();
@@ -309,7 +309,7 @@ public:
         return tw;
     }
 
-    // calore di reazione per l'energia sensibile e, -somma hf_s omega_s [W/m3]
+    // heat of reaction for the sensible energy e, -sum hf_s omega_s [W/m3]
     virtual tmp<volScalarField> computeSourceE() const override
     {
         checkSources();
@@ -326,7 +326,7 @@ public:
         return tQ;
     }
 
-    // ---- decode: dalle energie risolte ricava T_tr, T_ve e psi
+    // ---- decode: obtains T_tr, T_ve and psi from the solved energies
     virtual void correct() override
     {
         const scalarField& eCells = this->he().primitiveField();
@@ -348,14 +348,14 @@ public:
                 rhoS_[s] = rho*yS_[s];
             }
 
-            // energie per unita' di volume: Mutation++ vuole quella totale
-            // con la formazione, e quella vibro-elettronica
+            // energies per unit volume: Mutation++ wants the total one
+            // including formation, and the vibro-electronic one
             const double energies[2] =
             {
                 rho*(eCells[celli] + mixtureHf()),
                 rho*eveCells[celli]
             };
-            // Mutation++ inverte le energie (Newton) e trova T_tr e T_ve
+            // Mutation++ inverts the energies (Newton) and finds T_tr and T_ve
             mix.setState(rhoS_.data(), energies, 0);
 
             TCells[celli] = mix.T();
@@ -367,18 +367,18 @@ public:
 
         updatePsi();
     }
-    // ---- fine decode
+    // ---- end of decode
 
 };
 
-// ---- initMutation: legge highEnthalpyMutation da physicalProperties e crea la miscela
+// ---- initMutation: reads highEnthalpyMutation from physicalProperties and creates the mixture
 template<class Thermo>
 void HighEnthalpyMulticomponentThermo<Thermo>::initMutation()
 {
     const dictionary& propertiesDict = this->properties();
 
-    // legge mixture, stateModel, thermodynamicDatabase, mechanism, parkExponent,
-    // relaxationTime, chemistryVibration e preferentialFactor
+    // reads mixture, stateModel, thermodynamicDatabase, mechanism, parkExponent,
+    // relaxationTime, chemistryVibration and preferentialFactor
     if (propertiesDict.found("highEnthalpyMutation"))
     {
         const dictionary& mutationDict =
@@ -399,11 +399,11 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initMutation()
         parkExponent_ =
             mutationDict.lookupOrDefault<scalar>("parkExponent", parkExponent_);
 
-        // tau V-T: paper (eq. 9-17, default) oppure mutation
+        // V-T tau: paper (eq. 9-17, default) or mutation
         const word tauModel =
             mutationDict.lookupOrDefault<word>("relaxationTime", "paper");
-        // accoppiamento chimica-vibrazione: preferential (eq. 32, default)
-        // oppure nonPreferential (eq. 31)
+        // chemistry-vibration coupling: preferential (eq. 32, default)
+        // or nonPreferential (eq. 31)
         const word cvModel =
             mutationDict.lookupOrDefault<word>("chemistryVibration", "preferential");
         if
@@ -413,8 +413,8 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initMutation()
         )
         {
             FatalErrorInFunction
-                << "relaxationTime deve essere paper o mutation, "
-                << "chemistryVibration preferential o nonPreferential"
+                << "relaxationTime must be paper or mutation, "
+                << "chemistryVibration preferential or nonPreferential"
                 << exit(FatalError);
         }
         paperTau_ = (tauModel == "paper");
@@ -425,7 +425,7 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initMutation()
 
     Info<< "highEnthalpyMutation: tau V-T " << (paperTau_ ? "paper" : "mutation")
         << ", Q_C-V " << (preferentialCV_ ? "preferential" : "nonPreferential")
-        << " (alpha " << alphaCV_ << "), esponente di Park " << parkExponent_
+        << " (alpha " << alphaCV_ << "), Park exponent " << parkExponent_
         << endl;
 
     Mutation::MixtureOptions opts(mutationMixtureName_);
@@ -437,7 +437,7 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initMutation()
     nMutationSpecies_ = mutationMixturePtr_->nSpecies();
     nMutationEnergyEqns_ = mutationMixturePtr_->nEnergyEqns();
 
-    // collega ogni specie di OpenFOAM alla stessa specie di Mutation++
+    // links each OpenFOAM species to the same Mutation++ species
     const wordList& foamSpecies = this->species();
     foamToMutationSpecie_.setSize(foamSpecies.size(), -1);
 
@@ -449,22 +449,22 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initMutation()
         if (foamToMutationSpecie_[i] < 0)
         {
             FatalErrorInFunction
-                << "la specie " << foamSpecies[i]
-                << " non esiste nella miscela Mutation++ " << mutationMixtureName_
+                << "species " << foamSpecies[i]
+                << " does not exist in the Mutation++ mixture " << mutationMixtureName_
                 << exit(FatalError);
         }
     }
 
-    // molecole che vibrano e loro tempi di rilassamento
+    // vibrating molecules and their relaxation times
     vibrators_ = makeVibrators(*mutationMixturePtr_);
 
-    // buffer di lavoro
+    // work buffers
     yS_.assign(nMutationSpecies_, 0.0);
     rhoS_.assign(nMutationSpecies_, 0.0);
     eS_.assign(2*nMutationSpecies_, 0.0);
     wS_.assign(nMutationSpecies_, 0.0);
 
-    // entalpie di formazione (J/kg): hf/RT da Mutation++, a una T qualsiasi
+    // enthalpies of formation (J/kg): hf/RT from Mutation++, at any T
     const double T0 = 1000.0;
     std::vector<double> hfOverRT(nMutationSpecies_, 0.0);
     mutationMixturePtr_->speciesHOverRT
@@ -478,10 +478,10 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initMutation()
         hf_[s] = hfOverRT[s]*Mutation::RU*T0/mutationMixturePtr_->speciesMw(s);
     }
 }
-// ---- fine initMutation
+// ---- end of initMutation
 
-// ---- updatePsi: psi = rho/p in celle e facce di bordo, con rho da Mutation++
-// per p, T, Tve e composizione date (eq. 24: p somma delle pressioni parziali)
+// ---- updatePsi: psi = rho/p in cells and boundary faces, with rho from Mutation++
+// for given p, T, Tve and composition (eq. 24: p is the sum of the partial pressures)
 template<class Thermo>
 void HighEnthalpyMulticomponentThermo<Thermo>::updatePsi()
 {
@@ -522,7 +522,7 @@ void HighEnthalpyMulticomponentThermo<Thermo>::updatePsi()
         }
     }
 }
-// ---- fine updatePsi
+// ---- end of updatePsi
 
 } // End namespace Foam
 

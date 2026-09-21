@@ -1,9 +1,9 @@
-// sorgenti del modello a due temperature del paper (Casseau et al. 2016),
-// calcolate con Mutation++: le usano sia i programmi 0D (applications/test/
-// nonEqTTv) sia il thermo del solver, cosi' i due percorsi fanno la stessa fisica
+// source terms of the two-temperature model of the paper (Casseau et al. 2016),
+// computed with Mutation++: they are used both by the 0D programs (applications/test/
+// nonEqTTv) and by the solver thermo, so the two paths do the same physics
 //
-// solo funzioni di Mutation++, niente OpenFOAM; lo stato della miscela (rho_s,
-// T, Tv) va impostato prima con mix.setState(...)
+// Mutation++ functions only, no OpenFOAM; the mixture state (rho_s,
+// T, Tv) must be set beforehand with mix.setState(...)
 
 #ifndef mutationSources_H
 #define mutationSources_H
@@ -16,9 +16,9 @@
 #include <string>
 #include <vector>
 
-// una molecola che vibra: indice della specie, dati di Millikan-White di
-// Mutation++ (costanti A, B per ogni partner e sigma di Park dal file
-// transfer/VT.xml) e potenziale di dissociazione D (J/kg, tabella A1 del paper)
+// a vibrating molecule: species index, Millikan-White data of
+// Mutation++ (constants A, B for each partner and Park's sigma from the file
+// transfer/VT.xml) and dissociation potential D (J/kg, table A1 of the paper)
 struct Vibrator
 {
     int species;
@@ -26,8 +26,8 @@ struct Vibrator
     double D;
 };
 
-// potenziale di dissociazione D_m della tabella A1 del paper (J/kg); serve al
-// modello preferenziale di Q_C-V (eq. 32). Stessi valori di hy2Foam (thermoDEM)
+// dissociation potential D_m from table A1 of the paper (J/kg); it is needed by the
+// preferential Q_C-V model (eq. 32). Same values as hy2Foam (thermoDEM)
 inline double dissociationPotential(const std::string& name)
 {
     if (name == "N2") return 3.36e7;
@@ -36,7 +36,7 @@ inline double dissociationPotential(const std::string& name)
     return 0.0;
 }
 
-// lista dei vibratori della miscela: tutte le molecole, da creare una volta sola
+// list of the vibrators of the mixture: all the molecules, to be created only once
 inline std::vector<Vibrator> makeVibrators(Mutation::Mixture& mix)
 {
     std::vector<Vibrator> vibrators;
@@ -48,7 +48,7 @@ inline std::vector<Vibrator> makeVibrators(Mutation::Mixture& mix)
         if (mix.species(s).type() == Mutation::Thermodynamics::MOLECULE)
         {
             const std::string name = mix.speciesName(s);
-            // theta_v della molecola, letta da thermo/species.xml
+            // theta_v of the molecule, read from thermo/species.xml
             const double thetaV =
                 oscillatorDB.create(name).characteristicTemperatures()[0];
             vibrators.push_back
@@ -60,17 +60,17 @@ inline std::vector<Vibrator> makeVibrators(Mutation::Mixture& mix)
     return vibrators;
 }
 
-// energia vibrazionale e_v (J/kg) della specie s alla temperatura Tv (eq. 5)
+// vibrational energy e_v (J/kg) of species s at temperature Tv (eq. 5)
 inline double speciesEv(Mutation::Mixture& mix, const int s, const double Tv)
 {
     std::vector<double> h_v(mix.nSpecies());
-    // h_v/(R Tv) dipende solo da Tv: tutte le temperature uguali a Tv
+    // h_v/(R Tv) depends on Tv only: all temperatures equal to Tv
     mix.speciesHOverRT(Tv, Tv, Tv, Tv, Tv, nullptr, nullptr, nullptr,
                        h_v.data(), nullptr, nullptr);
     return h_v[s] * Mutation::RU * Tv / mix.speciesMw(s);
 }
 
-// energia elettronica e_el (J/kg) della specie s alla temperatura Tv (eq. 7)
+// electronic energy e_el (J/kg) of species s at temperature Tv (eq. 7)
 inline double speciesEel(Mutation::Mixture& mix, const int s, const double Tv)
 {
     std::vector<double> h_el(mix.nSpecies());
@@ -79,9 +79,9 @@ inline double speciesEel(Mutation::Mixture& mix, const int s, const double Tv)
     return h_el[s] * Mutation::RU * Tv / mix.speciesMw(s);
 }
 
-// energia vibro-elettronica e_ve = e_v + e_el (J/kg) della specie s alla
-// temperatura Tv: e' la definizione del paper (testo sotto l'eq. 8,
-// e_ve,m = e_v,m + e_el,m), la stessa grandezza del serbatoio di Mutation++
+// vibro-electronic energy e_ve = e_v + e_el (J/kg) of species s at
+// temperature Tv: this is the definition of the paper (text below eq. 8,
+// e_ve,m = e_v,m + e_el,m), the same quantity as the Mutation++ reservoir
 inline double speciesEve(Mutation::Mixture& mix, const int s, const double Tv)
 {
     const int ns = mix.nSpecies();
@@ -91,18 +91,18 @@ inline double speciesEve(Mutation::Mixture& mix, const int s, const double Tv)
     return (h_v[s] + h_el[s]) * Mutation::RU * Tv / mix.speciesMw(s);
 }
 
-// ---- tempo di rilassamento V-T della molecola come nel paper (eq. 9-17) e
-// nel modello di default di hy2Foam (MillikanWhitePark): per ogni partner s
+// ---- V-T relaxation time of the molecule as in the paper (eq. 9-17) and
+// in the default model of hy2Foam (MillikanWhitePark): for each partner s
 //   tau(m,s) = tau_MW(m,s) + tau_P(m,s)                                (eq. 10)
 //   tau_MW   = exp[A (T^-1/3 - B) - 18.42] / p,  p in atm              (eq. 11)
 //   tau_P    = 1 / (c_m sigma_v n_ms),  c_m = sqrt(8 R_m T / pi),
 //              sigma_v = sigma (50000/T)^2                        (eq. 15-17)
-// con n_ms densita' numerica della coppia, n_m + n_s (solo n_m se s = m), come
-// in hy2Foam; poi media armonica pesata con le frazioni molari (eq. 9).
-// Costanti A, B, sigma: quelle di Park 1993 nel VT.xml.
-// MillikanWhiteModel::relaxationTime di Mutation++ invece media tau_MW in modo
-// aritmetico e aggiunge una sola correzione di Park con la densita' della sola
-// molecola: per N2 puro le due forme coincidono, per le miscele no
+// with n_ms the number density of the pair, n_m + n_s (only n_m if s = m), as
+// in hy2Foam; then a harmonic average weighted by the mole fractions (eq. 9).
+// Constants A, B, sigma: those of Park 1993 in VT.xml.
+// MillikanWhiteModel::relaxationTime of Mutation++ instead averages tau_MW
+// arithmetically and adds a single Park correction with the density of the
+// molecule alone: for pure N2 the two forms coincide, for mixtures they do not
 inline double relaxationTimePaper(Mutation::Mixture& mix, const Vibrator& v)
 {
     const Mutation::Transfer::MillikanWhiteModelData& data = v.tau.data();
@@ -134,10 +134,10 @@ inline double relaxationTimePaper(Mutation::Mixture& mix, const Vibrator& v)
     }
     return sumX / sumXoverTau;
 }
-// ---- fine tempo di rilassamento
+// ---- end of relaxation time
 
-// tempo di rilassamento della molecola: quello del paper (default) oppure
-// quello di Mutation++, tenuto per confronto
+// relaxation time of the molecule: that of the paper (default) or
+// that of Mutation++, kept for comparison
 inline double relaxationTime
 (
     Mutation::Mixture& mix,
@@ -148,12 +148,12 @@ inline double relaxationTime
     return paperTau ? relaxationTimePaper(mix, v) : v.tau.relaxationTime(mix);
 }
 
-// ---- scambio V-T di tutte le molecole, Landau-Teller (eq. 8), in W/m3, allo
-// stato corrente della miscela (T = mix.T(), Tv = mix.Tv())
-// la forza motrice e' e_ve(T) - e_ve(Tv) della molecola che rilassa, come
-// scritto nel paper (eq. 8) e come in hy2Foam (LandauTellerVT); l'OmegaVT di
-// Mutation++ userebbe solo quella vibrazionale (senza livelli elettronici
-// le due forme coincidono)
+// ---- V-T exchange of all the molecules, Landau-Teller (eq. 8), in W/m3, at the
+// current state of the mixture (T = mix.T(), Tv = mix.Tv())
+// the driving term is e_ve(T) - e_ve(Tv) of the relaxing molecule, as
+// written in the paper (eq. 8) and as in hy2Foam (LandauTellerVT); the OmegaVT of
+// Mutation++ would use the vibrational energy only (without electronic levels
+// the two forms coincide)
 inline double sourceVT
 (
     Mutation::Mixture& mix,
@@ -165,7 +165,7 @@ inline double sourceVT
     double Q = 0.0;
     for (const Vibrator& v : vibrators)
     {
-        // molecola assente: niente da rilassare (e tau sarebbe infinito)
+        // molecule absent: nothing to relax (and tau would be infinite)
         if (rho_s[v.species] <= 0.0)
         {
             continue;
@@ -177,14 +177,14 @@ inline double sourceVT
     }
     return Q;
 }
-// ---- fine scambio V-T
+// ---- end of V-T exchange
 
-// ---- produzione delle specie per le reazioni di dissociazione (eq. 27-28),
-// kg/m3/s, valutate alla temperatura di Park T_P = T^a Tv^(1-a) (eq. 29, con
-// a = 0.7 nel paper e in hy2Foam)
-// Mutation++ le valuta a sqrt(T Tv), che non si puo' cambiare: gli si passa
-// lo stato {T_P, T_P}, cosi' sqrt(T_P T_P) = T_P, e poi si ripristina {T, Tv}
-// vale solo per meccanismi di sola dissociazione (qui N2_Park)
+// ---- species production for the dissociation reactions (eq. 27-28),
+// kg/m3/s, evaluated at Park's temperature T_P = T^a Tv^(1-a) (eq. 29, with
+// a = 0.7 in the paper and in hy2Foam)
+// Mutation++ evaluates them at sqrt(T Tv), which cannot be changed: it is given
+// the state {T_P, T_P}, so that sqrt(T_P T_P) = T_P, and then {T, Tv} is restored
+// valid only for mechanisms made of dissociations alone (here N2_Park)
 inline void productionRates
 (
     Mutation::Mixture& mix,
@@ -204,15 +204,15 @@ inline void productionRates
     const double TTv[2] = {T, Tv};
     mix.setState(rho_s.data(), TTv, 1);
 }
-// ---- fine produzione delle specie
+// ---- end of species production
 
-// ---- energia vibro-elettronica portata via (o aggiunta) dalle reazioni, W/m3
-// eq. 30: Q_C-V = somma sulle molecole m di omega_m (D'_m + e_el,m(Tv)), con
-//   - preferenziale (eq. 32):     D'_m = alpha D_m, alpha costante (0.3)
-//   - non preferenziale (eq. 31): D'_m = e_v,m(Tv)
-// solo le molecole, come nel paper e in hy2Foam (chemistry2Model, ParkTTv).
-// Il caso Park del paper (fig. 7 e 8) e' il preferenziale con alpha = 0.3: e'
-// l'impostazione del tutorial heatBath di hy2Foam (stesso caso della fig. 7)
+// ---- vibro-electronic energy removed (or added) by the reactions, W/m3
+// eq. 30: Q_C-V = sum over the molecules m of omega_m (D'_m + e_el,m(Tv)), with
+//   - preferential (eq. 32):     D'_m = alpha D_m, constant alpha (0.3)
+//   - non-preferential (eq. 31): D'_m = e_v,m(Tv)
+// molecules only, as in the paper and in hy2Foam (chemistry2Model, ParkTTv).
+// The Park case of the paper (fig. 7 and 8) is the preferential one with alpha = 0.3:
+// it is the setting of the hy2Foam heatBath tutorial (same case as fig. 7)
 inline double sourceCV
 (
     Mutation::Mixture& mix,
@@ -236,6 +236,6 @@ inline double sourceCV
     }
     return Q;
 }
-// ---- fine accoppiamento chimica-vibrazione
+// ---- end of chemistry-vibration coupling
 
 #endif

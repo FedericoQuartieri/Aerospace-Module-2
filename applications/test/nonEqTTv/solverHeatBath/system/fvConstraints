@@ -14,7 +14,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// nessun vincolo: limitTemperature userebbe il thermo base (janaf, valido fino a
-// 20000 K) per limitare l'energia e taglierebbe i casi che partono da 30000 K
+// no constraints: limitTemperature would use the base thermo (janaf, valid up to
+// 20000 K) to limit the energy and would clip the cases that start from 30000 K
 
 // ************************************************************************* //

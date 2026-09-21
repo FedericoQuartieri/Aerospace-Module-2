@@ -36,10 +36,10 @@ License
 #include "makeFluidMulticomponentThermo.H"
 
 
-// ---- macro per il thermo rrho del template del corso
-// rrho e' una copia di janaf, ma non e' fra i thermo delle macro forGases e
-// forCoeffGases del core: lo si istanzia qui con le stesse combinazioni
-// (gas perfetto, trasporto const o sutherland, energia h o e)
+// ---- macros for the rrho thermo of the course template
+// rrho is a copy of janaf, but it is not among the thermos of the core macros
+// forGases and forCoeffGases: it is instantiated here with the same combinations
+// (perfect gas, const or sutherland transport, h or e energy)
 #define forRrhoGasEqns(Mu, He, Macro, Args...)                                 \
     forThermo(Mu, He, rrhoThermo, perfectGas, specie, Macro, Args)
 
@@ -50,13 +50,13 @@ License
 #define forRrhoGases(Macro, Args...)                                           \
     forRrhoGasEnergies(constTransport, Macro, Args);                           \
     forRrhoGasEnergies(sutherlandTransport, Macro, Args)
-// ---- fine macro rrho
+// ---- end of rrho macros
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 namespace Foam
 {
-    // thermo del core: hConst, eConst, janaf
+    // core thermos: hConst, eConst, janaf
     forCoeffGases
     (
         makeFluidMulticomponentThermos,
@@ -78,7 +78,7 @@ namespace Foam
         singleComponentMixture
     );
 
-    // thermo rrho del template, in aggiunta a quelli del core
+    // rrho thermo of the template, in addition to the core ones
     forRrhoGases
     (
         makeFluidMulticomponentThermos,

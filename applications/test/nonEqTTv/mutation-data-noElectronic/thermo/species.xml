@@ -1,11 +1,11 @@
 <!--
-  dati termodinamici delle 5 specie dell'aria, presi dal paper
-  Casseau et al., Aerospace 2016, 3, 34: tabella A1 (theta_v, entalpie di
-  formazione) e tabella A2 (livelli elettronici, convertiti da K a 1/cm
-  dividendo per la seconda costante di radiazione hc/k = 1.438777 cm K)
+  thermodynamic data of the 5 air species, taken from the paper
+  Casseau et al., Aerospace 2016, 3, 34: table A1 (theta_v, enthalpies of
+  formation) and table A2 (electronic levels, converted from K to 1/cm
+  by dividing by the second radiation constant hc/k = 1.438777 cm K)
 
-  VERSIONE SENZA ENERGIA ELETTRONICA: solo il livello fondamentale
-  (casi "without electronic energy" del paper: fig. 3a, 3b, 4)
+  VERSION WITHOUT ELECTRONIC ENERGY: ground level only
+  (cases "without electronic energy" of the paper: fig. 3a, 3b, 4)
 -->
 <specieslist>
     <species name="N">

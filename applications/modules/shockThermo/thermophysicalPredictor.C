@@ -31,15 +31,15 @@ License
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
-// chiamata da foamRun a ogni passo: dopo flussi e velocita', prima della pressione
+// called by foamRun at every step: after the fluxes and the velocity, before the pressure
 void Foam::solvers::shockThermo::thermophysicalPredictor()
 {
-    // sorgenti di Mutation++ (chimica, calore di reazione, V-T e Q_C-V) una
-    // sola volta per correttore, tutte allo stato di inizio correttore: le
-    // riusano sotto le specie, l'energia totale e eve
+    // Mutation++ sources (chemistry, heat of reaction, V-T and Q_C-V) only
+    // once per corrector, all at the state at the start of the corrector: they
+    // are reused below by the species, the total energy and eve
     thermo_.correctSources();
 
-    // ---- equazioni delle specie (macchinario OpenFOAM), sorgente chimica da Mutation++
+    // ---- species equations (OpenFOAM machinery), chemical source from Mutation++
     tmp<fv::convectionScheme<scalar>> mvConvection
     (
         fv::convectionScheme<scalar>::New
@@ -57,7 +57,7 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
 
         if (thermo_.solveSpecie(i))
         {
-            // produzione chimica della specie calcolata da Mutation++ (eq. 27)
+            // chemical production of the species computed by Mutation++ (eq. 27)
             tmp<volScalarField> wdot = thermo_.computeSourceY(i);
 
             fvScalarMatrix YiEqn
@@ -85,7 +85,7 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
     }
 
     thermo_.normaliseY();
-    // ---- fine specie
+    // ---- end of species
 
     if (thermo_.he().name() != "e")
     {
@@ -104,7 +104,7 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
     // defined in the derived class; shockFluid::thermophysicalPredictor() is
     // pasted here below.
 
-    // ---- energia sensibile e (copiata da shockFluid), con il calore di reazione (eq. 22)
+    // ---- sensible energy e (copied from shockFluid), with the heat of reaction (eq. 22)
     volScalarField& e = thermo_.he();
 
     const surfaceScalarField e_pos(interpolate(e, pos, thermo.T().name()));
@@ -124,7 +124,7 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
         phiEp += mesh.phi()*(a_pos()*p_pos() + a_neg()*p_neg());
     }
 
-    // calore di reazione: e e' l'energia sensibile, la chimica la cambia
+    // heat of reaction: e is the sensible energy, and chemistry changes it
     tmp<volScalarField> Q_chem = thermo_.computeSourceE();
 
     // Solving for the sensible energy e,
@@ -156,14 +156,14 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
     EEqn.solve();
 
     fvConstraints().constrain(e);
-    // ---- fine energia totale
+    // ---- end of total energy
 
     volScalarField& eve = thermo_.eve();
 
-    // sorgente calcolata da correctSources(): V-T piu' chimica (eq. 26)
+    // source computed by correctSources(): V-T plus chemistry (eq. 26)
     tmp<volScalarField> Q_ve = thermo_.computeSourceVe();
 
-    // ---- equazione di eve: d(rho*eve)/dt = Q_ve (eq. 22, forma 0D: senza trasporto)
+    // ---- eve equation: d(rho*eve)/dt = Q_ve (eq. 22, 0D form: without transport)
     // Solve for vibrational energy e_ve
     fvScalarMatrix EveEqn
     (
@@ -179,9 +179,9 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
     EveEqn.solve("eve");
 
     fvConstraints().constrain(eve);
-    // ---- fine eve
+    // ---- end of eve
 
-    // decode nel bridge: dalle energie ricava T_tr e T_ve
+    // decode in the bridge: obtains T_tr and T_ve from the energies
     // Update T_ (T_tr) and Tve_ based on solved energies
     thermo_.correct();
 }

@@ -1,13 +1,13 @@
-# Ambiente di sviluppo del progetto: OpenFOAM-13 + Mutation++.
+# Development environment for the project: OpenFOAM-13 + Mutation++.
 #
-# Ubuntu 24.04 "noble": dl.openfoam.org pubblica openfoam13 anche per arm64,
-# quindi su Apple Silicon l'immagine gira in nativo e non sotto emulazione.
-# Questo conta: i tempi di calcolo sono quelli veri della macchina.
+# Ubuntu 24.04 "noble": dl.openfoam.org publishes openfoam13 for arm64 too,
+# so on Apple Silicon the image runs natively rather than under emulation.
+# This matters: the run times are the real ones of the machine.
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# ---- OpenFOAM-13 dal repository della OpenFOAM Foundation
+# ---- OpenFOAM-13 from the OpenFOAM Foundation repository
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates wget gnupg \
  && wget -qO /etc/apt/trusted.gpg.d/openfoam.asc https://dl.openfoam.org/gpg.key \
@@ -16,7 +16,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends openfoam13 \
  && rm -rf /var/lib/apt/lists/*
 
-# ---- strumenti: build di Mutation++ e script di confronto
+# ---- tools: Mutation++ build and comparison scripts
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
         build-essential cmake git patch \
@@ -24,17 +24,17 @@ RUN apt-get update \
         less nano time \
  && rm -rf /var/lib/apt/lists/*
 
-# ---- Mutation++ dentro l'immagine, non sul bind mount
-# il progetto lo cercherebbe in thirdParty/Mutationpp (vedi etc/config.sh/mutationpp):
-# l'entrypoint reindirizza MPP_DIRECTORY qui, cosi' la build non passa dal
-# filesystem condiviso con macOS (lento) e l'immagine e' autosufficiente
+# ---- Mutation++ inside the image, not on the bind mount
+# the project would look for it in thirdParty/Mutationpp (see etc/config.sh/mutationpp):
+# the entrypoint redirects MPP_DIRECTORY here, so the build does not go through
+# the filesystem shared with macOS (slow) and the image is self-contained
 #
-# la revisione e' bloccata per riproducibilita': l'immagine si ricostruisce
-# identica a distanza di mesi. Mutation++ e' installato come viene da monte,
-# senza patch: il progetto si linka alla libreria come viene da monte
+# the revision is pinned for reproducibility: the image rebuilds identically
+# months later. Mutation++ is installed as it comes from upstream, without
+# patches: the project links against the library as it comes from upstream
 #
-# -j2 e non -j$(nproc): le unita' che includono Eigen prendono oltre 1 GB
-# ciascuna e la VM di Docker Desktop ne ha 4 in tutto, con -j8 si esaurisce.
+# -j2 and not -j$(nproc): the units that include Eigen take more than 1 GB
+# each and the Docker Desktop VM has 4 in total, so -j8 runs out of memory.
 ENV MPP_DIRECTORY=/opt/Mutationpp
 ENV MPP_REVISION=e8edf4f3a7f2bc22b4c62a23060dbe86967f1b3e
 

@@ -14,7 +14,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// tempo finale scelto da Allrun in base alla figura
+// end time chosen by Allrun according to the figure
 #include "$FOAM_CASE/conditions"
 
 solver          shockThermo;
@@ -27,7 +27,7 @@ stopAt          endTime;
 
 endTime         $endTime;
 
-// passo di 1 ns come il paper
+// time step of 1 ns as in the paper
 deltaT          1e-9;
 
 writeControl    runTime;
@@ -54,7 +54,7 @@ maxDeltaT       1;
 
 functions
 {
-    // registra le grandezze nella cella ogni writeEvery passi: servono al confronto
+    // records the quantities in the cell every writeEvery steps: needed for the comparison
     probes
     {
         type            probes;

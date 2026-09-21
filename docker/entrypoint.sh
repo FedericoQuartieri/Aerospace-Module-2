@@ -1,15 +1,15 @@
 #!/bin/bash
-# Prepara l'ambiente e passa il comando. Ordine obbligato: prima OpenFOAM
-# (definisce WM_*, FOAM_USER_LIBBIN, WM_THIRD_PARTY_DIR), poi il bashrc del
-# progetto (definisce POLIMI_*), che si appoggia alle variabili del primo.
+# Sets up the environment and runs the command. The order is mandatory: first
+# OpenFOAM (defines WM_*, FOAM_USER_LIBBIN, WM_THIRD_PARTY_DIR), then the
+# project bashrc (defines POLIMI_*), which relies on the variables of the first.
 
 set -e
 
 source /opt/openfoam13/etc/bashrc
 source /project/etc/bashrc
 
-# Mutation++ sta nell'immagine, non in thirdParty/: etc/config.sh/mutationpp ha
-# appena puntato MPP_DIRECTORY al bind mount, lo riportiamo su /opt
+# Mutation++ lives in the image, not in thirdParty/: etc/config.sh/mutationpp has
+# just pointed MPP_DIRECTORY to the bind mount, so we point it back to /opt
 export MPP_DIRECTORY=/opt/Mutationpp
 export MPP_EIGEN=$MPP_DIRECTORY/thirdparty/eigen
 export MPP_DATA_DIRECTORY=$MPP_DIRECTORY/data

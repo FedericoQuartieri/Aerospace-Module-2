@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# confronta per una figura del paper le curve di:
-#   - paper       paper-data/<fig>-<curva>.csv   (estratte dal pdf, riferimento)
-#   - standalone  output/<fig>.csv               (programma 0D con Mutation++)
-#   - solver      output/<fig>-solver.csv        (caso OpenFOAM, se esiste)
-# stampa errore massimo e valori finali, e salva i grafici output/<fig>.png
-# (temperature) e output/<fig>-n.png (densita' numeriche, dove il paper le da')
+# compares, for one figure of the paper, the curves of:
+#   - paper       paper-data/<fig>-<curve>.csv   (extracted from the pdf, reference)
+#   - standalone  output/<fig>.csv               (0D program with Mutation++)
+#   - solver      output/<fig>-solver.csv        (OpenFOAM case, if it exists)
+# prints the maximum error and the final values, and saves the plots output/<fig>.png
+# (temperatures) and output/<fig>-n.png (number densities, where the paper gives them)
 #
-# uso: python3 compare.py <fig>      (es. fig3a)
+# usage: python3 compare.py <fig>      (e.g. fig3a)
 
 import os
 import sys
@@ -16,7 +16,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# temperature di equilibrio dichiarate nel testo o nelle figure del paper
+# equilibrium temperatures stated in the text or in the figures of the paper
 PAPER_TEQ = {
     "fig3a": 7623.3,
     "fig4-noEl": 21900.0,
@@ -31,7 +31,7 @@ here = os.path.dirname(os.path.abspath(__file__))
 
 
 def load_csv(path):
-    # ritorna {nome colonna: array}; le righe con # sono commenti
+    # returns {column name: array}; rows starting with # are comments
     with open(path) as f:
         lines = [l for l in f if not l.startswith("#")]
     names = lines[0].strip().split(",")
@@ -40,7 +40,7 @@ def load_csv(path):
 
 
 def read_Teq(path):
-    # il programma 0D scrive in testa "# T_eq = ... K (conservazione dell'energia)"
+    # the 0D program writes at the top "# T_eq = ... K (energy conservation)"
     with open(path) as f:
         first = f.readline()
     if first.startswith("# T_eq"):
@@ -54,9 +54,9 @@ Teq = read_Teq(os.path.join(here, "output", fig + ".csv"))
 solver_path = os.path.join(here, "output", fig + "-solver.csv")
 solver = load_csv(solver_path) if os.path.exists(solver_path) else None
 
-# curve del paper: file fig-<curva>.csv, oppure figa-/figb- per le figure
-# con due pannelli (temperature e densita' numeriche); le varianti di modello
-# (-park05, -park, -QK, -tauMpp, -nonPref) si confrontano con le stesse curve
+# curves of the paper: files fig-<curve>.csv, or figa-/figb- for the figures
+# with two panels (temperatures and number densities); the model variants
+# (-park05, -park, -QK, -tauMpp, -nonPref) are compared with the same curves
 base = fig
 for suffix in ("-park05", "-park", "-QK", "-tauMpp", "-nonPref"):
     base = base.replace(suffix, "")
@@ -70,70 +70,70 @@ curves = [n for n in std if n != "t"]
 
 print("=== %s ===" % fig)
 if Teq is not None:
-    print("T_eq dalla conservazione dell'energia: %.1f K" % Teq, end="")
+    print("T_eq from energy conservation: %.1f K" % Teq, end="")
     if base in PAPER_TEQ:
-        print("   (paper: %.1f K, scarto %.1f K)" % (PAPER_TEQ[base], Teq - PAPER_TEQ[base]))
+        print("   (paper: %.1f K, deviation %.1f K)" % (PAPER_TEQ[base], Teq - PAPER_TEQ[base]))
     else:
-        print("   (il paper non da' un valore)")
+        print("   (the paper does not give a value)")
 
-# ---- errori rispetto al paper e valori finali, curva per curva
+# ---- errors with respect to the paper and final values, curve by curve
 for name in curves:
-    # le temperature si chiamano T..., il resto sono densita' numeriche n/n0
+    # temperatures are called T..., the rest are number densities n/n0
     is_temperature = name.startswith("T")
     unit = "K" if is_temperature else ""
     if name not in paper:
-        print("%-6s nessuna curva del paper" % name)
+        print("%-6s no curve in the paper" % name)
         continue
     tp, yp = paper[name]["t"], paper[name][name]
-    # confronto sui tempi del paper (dentro l'intervallo simulato)
+    # comparison at the times of the paper (within the simulated interval)
     m = (tp >= std["t"][0]) & (tp <= std["t"][-1]) & (tp > 0)
     ys = np.interp(tp[m], std["t"], std[name])
     err = np.abs(ys - yp[m])
     if is_temperature:
-        # errore assoluto massimo e errore relativo massimo, ognuno con il
-        # proprio istante: in generale non cadono nello stesso punto
+        # maximum absolute error and maximum relative error, each with its own
+        # instant: in general they do not occur at the same point
         rel = err / yp[m]
-        print("%-6s standalone vs paper: max |err| = %7.1f K a t = %.2e s;"
-              " max err rel = %.2f %% a t = %.2e s;"
-              "  finale (t = %.1e s): paper %.1f, standalone %.1f"
+        print("%-6s standalone vs paper: max |err| = %7.1f K at t = %.2e s;"
+              " max rel err = %.2f %% at t = %.2e s;"
+              "  final (t = %.1e s): paper %.1f, standalone %.1f"
               % (name, err.max(), tp[m][err.argmax()], 100 * rel.max(), tp[m][rel.argmax()],
                  tp[m][-1], yp[m][-1], ys[-1]))
     else:
-        # densita' in scala logaritmica: lo scarto si misura in decadi,
-        # |log10(standalone/paper)|, come si legge sul grafico
+        # densities on a logarithmic scale: the deviation is measured in decades,
+        # |log10(standalone/paper)|, as it is read on the plot
         ok = (ys > 0) & (yp[m] > 0)
         dec = np.abs(np.log10(ys[ok] / yp[m][ok]))
-        print("%-6s standalone vs paper: max scarto = %.3f decadi (fattore %.2f) a t = %.2e s;"
-              "  finale (t = %.1e s): paper %.4g, standalone %.4g"
+        print("%-6s standalone vs paper: max deviation = %.3f decades (factor %.2f) at t = %.2e s;"
+              "  final (t = %.1e s): paper %.4g, standalone %.4g"
               % (name, dec.max(), 10 ** dec.max(), tp[m][ok][dec.argmax()],
                  tp[m][-1], yp[m][-1], ys[-1]))
 
     if solver is not None and name in solver:
-        # solver vs standalone, sui tempi del solver
+        # solver vs standalone, at the solver times
         ts = solver["t"]
         m2 = (ts >= std["t"][0]) & (ts <= std["t"][-1]) & (ts > 0)
         ys2 = np.interp(ts[m2], std["t"], std[name])
         err2 = np.abs(solver[name][m2] - ys2)
         if is_temperature:
             rel2 = err2 / np.abs(ys2)
-            print("%-6s solver vs standalone: max |err| = %7.1f K a t = %.2e s;"
-                  " max err rel = %.2f %% a t = %.2e s;  finale solver %.1f K"
+            print("%-6s solver vs standalone: max |err| = %7.1f K at t = %.2e s;"
+                  " max rel err = %.2f %% at t = %.2e s;  final solver %.1f K"
                   % ("", err2.max(), ts[m2][err2.argmax()], 100 * rel2.max(),
                      ts[m2][rel2.argmax()], solver[name][-1]))
         else:
             ok2 = (ys2 > 0) & (solver[name][m2] > 0)
             dec2 = np.abs(np.log10(solver[name][m2][ok2] / ys2[ok2]))
-            print("%-6s solver vs standalone: max scarto = %.4f decadi (%.2f %%) a t = %.2e s;"
-                  "  finale solver %.4g"
+            print("%-6s solver vs standalone: max deviation = %.4f decades (%.2f %%) at t = %.2e s;"
+                  "  final solver %.4g"
                   % ("", dec2.max(), 100 * (10 ** dec2.max() - 1), ts[m2][ok2][dec2.argmax()],
                      solver[name][-1]))
-# ---- fine errori
+# ---- end of errors
 
-# ---- grafici: uno per le temperature, uno per le densita' numeriche
+# ---- plots: one for the temperatures, one for the number densities
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 for is_temperature in (True, False):
     names = [n for n in curves if n.startswith("T") == is_temperature]
-    # le densita' si disegnano solo se il paper le riporta (fig. 7, 8, 9)
+    # densities are plotted only if the paper reports them (fig. 7, 8, 9)
     if not names or (not is_temperature and not any(n in paper for n in names)):
         continue
     plt.figure(figsize=(7, 4.5))
@@ -156,11 +156,11 @@ for is_temperature in (True, False):
         plt.yscale("log")
     plt.xlabel("t [s]")
     plt.ylabel("T [K]" if is_temperature else "n / n0")
-    plt.title(fig if is_temperature else fig + " (densita' numeriche)")
+    plt.title(fig if is_temperature else fig + " (number densities)")
     plt.legend(fontsize=8)
     plt.grid(alpha=0.3)
     plt.tight_layout()
     out = os.path.join(here, "output", fig + ("" if is_temperature else "-n") + ".png")
     plt.savefig(out, dpi=130)
-    print("grafico: " + os.path.relpath(out, here))
-# ---- fine grafici
+    print("plot: " + os.path.relpath(out, here))
+# ---- end of plots
