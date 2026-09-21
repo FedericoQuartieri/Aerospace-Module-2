@@ -2,11 +2,9 @@
 %  Aerospace-Module-2 - Project report
 %
 %  Build:  make        (or: latexmk -pdf main.tex)
-%  The Italian version is main-ita.tex (make ita).
 %  The result figures are not duplicated here: \graphicspath points directly
-%  to the project folders that generate them. The English figures (legends in
-%  English) are in images-en/, produced by
-%  "python3 immagini/genera-grafici.py --en".
+%  to the project folders that generate them. The report figures are in
+%  images-en/, produced by "python3 images-en/genera-grafici.py".
 %-----------------------------------------------------------------------------
 \documentclass[11pt,a4paper]{article}
 
@@ -52,10 +50,9 @@
 %-----------------------------------------------------------------------------
 
 % figures taken where the project produces them, without copying them into the
-% report; images-en/ comes first, so the English versions take precedence
+% report; images-en/ comes first, so the report figures take precedence
 \graphicspath{%
   {images-en/}%
-  {immagini/}%
   {../applications/test/nonEqTTv/output/}%
   {../explainations/dipendenze/}%
 }
