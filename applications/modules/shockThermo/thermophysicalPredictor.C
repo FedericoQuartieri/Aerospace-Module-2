@@ -34,6 +34,11 @@ License
 // chiamata da foamRun a ogni passo: dopo flussi e velocita', prima della pressione
 void Foam::solvers::shockThermo::thermophysicalPredictor()
 {
+    // sorgenti di Mutation++ (chimica, calore di reazione, V-T e Q_C-V) una
+    // sola volta per correttore, tutte allo stato di inizio correttore: le
+    // riusano sotto le specie, l'energia totale e eve
+    thermo_.correctSources();
+
     // ---- equazioni delle specie (macchinario OpenFOAM), sorgente chimica da Mutation++
     tmp<fv::convectionScheme<scalar>> mvConvection
     (
@@ -155,7 +160,7 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
 
     volScalarField& eve = thermo_.eve();
 
-    // sorgente calcolata da Mutation++ nel bridge: V-T piu' chimica (eq. 26)
+    // sorgente calcolata da correctSources(): V-T piu' chimica (eq. 26)
     tmp<volScalarField> Q_ve = thermo_.computeSourceVe();
 
     // ---- equazione di eve: d(rho*eve)/dt = Q_ve (eq. 22, forma 0D: senza trasporto)

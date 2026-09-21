@@ -13,15 +13,18 @@ fig=${1:-fig3a}
 # ---- condizioni iniziali del paper, figura per figura
 # p e frazioni in massa per N2 + N con 5e22 molecole/m3 ciascuna a 30000 K:
 # p = n k T = 1e23 * 1.380649e-23 * 30000 = 41419.5 Pa, Y_N2 = 2/3, Y_N = 1/3
-# "every": ogni quanti passi scrivere i probe (100 nel caso lungo, per non
-# avere piu' di 10000 righe nel csv)
+# (M_N2 = 2 M_N, quindi 2/3 e 1/3 sono esatti: scritti con 9 cifre)
+# "every": ogni quanti passi scrivere i probe (1, cioe' ogni ns; 10 nel caso
+# lungo). probes-to-csv.py poi tiene ogni passo all'inizio e 200 punti per
+# decade dopo, come i programmi 0D, cosi' il csv resta corto ma i primi
+# nanosecondi ci sono tutti
 case $fig in
-    fig3a)     Ttr=10000; Tve=1000;  p=101325;  YN2=1;      YN=0;      endTime=3e-5; every=10;  data=mutation-data-noElectronic; mechanism=none ;;
-    fig3b)     Ttr=3000;  Tve=10000; p=101325;  YN2=1;      YN=0;      endTime=1e-4; every=10;  data=mutation-data-noElectronic; mechanism=none ;;
-    fig4-noEl) Ttr=30000; Tve=1000;  p=101325;  YN2=1;      YN=0;      endTime=1e-5; every=10;  data=mutation-data-noElectronic; mechanism=none ;;
-    fig4-el)   Ttr=30000; Tve=1000;  p=101325;  YN2=1;      YN=0;      endTime=1e-5; every=10;  data=mutation-data;              mechanism=none ;;
-    fig5)      Ttr=30000; Tve=1000;  p=41419.5; YN2=0.6667; YN=0.3333; endTime=1e-5; every=10;  data=mutation-data-noElectronic; mechanism=none ;;
-    fig7)      Ttr=30000; Tve=1000;  p=41419.5; YN2=0.6667; YN=0.3333; endTime=1e-3; every=100; data=mutation-data-noElectronic; mechanism=N2_Park ;;
+    fig3a)     Ttr=10000; Tve=1000;  p=101325;  YN2=1;      YN=0;      endTime=3e-5; every=1;   data=mutation-data-noElectronic; mechanism=none ;;
+    fig3b)     Ttr=3000;  Tve=10000; p=101325;  YN2=1;      YN=0;      endTime=1e-4; every=1;   data=mutation-data-noElectronic; mechanism=none ;;
+    fig4-noEl) Ttr=30000; Tve=1000;  p=101325;  YN2=1;      YN=0;      endTime=1e-5; every=1;   data=mutation-data-noElectronic; mechanism=none ;;
+    fig4-el)   Ttr=30000; Tve=1000;  p=101325;  YN2=1;      YN=0;      endTime=1e-5; every=1;   data=mutation-data;              mechanism=none ;;
+    fig5)      Ttr=30000; Tve=1000;  p=41419.5; YN2=0.666666667; YN=0.333333333; endTime=1e-5; every=1;   data=mutation-data-noElectronic; mechanism=none ;;
+    fig7)      Ttr=30000; Tve=1000;  p=41419.5; YN2=0.666666667; YN=0.333333333; endTime=1e-3; every=10;  data=mutation-data-noElectronic; mechanism=N2_Park ;;
     *) echo "figura sconosciuta: $fig"; exit 1 ;;
 esac
 # ---- fine condizioni iniziali

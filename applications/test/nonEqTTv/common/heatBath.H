@@ -10,7 +10,31 @@
 
 #include "mutation++.h"
 
+#include <algorithm>
+#include <cmath>
 #include <vector>
+
+// ---- istanti in cui scrivere il csv: ogni passo all'inizio, poi a passo
+// logaritmico (200 punti per decade) fino all'ultimo passo. Le figure del
+// paper hanno il tempo in scala logaritmica da 1 ns: con una scrittura ogni
+// 10 o 100 passi i primi nanosecondi venivano interpolati fra punti lontani
+// (fra t = 0 e t = 10 ns) e gli scarti in quel tratto erano solo interpolazione
+struct OutputSchedule
+{
+    double next = 1.0;
+
+    // vero se al passo step (1..nSteps) va scritta una riga
+    bool write(const int step, const int nSteps)
+    {
+        if (step < next && step != nSteps)
+        {
+            return false;
+        }
+        next = std::max(next + 1.0, next * std::pow(10.0, 1.0 / 200.0));
+        return true;
+    }
+};
+// ---- fine istanti di scrittura
 
 // energia totale per unita' di volume, E = somma_s rho_s e_s (eq. 1 senza cinetica)
 inline double totalEnergy(Mutation::Mixture& mix, const std::vector<double>& rho_s)

@@ -2,9 +2,9 @@
 Ttr           30000;
 Tve           1000;
 p             41419.5;
-YN2           0.6667;
-YN            0.3333;
+YN2           0.666666667;
+YN            0.333333333;
 endTime       1e-3;
-writeEvery    100;
+writeEvery    10;
 mechanism     N2_Park;
 parkExponent  0.7;

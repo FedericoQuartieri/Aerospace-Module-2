@@ -6,9 +6,10 @@
 // mutationSources.H specie per specie (energie, tempi di rilassamento);
 // lo scambio V-V e' scritto seguendo l'eq. 18 del paper
 //
-// uso: Test-N2O2 <VV: on|off> <t_fine> <file_csv>
+// uso: Test-N2O2 <VV: on|off> <t_fine> <file_csv> [tau]
 //   fig 6: Test-N2O2 off 3e-6 output/fig6-noVV.csv
 //          Test-N2O2 on  3e-6 output/fig6-VV.csv
+// tau facoltativo: paper (eq. 9-17, default) oppure mutation (per confronto)
 
 #include "mutation++.h"
 #include "mutationSources.H"
@@ -44,14 +45,15 @@ static double TvFromEve(Mutation::Mixture& mix, const int s, const double e_ve)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 4)
+    if (argc != 4 && argc != 5)
     {
-        std::cerr << "uso: Test-N2O2 <VV: on|off> <t_fine> <file_csv>" << std::endl;
+        std::cerr << "uso: Test-N2O2 <VV: on|off> <t_fine> <file_csv> [paper|mutation]" << std::endl;
         return 1;
     }
     const bool withVV = (std::string(argv[1]) == "on");
     const double t_end = std::atof(argv[2]);
     const char* csvName = argv[3];
+    const bool paperTau = (argc < 5 || std::string(argv[4]) != "mutation");
 
     Mutation::MixtureOptions opts("air_5");
     opts.setStateModel("ChemNonEqTTv");
@@ -100,7 +102,7 @@ int main(int argc, char *argv[])
     // T finale dalla conservazione dell'energia (il paper la legge in figura)
     const double T_eq = equilibriumTemperature(mix, rho_s, E);
 
-    // ---- tempi di rilassamento V-T di Mutation++ (eq. 9-17), uno per molecola
+    // ---- tempi di rilassamento V-T (eq. 9-17), uno per molecola
     const std::vector<Vibrator> vibrators = makeVibrators(mix);
     const Vibrator* vibN2 = nullptr;
     const Vibrator* vibO2 = nullptr;
@@ -130,7 +132,7 @@ int main(int argc, char *argv[])
     // ---- ciclo nel tempo: passo di 1 ns come il paper
     const double dt = 1.0e-9;
     const int nSteps = int(t_end / dt + 0.5);
-    const int writeEvery = std::max(10, nSteps / 10000);
+    OutputSchedule output;
     double t = 0.0;
 
     for (int step = 1; step <= nSteps; step++)
@@ -142,25 +144,30 @@ int main(int argc, char *argv[])
         // scambio V-T di ogni molecola, Landau-Teller (eq. 8), con la forza
         // motrice e_ve(T_tr) - e_ve(T_v) della molecola stessa
         const double Q_N2_VT = rho_N2 * (speciesEve(mix, iN2, T) - speciesEve(mix, iN2, Tv_N2))
-                             / vibN2->tau.relaxationTime(mix);
+                             / relaxationTime(mix, *vibN2, paperTau);
         const double Q_O2_VT = rho_O2 * (speciesEve(mix, iO2, T) - speciesEve(mix, iO2, Tv_O2))
-                             / vibO2->tau.relaxationTime(mix);
+                             / relaxationTime(mix, *vibO2, paperTau);
 
-        // scambio V-V fra N2 e O2 (eq. 18, con le sole energie vibrazionali);
-        // quello che entra in N2 esce da O2
+        // scambio V-V (eq. 18, con le sole energie vibrazionali), scritto per
+        // ogni molecola m con il partner l come nel paper e in hy2Foam (KnabVV):
+        //   Q_m = NA sigma P sqrt(8 R T / (pi M_ml)) (rho_l/M_l) rho_m
+        //         * (e_v,m(T) e_v,l(Tv_l) / e_v,l(T) - e_v,m(Tv_m))
+        // i due termini non sono opposti (il rapporto e' -E_v,O2(T)/E_v,N2(T)
+        // per mole): la differenza va al modo traslazionale, perche' T_tr si
+        // ricava dall'energia totale E, che resta conservata
         double Q_N2_VV = 0.0;
+        double Q_O2_VV = 0.0;
         if (withVV)
         {
             const double ev_N2_T = speciesEv(mix, iN2, T);
             const double ev_O2_T = speciesEv(mix, iO2, T);
             const double ev_N2 = speciesEv(mix, iN2, Tv_N2);
             const double ev_O2 = speciesEv(mix, iO2, Tv_O2);
-            Q_N2_VV = Mutation::NA * sigma_N2O2 * P_N2O2
-                    * std::sqrt(8.0 * Mutation::RU * T / (Mutation::PI * M_N2O2))
-                    * (rho_O2 / M_O2) * rho_N2
-                    * (ev_N2_T * ev_O2 / ev_O2_T - ev_N2);
+            const double K = Mutation::NA * sigma_N2O2 * P_N2O2
+                           * std::sqrt(8.0 * Mutation::RU * T / (Mutation::PI * M_N2O2));
+            Q_N2_VV = K * (rho_O2 / M_O2) * rho_N2 * (ev_N2_T * ev_O2 / ev_O2_T - ev_N2);
+            Q_O2_VV = K * (rho_N2 / M_N2) * rho_O2 * (ev_O2_T * ev_N2 / ev_N2_T - ev_O2);
         }
-        const double Q_O2_VV = -Q_N2_VV;
 
         // eq. 22: cambiano i due serbatoi vibro-elettronici, E si conserva
         Eve_N2 += (Q_N2_VT + Q_N2_VV) * dt;
@@ -172,7 +179,7 @@ int main(int argc, char *argv[])
         Tv_O2 = TvFromEve(mix, iO2, Eve_O2 / rho_O2);
         T = T0 + (E - Eve_N2 - Eve_O2 - Etr0) / rhoCvTr;
 
-        if (step % writeEvery == 0)
+        if (output.write(step, nSteps))
         {
             csv << t << "," << T << "," << Tv_N2 << "," << Tv_O2 << "\n";
         }

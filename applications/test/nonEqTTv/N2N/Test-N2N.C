@@ -2,12 +2,15 @@
 // specie, rilassamento V-T e, se richiesto, la dissociazione
 // N2 + N2 -> 2N + N2 con le costanti di Park (meccanismo N2_Park, tabella 2)
 //
-// uso: Test-N2N <T_tr> <T_ve> <t_fine> <meccanismo> <esponente_Park> <file_csv>
+// uso: Test-N2N <T_tr> <T_ve> <t_fine> <meccanismo> <esponente_Park> <file_csv> [tau] [C-V]
 //   fig 5: Test-N2N 30000  1000 1e-5 none    0.7 output/fig5.csv
 //   fig 7: Test-N2N 30000  1000 1e-3 N2_Park 0.7 output/fig7.csv
 //   fig 8: Test-N2N 30000 30000 1e-4 N2_Park 0.7 output/fig8.csv
 // l'esponente e' quello della temperatura di Park T^a Tv^(1-a) (eq. 29):
 // 0.7 come il paper, 0.5 e' quello fisso di Mutation++
+// argomenti facoltativi, per confronto con le scelte del paper (default):
+//   tau: paper (eq. 9-17, default) oppure mutation (MillikanWhite di Mutation++)
+//   C-V: preferential (eq. 32, alpha = 0.3, default) oppure nonPreferential (eq. 31)
 
 #include "mutation++.h"
 #include "mutationSources.H"
@@ -21,10 +24,10 @@
 
 int main(int argc, char *argv[])
 {
-    if (argc != 7)
+    if (argc < 7 || argc > 9)
     {
         std::cerr << "uso: Test-N2N <T_tr> <T_ve> <t_fine> <meccanismo> <esponente_Park> <file_csv>"
-                  << std::endl;
+                  << " [paper|mutation] [preferential|nonPreferential]" << std::endl;
         return 1;
     }
     const double T_tr0 = std::atof(argv[1]);
@@ -34,6 +37,10 @@ int main(int argc, char *argv[])
     const double parkExponent = std::atof(argv[5]);
     const char* csvName = argv[6];
     const bool chemistry = (mechanism != "none");
+    // modelli del paper di default: tau delle eq. 9-17 e Q_C-V preferenziale
+    const bool paperTau = (argc < 8 || std::string(argv[7]) != "mutation");
+    const bool preferential = (argc < 9 || std::string(argv[8]) != "nonPreferential");
+    const double alpha = 0.3;
 
     Mutation::MixtureOptions opts("air_5");
     opts.setStateModel("ChemNonEqTTv");
@@ -83,22 +90,22 @@ int main(int argc, char *argv[])
     // ---- ciclo nel tempo: passo di 1 ns come il paper
     const double dt = 1.0e-9;
     const int nSteps = int(t_end / dt + 0.5);
-    // al massimo 10000 righe nel csv
-    const int writeEvery = std::max(10, nSteps / 10000);
+    // righe del csv: ogni passo all'inizio, poi a passo logaritmico
+    OutputSchedule output;
     double t = 0.0;
     std::vector<double> wdot(ns, 0.0);
 
     for (int step = 1; step <= nSteps; step++)
     {
         // scambio V-T (eq. 8)
-        double Q = sourceVT(mix, rho_s, vibrators);
+        double Q = sourceVT(mix, rho_s, vibrators, paperTau);
 
         if (chemistry)
         {
             // produzione delle specie alla temperatura di Park (eq. 27-29)
             // e energia vibro-elettronica che se ne va con esse (eq. 30)
             productionRates(mix, rho_s, parkExponent, wdot);
-            Q += sourceCV(mix, wdot);
+            Q += sourceCV(mix, wdot, vibrators, preferential, alpha);
             for (int s = 0; s < ns; s++)
             {
                 rho_s[s] += wdot[s] * dt;
@@ -113,7 +120,7 @@ int main(int argc, char *argv[])
         const double energies[2] = {E, Eve};
         mix.setState(rho_s.data(), energies, 0);
 
-        if (step % writeEvery == 0)
+        if (output.write(step, nSteps))
         {
             csv << t << "," << mix.T() << "," << mix.Tv() << "," << nN2() << "," << nN() << "\n";
         }

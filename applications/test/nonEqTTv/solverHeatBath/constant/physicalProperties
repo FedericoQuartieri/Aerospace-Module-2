@@ -40,6 +40,13 @@ highEnthalpyMutation
     mechanism               $mechanism;
     // esponente a della temperatura di Park T^a Tv^(1-a) per la dissociazione
     parkExponent            $parkExponent;
+    // modelli del paper (sono anche i default): tau V-T delle eq. 9-17 come
+    // in hy2Foam (mutation per quello di Mutation++) e Q_C-V preferenziale con
+    // alpha = 0.3 (eq. 32, nonPreferential per l'eq. 31), come nel tutorial
+    // heatBath di hy2Foam, che e' il caso della fig. 7
+    relaxationTime          paper;
+    chemistryVibration      preferential;
+    preferentialFactor      0.3;
 }
 
 defaultSpecie N2;

@@ -49,13 +49,31 @@ serve solo a OpenFOAM per costruire i campi, la sua polinomiale non entra nella 
 dall'energia limitandola a 20000 K, il suo intervallo di validità), poi per ogni
 cella chiede a Mutation++ le energie a `(p, T, Tve)` e riempie `e` ed `eve`.
 
-**Sorgenti** (usate dal solver, calcolate cella per cella con le funzioni di
-`mutationSources.H`, le stesse dei programmi 0D):
+**Sorgenti**: `correctSources()`, chiamata una volta per correttore all'inizio di
+`thermophysicalPredictor`, calcola in ogni cella, tutte allo stesso stato (Y, T, Tve
+e ρ di inizio correttore), la produzione chimica ω_s, il calore di reazione e la
+sorgente di `eve`, con le funzioni di `mutationSources.H` (le stesse dei programmi
+0D). Le tre funzioni usate dalle equazioni restituiscono quei valori:
 
-- `computeSourceVe()`: scambio V-T (eq. 8) più, con la chimica, l'energia
-  vibro-elettronica portata via dalle reazioni (eq. 30);
+- `computeSourceVe()`: scambio V-T (eq. 8) più, con la chimica, Q_C-V (eq. 30-32);
 - `computeSourceY(i)`: produzione chimica della specie `i` (eq. 27);
 - `computeSourceE()`: calore di reazione per l'energia sensibile, `-Σ hf_s ω_s`.
+
+Prima ogni specie ricalcolava la chimica dopo che le specie precedenti erano già
+avanzate, e l'energia la ricalcolava a una composizione ancora diversa: ora massa
+prodotta, calore di reazione e Q_C-V usano le stesse ω_s (e la chimica si calcola
+una volta invece di N_specie + 2 volte per passo).
+
+I modelli si scelgono nel sotto-dizionario `highEnthalpyMutation` di
+`physicalProperties`; i default sono quelli del paper e il log di `foamRun` li
+stampa all'avvio:
+
+| voce | default (paper) | alternativa |
+|---|---|---|
+| `relaxationTime` | `paper` (eq. 9-17) | `mutation` (Millikan-White di Mutation++) |
+| `chemistryVibration` | `preferential` (eq. 32) | `nonPreferential` (eq. 31) |
+| `preferentialFactor` | `0.3` | — |
+| `parkExponent` | `0.7` (eq. 29) | — |
 
 **`correct()`**: per ogni cella passa a Mutation++ `ρ(e + Σ Y_s hf_s)` e `ρ eve`
 (`setState` con `vars = 0`), che inverte le energie con un Newton e restituisce
@@ -66,23 +84,37 @@ parziali (eq. 24), in celle e facce di bordo.
 
 Funzioni di solo Mutation++ (niente OpenFOAM), condivise fra thermo e programmi 0D:
 
-- `makeVibrators(mix)`: per ogni molecola, il modello di Millikan-White con
-  correzione di Park di Mutation++ (eq. 9-17, costanti del suo `VT.xml`);
-- `speciesEv`, `speciesEve`: energia vibrazionale e vibro-elettronica di una specie a
-  una data `Tv` (eq. 5 e 7);
+- `makeVibrators(mix)`: per ogni molecola, i dati di Millikan-White di Mutation++
+  (costanti A, B per partner e σ di Park dal suo `VT.xml`) e il potenziale di
+  dissociazione D della tabella A1 del paper;
+- `relaxationTimePaper`: τ_VT delle eq. 9-17 come nel modello di default di hy2Foam
+  (`MillikanWhitePark`): per ogni partner τ_MW + τ_P con la densità numerica della
+  coppia `n_m + n_s`, poi media armonica pesata con le frazioni molari (eq. 9).
+  `MillikanWhiteModel::relaxationTime` di Mutation++ fa la media aritmetica di τ_MW
+  e aggiunge una sola correzione di Park con la densità della molecola: per N2 puro
+  le due forme coincidono, per N2 + N a 24000-30000 K quella di Mutation++ è più
+  lunga del 28-38 %. Resta disponibile per confronto;
+- `speciesEv`, `speciesEel`, `speciesEve`: energia vibrazionale, elettronica e
+  vibro-elettronica di una specie a una data `Tv` (eq. 5 e 7). `e_ve = e_v + e_el` è
+  la definizione del paper (testo sotto l'eq. 8);
 - `sourceVT`: Landau-Teller (eq. 8) con forza motrice `e_ve(T) − e_ve(Tv)` della
-  molecola, come nel paper. L'`OmegaVT` di Mutation++ userebbe solo l'energia
-  vibrazionale: senza livelli elettronici i due coincidono;
-- `productionRates`: velocità di reazione alla temperatura di Park `T^a Tv^(1−a)`
-  (eq. 29). Mutation++ le valuta a `sqrt(T Tv)` e non si può cambiare: gli si passa
+  molecola, come scritto nel paper e come in hy2Foam (`LandauTellerVT`). L'`OmegaVT`
+  di Mutation++ userebbe solo l'energia vibrazionale: senza livelli elettronici i
+  due coincidono;
+- `productionRates`: velocità di reazione alla temperatura di Park
+  `T_P = T^0.7 Tv^0.3` (eq. 29, esponente 0.7 dichiarato nel paper e usato da
+  hy2Foam). Mutation++ le valuta a `sqrt(T Tv)` e non si può cambiare: gli si passa
   lo stato `{T_P, T_P}` e poi si ripristina `{T, Tv}`. Vale per i meccanismi di sola
   dissociazione;
-- `sourceCV`: `Σ e_ve,s(Tv) ω_s`, il modello non preferenziale (eq. 30-31), lo stesso
-  che Mutation++ implementa in `OmegaCV + OmegaCElec`.
+- `sourceCV`: eq. 30 sulle sole molecole, `Σ_m ω_m (D'_m + e_el,m(Tv))`, con
+  `D' = α D` (preferenziale, eq. 32, α = 0.3: è l'impostazione `ParkTTv` del
+  tutorial `heatBath` di hy2Foam, lo stesso caso della fig. 7) oppure `D' = e_v`
+  (non preferenziale, eq. 31, quello di Mutation++).
 
 ### 2.3 Il solver — `thermophysicalPredictor.C`
 
 ```cpp
+thermo_.correctSources();   // omega_s, Q_chem, Q_ve: una volta, stesso stato
 // specie: sorgente chimica di Mutation++
 YiEqn: ddt(rho, Yi) + div(phi, Yi) + divj(Yi) == wdot_i + fvModels
 // energia sensibile: calore di reazione
@@ -128,7 +160,10 @@ Caso `applications/test/nonEqTTv/solverHeatBath/`, **heat bath a singola cella**
 (1×1×1 celle, velocità nulla), lanciato con `./Allrun <figura>` per ognuna delle
 figure del paper riprodotte nel solver (3a, 3b, 4, 5, 7). Il confronto con il
 programma 0D e con le curve del paper è in `milestone-2-heat-bath-paper.md`: solver e
-programma 0D coincidono entro 0.03-0.2 % su tutte le curve, chimica compresa.
+programma 0D coincidono entro 0.02-0.3 %, chimica compresa, tranne i primi 100 ns
+della fig. 4 a 30000 K (fino all'1.2 % su Tv), dove pesa la differenza fra
+l'Eulero esplicito del programma 0D e i due correttori PIMPLE del solver
+(Δt/τ ≈ 0.8 %).
 
 ---
 

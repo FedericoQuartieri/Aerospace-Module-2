@@ -34,9 +34,19 @@ if fig.startswith("fig7"):
     n0 = n["N2"][0] + n["N"][0]
     columns += [("N2", n["N2"] / n0), ("N", n["N"] / n0)]
 
+# righe da tenere: ogni passo all'inizio, poi 200 punti per decade (stessa
+# regola di OutputSchedule nei programmi 0D), sempre l'ultima
+keep = []
+nextStep = 1.0
+for i, ti in enumerate(t):
+    step = round(ti / 1.0e-9)
+    if step >= nextStep or i == len(t) - 1:
+        keep.append(i)
+        nextStep = max(nextStep + 1.0, nextStep * 10.0 ** (1.0 / 200.0), step + 1.0)
+
 out = os.path.join(here, "..", "output", fig + "-solver.csv")
 with open(out, "w") as f:
     f.write(",".join(name for name, _ in columns) + "\n")
-    for i in range(len(t)):
+    for i in keep:
         f.write(",".join("%.8g" % col[i] for _, col in columns) + "\n")
 print("scritto " + os.path.relpath(out, here))

@@ -124,6 +124,10 @@ public:
 
     // sorgenti calcolate da Mutation++ nel bridge (HighEnthalpyMulticomponentThermo.H)
 
+    //- calcola tutte le sorgenti una volta per correttore, allo stesso stato;
+    //  le funzioni computeSource* sotto restituiscono i valori calcolati qui
+    virtual void correctSources() = 0;
+
     //- sorgente dell'energia vibro-elettronica: V-T piu' chimica (eq. 26) [W/m3]
     virtual tmp<volScalarField> computeSourceVe() const = 0;
 

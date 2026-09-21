@@ -98,7 +98,8 @@ int main(int argc, char *argv[])
     // ---- ciclo nel tempo: passo di 1 ns come il paper
     const double dt = 1.0e-9;
     const int nSteps = int(t_end / dt + 0.5);
-    const int writeEvery = std::max(10, nSteps / 10000);
+    // righe del csv: ogni passo all'inizio, poi a passo logaritmico
+    OutputSchedule output;
     double t = 0.0;
     std::vector<double> wdot(ns, 0.0);
     std::vector<double> wdot2(ns, 0.0);
@@ -121,7 +122,7 @@ int main(int argc, char *argv[])
         const double energies[1] = {E};
         mix.setState(rho_s.data(), energies, 0);
 
-        if (step % writeEvery == 0)
+        if (output.write(step, nSteps))
         {
             writeLine(t);
         }

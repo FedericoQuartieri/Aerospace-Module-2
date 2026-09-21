@@ -56,9 +56,9 @@ solver = load_csv(solver_path) if os.path.exists(solver_path) else None
 
 # curve del paper: file fig-<curva>.csv, oppure figa-/figb- per le figure
 # con due pannelli (temperature e densita' numeriche); le varianti di modello
-# (-park05, -park, -QK) si confrontano con le stesse curve
+# (-park05, -park, -QK, -tauMpp, -nonPref) si confrontano con le stesse curve
 base = fig
-for suffix in ("-park05", "-park", "-QK"):
+for suffix in ("-park05", "-park", "-QK", "-tauMpp", "-nonPref"):
     base = base.replace(suffix, "")
 paper = {}
 for prefix in (base, base + "a", base + "b"):
@@ -71,8 +71,8 @@ curves = [n for n in std if n != "t"]
 print("=== %s ===" % fig)
 if Teq is not None:
     print("T_eq dalla conservazione dell'energia: %.1f K" % Teq, end="")
-    if fig in PAPER_TEQ:
-        print("   (paper: %.1f K, scarto %.1f K)" % (PAPER_TEQ[fig], Teq - PAPER_TEQ[fig]))
+    if base in PAPER_TEQ:
+        print("   (paper: %.1f K, scarto %.1f K)" % (PAPER_TEQ[base], Teq - PAPER_TEQ[base]))
     else:
         print("   (il paper non da' un valore)")
 
@@ -90,9 +90,13 @@ for name in curves:
     ys = np.interp(tp[m], std["t"], std[name])
     err = np.abs(ys - yp[m])
     if is_temperature:
-        print("%-6s standalone vs paper: max |err| = %7.1f K (%.2f %%) a t = %.2e s;"
+        # errore assoluto massimo e errore relativo massimo, ognuno con il
+        # proprio istante: in generale non cadono nello stesso punto
+        rel = err / yp[m]
+        print("%-6s standalone vs paper: max |err| = %7.1f K a t = %.2e s;"
+              " max err rel = %.2f %% a t = %.2e s;"
               "  finale (t = %.1e s): paper %.1f, standalone %.1f"
-              % (name, err.max(), 100 * (err / yp[m]).max(), tp[m][err.argmax()],
+              % (name, err.max(), tp[m][err.argmax()], 100 * rel.max(), tp[m][rel.argmax()],
                  tp[m][-1], yp[m][-1], ys[-1]))
     else:
         # densita' in scala logaritmica: lo scarto si misura in decadi,
@@ -111,13 +115,18 @@ for name in curves:
         ys2 = np.interp(ts[m2], std["t"], std[name])
         err2 = np.abs(solver[name][m2] - ys2)
         if is_temperature:
-            print("%-6s solver vs standalone: max |err| = %7.1f K (%.2f %%);  finale solver %.1f K"
-                  % ("", err2.max(), 100 * (err2 / np.abs(ys2)).max(), solver[name][-1]))
+            rel2 = err2 / np.abs(ys2)
+            print("%-6s solver vs standalone: max |err| = %7.1f K a t = %.2e s;"
+                  " max err rel = %.2f %% a t = %.2e s;  finale solver %.1f K"
+                  % ("", err2.max(), ts[m2][err2.argmax()], 100 * rel2.max(),
+                     ts[m2][rel2.argmax()], solver[name][-1]))
         else:
             ok2 = (ys2 > 0) & (solver[name][m2] > 0)
             dec2 = np.abs(np.log10(solver[name][m2][ok2] / ys2[ok2]))
-            print("%-6s solver vs standalone: max scarto = %.4f decadi (%.2f %%);  finale solver %.4g"
-                  % ("", dec2.max(), 100 * (10 ** dec2.max() - 1), solver[name][-1]))
+            print("%-6s solver vs standalone: max scarto = %.4f decadi (%.2f %%) a t = %.2e s;"
+                  "  finale solver %.4g"
+                  % ("", dec2.max(), 100 * (10 ** dec2.max() - 1), ts[m2][ok2][dec2.argmax()],
+                     solver[name][-1]))
 # ---- fine errori
 
 # ---- grafici: uno per le temperature, uno per le densita' numeriche

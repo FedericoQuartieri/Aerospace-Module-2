@@ -61,8 +61,10 @@ int main(int argc, char *argv[])
     const double temps0[2] = {T_tr0, T_ve0};
     mix.setState(rho_s.data(), temps0, 1);
 
-    // tempi di rilassamento V-T delle molecole (qui solo N2)
+    // tempi di rilassamento V-T delle molecole (qui solo N2): formula del
+    // paper (eq. 9-17); per N2 puro coincide con quella di Mutation++
     const std::vector<Vibrator> vibrators = makeVibrators(mix);
+    const bool paperTau = true;
 
     std::ofstream csv(csvName);
     csv << "# T_eq = " << T_eq << " K (conservazione dell'energia)\n";
@@ -72,15 +74,15 @@ int main(int argc, char *argv[])
     // ---- ciclo nel tempo: passo di 1 ns come il paper
     const double dt = 1.0e-9;
     const int nSteps = int(t_end / dt + 0.5);
-    // al massimo 10000 righe nel csv
-    const int writeEvery = std::max(10, nSteps / 10000);
+    // righe del csv: ogni passo all'inizio, poi a passo logaritmico
+    OutputSchedule output;
     double t = 0.0;
 
     for (int step = 1; step <= nSteps; step++)
     {
         // Q_VT: energia che passa dal serbatoio traslazionale a quello
         // vibro-elettronico (Landau-Teller, eq. 8, tau da Mutation++)
-        const double Q = sourceVT(mix, rho_s, vibrators);
+        const double Q = sourceVT(mix, rho_s, vibrators, paperTau);
 
         // eq. 22: cambia solo E_ve, l'energia totale E si conserva
         Eve += Q * dt;
@@ -90,7 +92,7 @@ int main(int argc, char *argv[])
         const double energies[2] = {E, Eve};
         mix.setState(rho_s.data(), energies, 0);
 
-        if (step % writeEvery == 0)
+        if (output.write(step, nSteps))
         {
             csv << t << "," << mix.T() << "," << mix.Tv() << "\n";
         }
