@@ -37,3 +37,8 @@ applications/test/openmp/scalingBath/[1-9]*/
 applications/test/openmp/scalingBath/0.[0-9]*/
 applications/test/openmp/scalingBath/constant/polyMesh/
 applications/test/openmp/scalingBath/log.*
+
+
+.vscode/
+explainations/*
+report/main-ita.pdf
