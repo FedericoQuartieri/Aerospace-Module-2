@@ -29,6 +29,10 @@ TESTI = {
     "equilibrio":  "equilibrium" if inglese else "equilibrio",
 }
 
+# etichette delle varianti con le due formule del tempo di rilassamento V-T
+TAU_PAPER = r"$\tau$ reference study" if inglese else r"$\tau$ del riferimento"
+TAU_MPP = r"$\tau$ Mutation++" if inglese else r"$\tau$ di Mutation++"
+
 # nome del grafico -> (risultato, curve del paper, cosa disegnare, variante)
 # la variante, se c'e', e' (altro risultato, etichetta del primo, etichetta della
 # variante): le due curve finiscono nello stesso grafico e il solver non si disegna
@@ -49,6 +53,10 @@ GRAFICI = {
     "park-exponent-densities": ("fig7", "fig7", "n",
                                 ("fig7-park05", "$a = 0.7$", "$a = 0.5$")),
     "air-densities-park-rates": ("fig9-park", "fig9", "n"),
+    "relaxation-time-nitrogen-atomic": ("fig5", "fig5", "T",
+                                        ("fig5-tauMpp", TAU_PAPER, TAU_MPP)),
+    "relaxation-time-reacting": ("fig7", "fig7", "T",
+                                 ("fig7-tauMpp", TAU_PAPER, TAU_MPP)),
 }
 
 NOMI = {

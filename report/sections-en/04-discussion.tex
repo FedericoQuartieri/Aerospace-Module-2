@@ -12,40 +12,55 @@ study further assesses the thermochemical model. In non-reacting cases, final
 temperatures are consistent with energy conservation and agree with the reference values to
 within 0.3\%, which is within the uncertainty associated with extracting data
 from the figures. In the reacting cases, the final temperatures agree to
-within 0.8\%, the nitrogen-mixture composition to within 2.5\% and the air
+within 0.5\%, the nitrogen-mixture composition to within 1.7\% and the air
 composition to within 15\%. Transient temperature differences remain within
-a few percent for pure nitrogen, the nitrogen-oxygen mixture and air. The
-largest temperature discrepancy occurs in the vibrational temperature of the
-molecular-atomic nitrogen mixtures, with deviations of 10--20\%.
+6\% in every case. The largest occur in the vibrational temperatures of pure
+nitrogen during vibrational cooling (5.1\%) and of oxygen in the
+nitrogen-oxygen mixture (5.6\%); in the molecular-atomic nitrogen mixtures,
+with and without reactions, they remain below 0.5\%.
 
 \subsection{Sources of the discrepancies}
 \label{sec:discussione-origine}
 
-The delayed vibrational heating in molecular-atomic nitrogen is most plausibly
-associated with the averaging of relaxation times over collision partners in
-\mpp, which differs from the reference study. The close agreement for pure
-nitrogen supports this interpretation, since averaging affects only mixtures
-with multiple collision partners. The equilibrium state is unaffected by the
-relaxation-time formulation, as it is determined by the conserved energy and
-the thermodynamic model. This explanation remains a hypothesis; testing it
-requires implementing the averaging procedure used in the reference study.
-For pure nitrogen and the nitrogen-oxygen mixture, temporal shifts of a few
-percent remain, and their origin has not been isolated.
+With the relaxation-time formula of \mpp{}, the rise in vibrational
+temperature in molecular-atomic nitrogen is delayed, with deviations of up to
+19.6\% without reactions and 20.0\% with them. With the formula of the
+reference study, the deviations fall to 0.44\% and 0.31\%, respectively
+(Figure~\ref{fig:sensibilita-tau}). The two formulas differ mainly in Park's
+correction, which dominates the relaxation time at these temperatures, rather
+than in the averaging over collision partners. For the collision between
+molecular and atomic nitrogen, \mpp{} evaluates the correction with the number
+density of the vibrating molecule alone, whereas the reference study uses the
+number density of the colliding pair. At the initial temperature of
+30\,000~K, the relaxation time of \mpp{} is therefore 38\% longer, while the
+choice between the arithmetic average of \mpp{} and the harmonic average of
+the reference study changes it by less than 0.1\%. Pure nitrogen is
+unaffected, since the two formulas coincide for a single species, and so is
+the equilibrium state, which is determined by the conserved energy and the
+thermodynamic model. The reference study attributes its difference from
+LeMANS for the same mixture to a third convention for this number density,
+that of the whole mixture. For pure nitrogen and the nitrogen-oxygen mixture,
+temporal shifts of a few percent remain, and their origin has not been
+isolated.
 
 \subsection{Methodological implications}
 \label{sec:discussione-lezioni}
 
 Reproducing the reference results required reconstructing modelling choices
-that the reference study leaves unspecified or describes only partially.
-These include the treatment of electronic energy, the energy used in the
-relaxation source term, the exponent in Park's dissociation temperature and
-the reaction-rate constants for air. The comparisons collected in
+that the reference study leaves unspecified or describes only partially, and
+replacing the default formulations of \mpp{} where they differ from it.
+These include the treatment of electronic energy, the chemistry--vibration
+coupling, the relaxation-time formula, the energy used in the relaxation
+source term, the exponent in Park's dissociation temperature and the
+reaction-rate constants for air. The comparisons collected in
 Section~\ref{sec:risultati-sensibilita} show that these choices can produce
-deviations larger than the residual differences: up to 56\% in vibrational
-temperature, a factor of 3 in air species densities and 25\% in final
+deviations larger than the residual differences: 20\% in vibrational
+temperature, a factor of 3.5 in air species densities and 25\% in final
 temperature. The reference study also illustrates this sensitivity by
 attributing its difference from LeMANS for molecular-atomic nitrogen to a
-different convention in Park's correction.
+different convention in Park's correction, the same term that separates the
+formula of \mpp{} from that of the reference study
+(Section~\ref{sec:discussione-origine}).
 
 Two complementary checks guided the selection of these modelling assumptions.
 First, the equilibrium temperature obtained from energy conservation is

@@ -9,33 +9,42 @@ as a basis for simulations of reacting hypersonic flows. The solver advances
 the energy equations and uses \mpp{} to recover the temperatures and evaluate
 thermochemical properties. The source-term functions are shared with
 stand-alone zero-dimensional programs. Where the library's default
-formulations differ from those of the reference study, customised source
-terms have been implemented using the properties supplied by \mpp.
+formulations differ from those of the reference study, as for the relaxation
+time, the energy driving the V--T exchange, Park's temperature and the
+chemistry--vibration coupling, customised source terms have been implemented
+using the properties supplied by \mpp.
 
 All zero-dimensional verification cases reported by Casseau
-\textit{et al.}~\cite{casseau2016} have been reproduced. Across the cases
+\textit{et al.}~\cite{casseau2016} have been reproduced; for the reacting
+nitrogen mixture, the Park configuration was reproduced, whereas the
+configuration based on the coupled vibration-dissociation-vibration (CVDV)
+model was not implemented. Across the cases
 computed with both implementations, including reacting cases, the solver
 agrees with the zero-dimensional programs to within 0.3\%, except for
 high-temperature nitrogen, where the maximum difference is 1.2\%.
-Compared with the reference study, final temperatures agree to within 1\%,
-nitrogen-mixture composition to within 2.5\% and air composition to within
-15\%. The largest temperature discrepancy is a delayed rise in vibrational
-temperature in mixtures containing atomic nitrogen. Differences in the
-averaging of relaxation times are a plausible explanation, although this
-hypothesis remains to be tested.
+Compared with the reference study, final temperatures agree to within 0.5\%,
+nitrogen-mixture composition to within 1.7\% and air composition to within
+15\%. With the relaxation-time formula of \mpp{}, the vibrational temperature
+in mixtures containing atomic nitrogen rises with a delay, with deviations of
+up to 20\%; with the formula of the reference study they fall below 0.5\%.
+The difference lies in the number density used in Park's correction, the
+same term to which the reference study attributes its difference from
+LeMANS.
 
 Reproduction of the results required reconstructing incompletely specified
 modelling choices, particularly the treatment of electronic energy and the
-reaction-rate constants for air. Verification remains limited to spatially
+chemistry--vibration coupling, and retrieving the rate constants for air,
+which the reference study gives only through a bibliographic reference.
+Verification remains limited to spatially
 uniform heat baths with no flow; flow applications require the extensions
 outlined below.
 
 \subsection{Future work}
 \label{sec:sviluppi}
 
-The proposed extensions address multi-cell operation, the transport of energy
-and viscous-flow modelling. The first is the decisive one and relies on the
-other two.
+The proposed extensions address multi-cell operation, the transport of
+energy, viscous-flow modelling and the thermodynamic properties used by the
+solver. The first is the decisive one and relies on the other three.
 
 \begin{enumerate}[leftmargin=1.8em]
   \item \textbf{Running on a real mesh.} Everything has been verified on a
@@ -43,9 +52,9 @@ other two.
     flow. What it requires is described in
     Section~\ref{sec:discussione-multicella}: boundary conditions for the two
     new fields, the source terms evaluated with the density of the current
-    step, and the transport terms of the next point. Nothing else stands in
-    the way, since every computation of the thermophysical model is local to
-    the cell.
+    step, the transport terms of the next point and the thermodynamic
+    properties of the last one. Every computation of the thermophysical model
+    is local to the cell.
   \item \textbf{Transport of the vibro-electronic energy.} This is the part
     of the previous point that can be developed and tested on its own. The
     face fluxes needed for the convective term are those already computed for
@@ -56,5 +65,13 @@ other two.
     computes them, and splits the conductivity into its translational and
     vibro-electronic contributions: they only need to be queried cell by cell
     in the thermophysical model, as is currently done for the energies, and
-    passed to the solver in place of the one-temperature values.
+    passed to the solver in place of the values computed at start-up.
+  \item \textbf{Updating the thermodynamic properties.} The heat capacities
+    $C_p$ and $C_v$, the viscosity and the thermal conductivity are computed
+    once, at start-up, by the one-temperature model of OpenFOAM, and are then
+    never updated, because the thermophysical model replaces the update step
+    in order to recover the two temperatures. They play no role in the
+    uniform heat baths, but in a flow the ratio $C_p/C_v$ enters the speed of
+    sound used by the numerical fluxes. They should be recomputed at every
+    update, with \mpp{} at the two temperatures.
 \end{enumerate}
