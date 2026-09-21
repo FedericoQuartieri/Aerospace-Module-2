@@ -36,7 +36,7 @@ vorrebbe dire invece riapplicare ogni modifica a ogni nuova versione.
 \subsubsection{Com'è fatto e il suo modello a una temperatura}
 \label{sec:openfoam-moduli}
 
-OpenFOAM~\cite{weller1998} è una piattaforma CFD a codice aperto: un insieme
+OpenFOAM è una piattaforma CFD a codice aperto: un insieme
 di librerie e di
 solver già pronti che discretizzano le equazioni con il metodo dei volumi
 finiti, dividendo il dominio in celle e tenendo un valore di ogni grandezza per
@@ -113,17 +113,105 @@ produzioni $\dot\omega_s$ e i termini sorgente dello scambio di energia. Lo
 stato viene reimpostato prima di ogni richiesta, così che ogni grandezza si
 riferisca alle condizioni correnti.
 
-\subsection{Il modello implementato}
+\subsection{Equazioni termochimiche generali}
+\label{sec:equazioni-generali}
+
+In un flusso che varia nello spazio, un modello a due temperature richiede
+bilanci delle specie e delle energie con termini di trasporto e sorgenti
+locali. Questa sezione introduce il quadro generale; le equazioni del bagno
+termico implementate e verificate nel progetto sono presentate separatamente
+nella sezione~\ref{sec:implementato}. I bilanci seguenti descrivono la parte
+termochimica del problema e accompagnano le equazioni della massa e della
+quantità di moto del flusso.
+
+Qui $t$ è il tempo, $\rho$ è la densità del gas, $\mathbf{U}$ la velocità, $Y_s$ la frazione
+in massa della specie $s$ e $\rho_s=\rho Y_s$ la sua densità parziale. Le due
+temperature sono $\Ttr$ e $\Tve$. L'energia interna sensibile specifica $e$
+esclude l'energia chimica di formazione e comprende la componente
+vibro-elettronica $\eve$.
+
+\subsubsection{Bilancio delle specie}
+
+L'equazione di conservazione di ciascuna specie è
+\begin{equation}
+  \frac{\partial (\rho Y_s)}{\partial t}
+  + \nabla\cdot(\rho\,\mathbf{U}\,Y_s)
+  + \nabla\cdot\mathbf{j}_s = \dot\omega_s ,
+\end{equation}
+dove $\mathbf{j}_s$ è il flusso diffusivo e $\dot\omega_s$ la produzione di
+massa per unità di volume e di tempo. I flussi descrivono il trasporto tra
+regioni vicine; la sorgente descrive le variazioni locali dovute alle reazioni.
+
+\subsubsection{Bilancio dell'energia interna sensibile}
+
+Nella formulazione energetica del modulo di base per flussi compressibili,
+il bilancio dell'energia sensibile con la sorgente chimica si scrive
+\begin{equation}
+  \frac{\partial (\rho e)}{\partial t}
+  + \nabla\cdot\boldsymbol\phi_p
+  + \frac{\partial (\rho K)}{\partial t}
+  = Q_{ch}
+  + \nabla\cdot(\tau\cdot\mathbf{U})
+  + \nabla\cdot(\kappa\nabla\Ttr) ,
+  \qquad
+  Q_{ch} = -\sum_s h_{f,s}\,\dot\omega_s ,
+\end{equation}
+dove $\boldsymbol\phi_p$ è il flusso convettivo di energia, comprensivo del
+lavoro della pressione, $K=|\mathbf{U}|^2/2$ l'energia cinetica specifica,
+$\tau$ lo sforzo viscoso, $\kappa$ la conducibilità termica e $h_{f,s}$
+l'entalpia specifica di formazione della specie $s$. La sorgente $Q_{ch}$
+converte energia chimica di formazione in energia sensibile o viceversa.
+Poiché $e$ comprende entrambi i modi termici, lo scambio fra essi ridistribuisce
+energia internamente e non introduce un'ulteriore sorgente in questo bilancio.
+
+\subsubsection{Bilancio dell'energia vibro-elettronica}
+
+Un modello a due temperature per flussi non uniformi richiede anche il
+trasporto dell'energia vibro-elettronica. Con le sorgenti considerate qui,
+il bilancio può essere espresso in forma schematica come
+\begin{equation}
+  \frac{\partial (\rho\eve)}{\partial t}
+  + \nabla\cdot(\rho\mathbf{U}\eve)
+  + \nabla\cdot\mathbf{J}_{ve} = Q_{VT} + Q_{CV} ,
+  \label{eq:eve-generale}
+\end{equation}
+dove $\mathbf{J}_{ve}$ raccoglie i flussi non convettivi di energia
+vibro-elettronica, inclusi conduzione e trasporto per diffusione delle specie.
+Le sorgenti $Q_{VT}$ e $Q_{CV}$ rappresentano rispettivamente lo scambio
+vibrazione--traslazione e l'energia vibro-elettronica associata alle reazioni.
+Sebbene l'Eq.~\eqref{eq:eve-generale} rappresenti il caso generale
+spazialmente variabile, la verifica qui condotta considera bagni termici
+spazialmente uniformi, per i quali tutti i termini di trasporto si annullano
+e restano solo le sorgenti locali $Q_{VT}$ e $Q_{CV}$.
+
+\subsection{Modello del bagno termico implementato e procedura di soluzione}
 \label{sec:implementato}
 
-Il solver a due temperature deriva dal modulo density-based di OpenFOAM: ne
-eredita i flussi, la densità, la quantità di moto e l'aggiornamento della
-pressione, e riscrive la fase che si occupa dell'energia. Questa sezione segue
-quella fase passo per passo. In tutte le formule $\rho$ è la densità del gas,
-$\mathbf{U}$ la sua velocità, $Y_s$ la frazione in massa della specie $s$ e
-$\rho_s = \rho Y_s$ la sua densità parziale, $\Ttr$ e $\Tve$ sono le due
-temperature, $e$ è l'energia del gas per unità di massa e $\eve$ la sua parte
-vibro-elettronica.
+I casi verificati nel progetto sono bagni termici chiusi e isolati,
+rappresentati in OpenFOAM da una sola cella. Il gas è fermo e uniforme nello
+spazio, quindi $\mathbf{U}=0$ e tutti i gradienti spaziali sono nulli.
+Convezione, diffusione, lavoro viscoso e conduzione termica non contribuiscono
+all'evoluzione. Per i casi a due temperature, le equazioni avanzate nel tempo
+si riducono a
+\begin{equation}
+  \frac{\mathrm{d}(\rho Y_s)}{\mathrm{d}t} = \dot\omega_s ,
+  \qquad
+  \frac{\mathrm{d}(\rho e)}{\mathrm{d}t} = Q_{ch} ,
+  \qquad
+  \frac{\mathrm{d}(\rho\eve)}{\mathrm{d}t} = Q_{VT}+Q_{CV} .
+\end{equation}
+La densità totale rimane costante nel volume chiuso e fisso. L'energia interna
+conservata comprende l'energia chimica di formazione; la parte sensibile $e$
+può cambiare al variare della composizione.
+
+OpenFOAM assembla le equazioni e le integra nel tempo, mentre il modello
+termofisico usa \mpp{} per valutare proprietà e sorgenti e ricavare le
+temperature. Gli operatori di trasporto delle specie e dell'energia sensibile
+ereditati dal modulo di base restano nel solver, ma si annullano in questi
+casi. Il trasporto nell'equazione vibro-elettronica aggiunta non è implementato
+e deve essere incluso prima di applicare il modello a flussi generali. La
+procedura seguente descrive quindi l'evoluzione termochimica verificata nelle
+condizioni del bagno termico.
 
 \subsubsection{Inizializzazione: dalle temperature alle energie}
 \label{sec:implementato-avvio}
@@ -135,62 +223,43 @@ primo passo il modello chiede a \mpp{} le energie corrispondenti,
   \qquad
   \eve = \sum_s Y_s\,e_{ve,s}(\Tve) ,
 \end{equation}
-dove $e_s$ è l'energia della specie $s$ e $h_{f,s}$ la sua entalpia di
-formazione. La sottrazione è una questione di convenzione: l'energia di
+dove $e_s$ è l'energia interna specifica della specie $s$, compresa l'energia
+di formazione, $e_{ve,s}$ è la sua energia vibro-elettronica specifica e
+$h_{f,s}$ la sua entalpia specifica di formazione. La sottrazione è una
+questione di convenzione: l'energia di
 OpenFOAM non comprende l'energia chimica di formazione, quella di \mpp{} sì.
-Da qui in poi il solver trasporta $\rho$, $\rho Y_s$, $\rho e$ e $\rho\eve$,
-mai le temperature.
+Il solver avanza nel tempo $\rho Y_s$, $\rho e$ e $\rho\eve$; le
+temperature sono ricavate dallo stato aggiornato.
 
-\subsubsection{Specie e chimica}
+\subsubsection{Aggiornamento delle specie e dell'energia chimica}
 \label{sec:implementato-specie}
+\label{sec:implementato-energia}
 
-A ogni passo si aggiorna per prima la composizione,
-\begin{equation}
-  \frac{\partial (\rho Y_s)}{\partial t}
-  + \nabla\cdot(\rho\,\mathbf{U}\,Y_s)
-  + \nabla\cdot\mathbf{j}_s = \dot\omega_s ,
-\end{equation}
-dove $\mathbf{j}_s$ è il flusso diffusivo della specie $s$ e $\dot\omega_s$ la
-massa della specie $s$ prodotta per unità di volume e di tempo; i termini
-convettivo e diffusivo arrivano invariati dalla parte ereditata del solver.
-\mpp{} fornisce $\dot\omega_s$ a partire dal meccanismo di reazione. Le
-dissociazioni non sono calcolate a $\Ttr$ ma alla temperatura di Park,
+L'aggiornamento termofisico comincia dalle equazioni delle specie. Il modello
+ottiene $\dot\omega_s$ da \mpp{} con il meccanismo di reazione scelto;
+nel bagno termico a una cella queste sorgenti determinano da sole l'evoluzione
+di $\rho Y_s$. Le velocità di dissociazione dell'azoto usano la temperatura
+efficace di Park $T_P$,
 \begin{equation}
   T_P = \Ttr^{\,a}\,\Tve^{\,1-a}, \qquad a = 0{,}7 ,
 \end{equation}
-così che una molecola che vibra ancora poco si dissoci più lentamente. Le
-frazioni in massa vengono poi riscalate perché la loro somma resti uno.
+dove $a$ è l'esponente che pesa le due temperature. Questa scelta tiene conto
+della riduzione della velocità di dissociazione quando
+l'eccitazione vibrazionale è inferiore al suo valore di equilibrio a $\Ttr$.
+Dopo l'aggiornamento, le frazioni in massa vengono normalizzate perché la loro
+somma sia uno.
 
-\subsubsection{Energia del gas}
-\label{sec:implementato-energia}
+L'equazione dell'energia sensibile usa la sorgente
+$Q_{ch}=-\sum_s h_{f,s}\dot\omega_s$ definita sopra. Durante la dissociazione,
+l'energia sensibile diminuisce mentre aumenta l'energia chimica di formazione
+della miscela. Lo scambio V--T non entra in questa equazione perché entrambi
+i modi termici sono già compresi in $e$.
 
-L'equazione dell'energia è quella del modulo originale con un termine in più,
-\begin{equation}
-  \frac{\partial (\rho e)}{\partial t}
-  + \nabla\cdot\boldsymbol\phi_p
-  + \frac{\partial (\rho K)}{\partial t}
-  = Q_{ch}
-  + \nabla\cdot(\tau\cdot\mathbf{U})
-  + \nabla\cdot(\kappa\nabla\Ttr) ,
-  \qquad
-  Q_{ch} = -\sum_s h_{f,s}\,\dot\omega_s ,
-\end{equation}
-dove $\boldsymbol\phi_p$ è il flusso convettivo di energia, che comprende il
-lavoro della pressione, $K = |\mathbf{U}|^2/2$ è l'energia cinetica per unità
-di massa, $\tau$ lo sforzo viscoso e $\kappa$ la conducibilità termica; tutti
-ereditati dal modulo originale. Il termine aggiunto $Q_{ch}$ è il calore di
-reazione: rompere una molecola immagazzina energia nei legami chimici dei
-prodotti, e quella quota viene tolta a $e$. Poiché $e$ contiene anche la parte
-vibro-elettronica, lo scambio fra le due temperature qui non compare: sposta
-energia dentro $e$, non ne aggiunge né toglie.
-
-\subsubsection{Energia vibro-elettronica}
+\subsubsection{Sorgenti dell'energia vibro-elettronica}
 \label{sec:implementato-eve}
 
-È l'equazione che il progetto aggiunge,
-\begin{equation}
-  \frac{\partial (\rho \eve)}{\partial t} = Q_{VT} + Q_{CV} .
-\end{equation}
+L'aggiornamento vibro-elettronico implementato integra le due sorgenti locali
+$Q_{VT}$ e $Q_{CV}$.
 La prima sorgente è lo scambio con il moto di traslazione, scritto come un
 rilassamento verso l'equilibrio~\cite{landau1936},
 \begin{equation}
@@ -205,9 +274,6 @@ seconda sorgente è l'energia che le reazioni portano via o restituiscono,
 \begin{equation}
   Q_{CV} = \sum_s e_{ve,s}(\Tve)\,\dot\omega_s .
 \end{equation}
-L'equazione non ha ancora un termine di trasporto: nel bagno termico non
-serve, perché il gas è fermo.
-
 \subsubsection{Recupero delle temperature}
 \label{sec:implementato-temperature}
 
@@ -223,23 +289,16 @@ corrette con lo scarto di energia diviso per i calori specifici
 corrispondenti, e ci si ferma quando le energie coincidono entro una piccola
 tolleranza.
 
-Con le temperature e la composizione la libreria restituisce anche la densità,
-da cui il modello aggiorna il legame fra pressione e densità,
-$\psi = \rho(\Ttr,\Tve)/p$, usato dalla fase della pressione che il solver
+Con la pressione $p$, le temperature e la composizione la libreria restituisce
+anche la densità, da cui il modello aggiorna il coefficiente
+$\psi = \rho/p$, usato dalla fase della pressione che il solver
 eredita.
 
-Nei casi di questo progetto i termini di trasporto non entrano mai in gioco: il
-bagno termico è una sola cella, ferma e uniforme, quindi $\mathbf{U} = 0$,
-$\nabla\Ttr = 0$ e ogni termine convettivo e diffusivo si annulla. Quello che
-viene davvero avanzato nel tempo è la coppia
-\begin{equation}
-  \frac{\partial (\rho e)}{\partial t} = Q_{ch} ,
-  \qquad
-  \frac{\partial (\rho \eve)}{\partial t} = Q_{VT} + Q_{CV} ,
-\end{equation}
-cioè le stesse equazioni integrate dai programmi zero-dimensionali della
-sezione~\ref{sec:programmi0D}. È questo che rende il confronto fra i due una
-verifica vera del solver.
+Le stesse equazioni del bagno termico sono integrate anche dai programmi
+indipendenti descritti nella sezione~\ref{sec:programmi0D}, con le formulazioni
+delle temperature specifiche dei singoli casi spiegate in quella sezione.
+Il confronto verifica l'accoppiamento termochimico in OpenFOAM in queste
+condizioni; non verifica il trasporto spaziale.
 
 \subsection{I programmi di verifica zero-dimensionali}
 \label{sec:programmi0D}

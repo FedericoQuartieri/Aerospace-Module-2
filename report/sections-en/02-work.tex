@@ -26,7 +26,7 @@ maintenance required when updating the underlying framework.
 \subsubsection{The framework and its one-temperature model}
 \label{sec:openfoam-moduli}
 
-OpenFOAM~\cite{weller1998} is an open-source CFD framework comprising
+OpenFOAM is an open-source CFD framework comprising
 libraries and solvers based on the finite volume method. The governing
 equations are discretised over a mesh of control volumes, with the primary
 fields stored at cell centres. Its modular architecture supports additional
@@ -61,8 +61,8 @@ accesses the library through the thermophysical interface.
 \subsection{\mpp}
 \label{sec:mutation}
 
-The thermochemical closure is provided by \mpp{}, whose capabilities and
-coupling to the solver are described below.
+\mpp{} supplies the gas properties and chemical reaction rates needed by the
+solver. Its capabilities and integration with the solver are described below.
 
 \subsubsection{Purpose and capabilities}
 \label{sec:mutation-cosa}
@@ -102,16 +102,103 @@ production rates $\dot\omega_s$ and energy-transfer source terms. The library
 state is reset before each property or source-term evaluation to ensure
 consistency with the current cell conditions.
 
-\subsection{Governing equations and solution procedure}
+\subsection{General thermochemical equations}
+\label{sec:equazioni-generali}
+
+For a spatially varying flow, a two-temperature model requires species and
+energy balances containing both transport and local source terms. This
+section introduces that general setting; the heat-bath equations implemented
+and verified in this work are presented separately in
+Section~\ref{sec:implementato}. The equations below describe the thermochemical
+part of the problem and accompany the flow mass and momentum equations.
+
+Here $t$ is time, $\rho$ is the gas density, $\mathbf{U}$ the velocity, $Y_s$ the mass
+fraction of species $s$ and $\rho_s = \rho Y_s$ its partial density. The two
+temperatures are $\Ttr$ and $\Tve$. The specific sensible internal energy $e$
+excludes chemical formation energy and includes the vibro-electronic
+component $\eve$.
+
+\subsubsection{Species balance}
+
+The conservation equation for each species is
+\begin{equation}
+  \frac{\partial (\rho Y_s)}{\partial t}
+  + \nabla\cdot(\rho\,\mathbf{U}\,Y_s)
+  + \nabla\cdot\mathbf{j}_s = \dot\omega_s ,
+\end{equation}
+where $\mathbf{j}_s$ is the diffusive mass flux and $\dot\omega_s$ the mass
+production rate per unit volume. The flux terms describe transport between
+neighbouring regions; the source describes local changes due to reactions.
+
+\subsubsection{Sensible internal energy balance}
+
+In the energy formulation of the underlying compressible-flow framework,
+the sensible-energy balance with a chemical source is written as
+\begin{equation}
+  \frac{\partial (\rho e)}{\partial t}
+  + \nabla\cdot\boldsymbol\phi_p
+  + \frac{\partial (\rho K)}{\partial t}
+  = Q_{ch}
+  + \nabla\cdot(\tau\cdot\mathbf{U})
+  + \nabla\cdot(\kappa\nabla\Ttr) ,
+  \qquad
+  Q_{ch} = -\sum_s h_{f,s}\,\dot\omega_s ,
+\end{equation}
+where $\boldsymbol\phi_p$ is the convective energy flux including pressure
+work, $K = |\mathbf{U}|^2/2$ the specific kinetic energy, $\tau$ the viscous
+stress, $\kappa$ the thermal conductivity and $h_{f,s}$ the specific enthalpy
+of formation of species $s$. The source $Q_{ch}$ converts chemical formation
+energy into sensible energy or vice versa. Since $e$ includes both thermal
+modes, exchange between them redistributes energy internally and introduces
+no additional source in this balance.
+
+\subsubsection{Vibro-electronic energy balance}
+
+A spatially varying two-temperature model also requires transport of
+vibro-electronic energy. With the source terms considered here, its balance
+can be expressed schematically as
+\begin{equation}
+  \frac{\partial (\rho\eve)}{\partial t}
+  + \nabla\cdot(\rho\mathbf{U}\eve)
+  + \nabla\cdot\mathbf{J}_{ve} = Q_{VT} + Q_{CV} ,
+  \label{eq:eve-general}
+\end{equation}
+where $\mathbf{J}_{ve}$ groups the non-convective vibro-electronic energy
+fluxes, including conduction and transport by species diffusion. The sources
+$Q_{VT}$ and $Q_{CV}$ represent vibration--translation exchange and the
+vibro-electronic energy associated with reactions, respectively. Although
+Eq.~\eqref{eq:eve-general} represents the general spatially varying case,
+the present verification considers spatially uniform heat baths, for which
+all transport terms vanish and only the local sources $Q_{VT}$ and $Q_{CV}$
+remain.
+
+\subsection{Implemented heat-bath model and solution procedure}
 \label{sec:implementato}
 
-The thermophysical solution procedure comprises the species and energy
-updates, followed by the recovery of the two temperatures. In the following,
-$\rho$ denotes the gas density, $\mathbf{U}$ the velocity, $Y_s$ the mass
-fraction of species $s$ and $\rho_s = \rho Y_s$ its partial density. The
-temperatures are denoted by $\Ttr$ and $\Tve$, while $e$ is the specific
-sensible internal energy, excluding the chemical energy of formation, and
-$\eve$ is its vibro-electronic component.
+The cases verified in this work are closed, isolated heat baths represented
+in OpenFOAM by a single cell. The gas is at rest and spatially uniform, so
+$\mathbf{U}=0$ and all spatial gradients vanish. Consequently, convection,
+diffusion, viscous work and heat conduction make no contribution. For the
+two-temperature cases, the equations advanced in time reduce to
+\begin{equation}
+  \frac{\mathrm{d}(\rho Y_s)}{\mathrm{d}t} = \dot\omega_s ,
+  \qquad
+  \frac{\mathrm{d}(\rho e)}{\mathrm{d}t} = Q_{ch} ,
+  \qquad
+  \frac{\mathrm{d}(\rho\eve)}{\mathrm{d}t} = Q_{VT}+Q_{CV} .
+\end{equation}
+The total density remains constant in the closed, fixed volume. The
+conserved internal energy includes the chemical formation energy; the
+sensible part $e$ can change as the composition evolves.
+
+OpenFOAM supplies the equation assembly and time integration, while the
+thermophysical model uses \mpp{} to evaluate properties and source terms and
+to recover temperatures. The inherited species and sensible-energy transport
+operators remain in the solver but vanish in these cases. Transport in the
+added vibro-electronic equation is not implemented and must be included
+before applying the model to general flow configurations. The procedure
+below therefore describes the thermochemical evolution verified under
+heat-bath conditions.
 
 \subsubsection{Initialisation: from temperatures to energies}
 \label{sec:implementato-avvio}
@@ -124,66 +211,41 @@ corresponding specific energies from \mpp{},
   \qquad
   \eve = \sum_s Y_s\,e_{ve,s}(\Tve) ,
 \end{equation}
-where $e_s$ is the specific internal energy of species $s$ and $h_{f,s}$ its
-specific enthalpy of formation. Subtracting $h_{f,s}$ converts the \mpp{}
+where $e_s$ is the specific internal energy of species $s$, including its
+formation energy, $e_{ve,s}$ is its specific vibro-electronic energy and
+$h_{f,s}$ its specific enthalpy of formation. Subtracting $h_{f,s}$ converts the \mpp{}
 energy definition to the sensible-energy convention used by OpenFOAM. The
 species and energy equations are then advanced in terms of $\rho Y_s$,
 $\rho e$ and $\rho\eve$; the temperatures are recovered from the updated
 state.
 
-\subsubsection{Species and chemistry}
+\subsubsection{Species and chemical-energy update}
 \label{sec:implementato-specie}
+\label{sec:implementato-energia}
 
-The thermophysical update begins with the species conservation equations,
-\begin{equation}
-  \frac{\partial (\rho Y_s)}{\partial t}
-  + \nabla\cdot(\rho\,\mathbf{U}\,Y_s)
-  + \nabla\cdot\mathbf{j}_s = \dot\omega_s ,
-\end{equation}
-where $\mathbf{j}_s$ is the diffusive mass flux of species $s$ and
-$\dot\omega_s$ its mass production rate per unit volume. The convective and
-diffusive operators retain the standard OpenFOAM formulation, while \mpp{}
-evaluates the production rates from the selected reaction mechanism.
-Nitrogen dissociation rates are evaluated at Park's effective temperature,
+The thermophysical update begins with the species equations. The model
+obtains $\dot\omega_s$ from \mpp{} using the selected reaction mechanism;
+in the single-cell heat bath these rates alone determine the evolution of
+$\rho Y_s$. Nitrogen dissociation rates use Park's effective temperature $T_P$,
 \begin{equation}
   T_P = \Ttr^{\,a}\,\Tve^{\,1-a}, \qquad a = 0.7 ,
 \end{equation}
-which accounts for the reduction in dissociation rate when vibrational
+where $a$ is the exponent that weights the two temperatures. This choice
+accounts for the reduction in dissociation rate when vibrational
 excitation is below its equilibrium value at $\Ttr$. After the species
 update, the mass fractions are normalised to sum to unity.
 
-\subsubsection{Sensible internal energy}
-\label{sec:implementato-energia}
+The sensible-energy equation uses the source
+$Q_{ch}=-\sum_s h_{f,s}\dot\omega_s$ defined above. During dissociation,
+sensible energy decreases as the chemical formation energy of the mixture
+increases. The V--T exchange does not enter this equation because both
+thermal modes are already included in $e$.
 
-The energy equation retains the formulation of the original module, with an
-additional chemical source term,
-\begin{equation}
-  \frac{\partial (\rho e)}{\partial t}
-  + \nabla\cdot\boldsymbol\phi_p
-  + \frac{\partial (\rho K)}{\partial t}
-  = Q_{ch}
-  + \nabla\cdot(\tau\cdot\mathbf{U})
-  + \nabla\cdot(\kappa\nabla\Ttr) ,
-  \qquad
-  Q_{ch} = -\sum_s h_{f,s}\,\dot\omega_s ,
-\end{equation}
-where $\boldsymbol\phi_p$ denotes the convective energy flux including
-pressure work, $K = |\mathbf{U}|^2/2$ the specific kinetic energy, $\tau$ the
-viscous stress and $\kappa$ the thermal conductivity. These terms retain the
-formulation of the original module. The source $Q_{ch}$ accounts for the
-conversion between sensible and chemical energy: during dissociation,
-sensible energy decreases as the chemical energy of the mixture increases.
-Since $e$ includes both translational-rotational and vibro-electronic energy,
-exchange between these modes redistributes energy internally and introduces
-no additional source in this equation.
-
-\subsubsection{Vibro-electronic energy}
+\subsubsection{Vibro-electronic source terms}
 \label{sec:implementato-eve}
 
-The additional vibro-electronic energy equation is
-\begin{equation}
-  \frac{\partial (\rho \eve)}{\partial t} = Q_{VT} + Q_{CV} .
-\end{equation}
+The implemented vibro-electronic update integrates the two local sources
+$Q_{VT}$ and $Q_{CV}$.
 The vibration--translation (V--T) source $Q_{VT}$ describes energy exchange
 with the translational mode through relaxation towards
 equilibrium~\cite{landau1936},
@@ -200,11 +262,6 @@ by chemical reactions,
 \begin{equation}
   Q_{CV} = \sum_s e_{ve,s}(\Tve)\,\dot\omega_s .
 \end{equation}
-The current implementation includes only these source terms. Spatial
-transport is absent in the homogeneous, stationary heat baths considered
-here; its implementation is required before the model can be applied to
-general flow configurations.
-
 \subsubsection{Recovering the temperatures}
 \label{sec:implementato-temperature}
 
@@ -218,23 +275,15 @@ The inversion uses a Newton iteration based on the energy residuals and
 corresponding heat capacities, terminating when the convergence tolerance is
 satisfied.
 
-The thermophysical model then evaluates the density at the current pressure,
-temperatures and composition, and updates the pressure-density coefficient
-$\psi = \rho(\Ttr,\Tve)/p$ used by the pressure solution stage.
+The thermophysical model then evaluates the density at the current pressure
+$p$, temperatures and composition, and updates the pressure-density
+coefficient $\psi=\rho/p$ used by the pressure solution stage.
 
-For the verification cases, the gas occupies a single cell and remains
-stationary and spatially uniform. Consequently, $\mathbf{U} = 0$,
-$\nabla\Ttr = 0$ and all convective and diffusive terms vanish. The energy
-equations reduce to
-\begin{equation}
-  \frac{\partial (\rho e)}{\partial t} = Q_{ch} ,
-  \qquad
-  \frac{\partial (\rho \eve)}{\partial t} = Q_{VT} + Q_{CV} ,
-\end{equation}
-which are also integrated by the zero-dimensional programs described in
-Section~\ref{sec:programmi0D}. Comparing the two computational approaches
-therefore provides a check of the model integration within OpenFOAM under
-heat-bath conditions.
+The same heat-bath equations are also integrated by the stand-alone
+programs described in Section~\ref{sec:programmi0D}, with the case-specific
+temperature formulations explained there. Comparison with those programs
+checks the thermochemical coupling within OpenFOAM under these conditions;
+it does not test spatial transport.
 
 \subsection{Zero-dimensional verification programs}
 \label{sec:programmi0D}

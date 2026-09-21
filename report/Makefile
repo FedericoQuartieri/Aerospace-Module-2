@@ -12,12 +12,12 @@ MAIN = main
 
 all: $(MAIN).pdf
 
-$(MAIN).pdf: $(MAIN).tex sections-en/*.tex bibliografia.bib
+$(MAIN).pdf: $(MAIN).tex sections-en/*.tex bibliografia.bib assets/logo-polimi.pdf
 	latexmk -pdf -interaction=nonstopmode -halt-on-error $(MAIN).tex
 
 ita: $(MAIN)-ita.pdf
 
-$(MAIN)-ita.pdf: $(MAIN)-ita.tex sezioni/*.tex bibliografia.bib
+$(MAIN)-ita.pdf: $(MAIN)-ita.tex sezioni/*.tex bibliografia.bib assets/logo-polimi.pdf
 	latexmk -pdf -interaction=nonstopmode -halt-on-error $(MAIN)-ita.tex
 
 pulito:
