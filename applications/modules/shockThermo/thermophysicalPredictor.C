@@ -34,10 +34,11 @@ License
 // called by foamRun at every step: after the fluxes and the velocity, before the pressure
 void Foam::solvers::shockThermo::thermophysicalPredictor()
 {
-    // Mutation++ sources (chemistry, heat of reaction, V-T and Q_C-V) only
-    // once per corrector, all at the state at the start of the corrector: they
-    // are reused below by the species, the total energy and eve
-    thermo_.correctSources();
+    // state of each cell at the start of the corrector (rho_s, T, Tve): the
+    // Mutation++ sources below (chemistry, heat of reaction, V-T and Q_C-V) are
+    // each evaluated at this state, the library state being reset for every
+    // species and source term
+    thermo_.correctSourceState();
 
     // ---- species equations (OpenFOAM machinery), chemical source from Mutation++
     tmp<fv::convectionScheme<scalar>> mvConvection
@@ -160,7 +161,7 @@ void Foam::solvers::shockThermo::thermophysicalPredictor()
 
     volScalarField& eve = thermo_.eve();
 
-    // source computed by correctSources(): V-T plus chemistry (eq. 26)
+    // V-T plus chemistry (eq. 26), at the state stored by correctSourceState()
     tmp<volScalarField> Q_ve = thermo_.computeSourceVe();
 
     // ---- eve equation: d(rho*eve)/dt = Q_ve (eq. 22, 0D form: without transport)

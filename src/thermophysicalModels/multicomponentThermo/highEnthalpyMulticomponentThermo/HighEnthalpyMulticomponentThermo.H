@@ -54,8 +54,9 @@ private:
     // exponent a of Park's temperature T^a Tv^(1-a) (eq. 29)
     scalar parkExponent_;
 
-    // models of the paper: V-T tau of eq. 9-17 (false: the Mutation++ one)
-    // and preferential Q_C-V with factor alpha (eq. 32; false: eq. 31)
+    // model choices, read from the case: V-T tau of the paper, eq. 9-17
+    // (false, default: the Mutation++ one, report eq. 7) and preferential
+    // Q_C-V with factor alpha (eq. 32; false, default: report eq. 8)
     bool paperTau_;
     bool preferentialCV_;
     scalar alphaCV_;
@@ -76,10 +77,11 @@ private:
     mutable std::vector<double> eS_;    // energies per species (total, then ve)
     mutable std::vector<double> wS_;    // species production
 
-    // sources of each cell computed by correctSources()
-    List<scalarField> wdotCells_;       // production of each Mutation++ species
-    scalarField QchemCells_;            // heat of reaction for e
-    scalarField QveCells_;              // source of eve
+    // state of each cell at the start of the corrector, stored by
+    // correctSourceState(): every source is evaluated at this state
+    List<scalarField> rhoSSource_;      // partial densities, Mutation++ order
+    scalarField TSource_;               // T_tr
+    scalarField TveSource_;             // T_ve
 
     void initMutation();
 
@@ -107,17 +109,26 @@ private:
         return hf;
     }
 
-    // brings Mutation++ to the state of the cell: partial densities and the two
-    // temperatures (fills yS_ and rhoS_)
-    void setCellState(const label celli, const scalar rho) const
+    // resets Mutation++ to the state of the cell stored by correctSourceState():
+    // partial densities and the two temperatures (fills rhoS_)
+    void setSourceState(const label celli) const
     {
-        fillMassFractions(this->Y(), celli);
         for (int s = 0; s < nMutationSpecies_; s++)
         {
-            rhoS_[s] = rho*yS_[s];
+            rhoS_[s] = rhoSSource_[s][celli];
         }
-        const double TTv[2] = {this->T_[celli], this->Tve_[celli]};
+        const double TTv[2] = {TSource_[celli], TveSource_[celli]};
         mutationMixturePtr_->setState(rhoS_.data(), TTv, 1);
+    }
+
+    void checkSourceState() const
+    {
+        if (TSource_.size() != this->T_.size())
+        {
+            FatalErrorInFunction
+                << "call correctSourceState() before the source terms"
+                << exit(FatalError);
+        }
     }
 
 public:
@@ -138,8 +149,8 @@ public:
         mutationThermoDatabase_("RRHO"),
         mutationMechanism_("none"),
         parkExponent_(0.7),
-        paperTau_(true),
-        preferentialCV_(true),
+        paperTau_(false),
+        preferentialCV_(false),
         alphaCV_(0.3),
         nMutationSpecies_(0),
         nMutationEnergyEqns_(0)
@@ -208,77 +219,44 @@ public:
 
     // Member Functions
 
-    // ---- sources of each cell, computed ONCE per corrector (called at the
-    // start of thermophysicalPredictor) at the same state: Y, T, Tve and rho at
-    // the start of the corrector. The equations of the species, of the total
-    // energy and of eve then use the same production rates, so the mass produced,
-    // the heat of reaction and Q_C-V are consistent with each other (previously each
-    // species recomputed the chemistry after the previous species had already advanced)
-    virtual void correctSources() override
+    // ---- sources: the state of each cell is stored once per corrector (called
+    // at the start of thermophysicalPredictor): rho_s, T and Tve at the start of
+    // the corrector. Each source function below then resets the Mutation++ state
+    // cell by cell from it and evaluates its own source, separately for each
+    // species and source term (report sections 2.3.2 and 2.6): the species,
+    // the sensible energy and eve see the same state, so the mass produced, the
+    // heat of reaction and Q_C-V are consistent with each other, even after
+    // the species equations have already advanced Y
+    virtual void correctSourceState() override
     {
         const label nCells = this->T_.size();
-
-        wdotCells_.setSize(nMutationSpecies_);
-        forAll(wdotCells_, s)
-        {
-            wdotCells_[s] = scalarField(nCells, 0.0);
-        }
-        QchemCells_ = scalarField(nCells, 0.0);
-        QveCells_ = scalarField(nCells, 0.0);
 
         // keeps the tmp of rho (= psi*p) alive as long as it is needed
         const tmp<volScalarField> tRho = this->rho();
         const scalarField& rhoCells = tRho().primitiveField();
 
-        Mutation::Mixture& mix = *mutationMixturePtr_;
-        const bool chemistry = (mutationMechanism_ != "none");
-
-        forAll(QveCells_, celli)
+        rhoSSource_.setSize(nMutationSpecies_);
+        forAll(rhoSSource_, s)
         {
-            setCellState(celli, rhoCells[celli]);
-
-            // V-T exchange (eq. 8)
-            double Qve = sourceVT(mix, rhoS_, vibrators_, paperTau_);
-
-            if (chemistry)
-            {
-                // species production at Park's temperature (eq. 27-29)
-                productionRates(mix, rhoS_, parkExponent_, wS_);
-
-                // vibro-electronic energy removed by the reactions (eq. 30-32)
-                Qve += sourceCV(mix, wS_, vibrators_, preferentialCV_, alphaCV_);
-
-                // heat of reaction for the sensible energy e: the reactions
-                // convert sensible energy into energy of formation,
-                // -sum_s hf_s omega_s (eq. 1, last term)
-                double Qchem = 0.0;
-                for (int s = 0; s < nMutationSpecies_; s++)
-                {
-                    wdotCells_[s][celli] = wS_[s];
-                    Qchem -= hf_[s]*wS_[s];
-                }
-                QchemCells_[celli] = Qchem;
-            }
-            QveCells_[celli] = Qve;
+            rhoSSource_[s].setSize(nCells);
         }
-    }
-    // ---- end of sources
+        TSource_ = this->T_.primitiveField();
+        TveSource_ = this->Tve_.primitiveField();
 
-    // the three functions below return the values of correctSources()
-    void checkSources() const
-    {
-        if (QveCells_.size() != this->T_.size())
+        forAll(TSource_, celli)
         {
-            FatalErrorInFunction
-                << "call correctSources() before the source terms"
-                << exit(FatalError);
+            fillMassFractions(this->Y(), celli);
+            for (int s = 0; s < nMutationSpecies_; s++)
+            {
+                rhoSSource_[s][celli] = rhoCells[celli]*yS_[s];
+            }
         }
     }
 
     // source of the vibro-electronic energy (eq. 26): V-T plus Q_C-V [W/m3]
     virtual tmp<volScalarField> computeSourceVe() const override
     {
-        checkSources();
+        checkSourceState();
         tmp<volScalarField> tQ
         (
             volScalarField::New
@@ -288,14 +266,35 @@ public:
                 dimensionedScalar(dimEnergy/dimVolume/dimTime, Zero)
             )
         );
-        tQ.ref().primitiveFieldRef() = QveCells_;
+        scalarField& QCells = tQ.ref().primitiveFieldRef();
+
+        Mutation::Mixture& mix = *mutationMixturePtr_;
+        const bool chemistry = (mutationMechanism_ != "none");
+
+        forAll(QCells, celli)
+        {
+            setSourceState(celli);
+
+            // V-T exchange (report eq. 7)
+            double Q = sourceVT(mix, rhoS_, vibrators_, paperTau_);
+
+            if (chemistry)
+            {
+                // vibro-electronic energy removed by the reactions (report eq. 8,
+                // or the preferential model), with the production at Park's temperature
+                productionRates(mix, rhoS_, parkExponent_, wS_);
+                Q += sourceCV(mix, wS_, vibrators_, preferentialCV_, alphaCV_);
+            }
+            QCells[celli] = Q;
+        }
+
         return tQ;
     }
 
     // chemical production of the OpenFOAM species speciei (eq. 27) [kg/m3/s]
     virtual tmp<volScalarField> computeSourceY(const label speciei) const override
     {
-        checkSources();
+        checkSourceState();
         tmp<volScalarField> tw
         (
             volScalarField::New
@@ -305,14 +304,35 @@ public:
                 dimensionedScalar(dimDensity/dimTime, Zero)
             )
         );
-        tw.ref().primitiveFieldRef() = wdotCells_[foamToMutationSpecie_[speciei]];
+        scalarField& wCells = tw.ref().primitiveFieldRef();
+
+        // without a reaction mechanism there is nothing to compute
+        if (mutationMechanism_ == "none")
+        {
+            return tw;
+        }
+
+        Mutation::Mixture& mix = *mutationMixturePtr_;
+        const label mutationi = foamToMutationSpecie_[speciei];
+
+        forAll(wCells, celli)
+        {
+            setSourceState(celli);
+
+            // species production at Park's temperature (report eq. 6)
+            productionRates(mix, rhoS_, parkExponent_, wS_);
+            wCells[celli] = wS_[mutationi];
+        }
+
         return tw;
     }
 
-    // heat of reaction for the sensible energy e, -sum hf_s omega_s [W/m3]
+    // heat of reaction for the sensible energy e: the reactions convert
+    // sensible energy into energy of formation, -sum hf_s omega_s [W/m3]
+    // (report eq. 2)
     virtual tmp<volScalarField> computeSourceE() const override
     {
-        checkSources();
+        checkSourceState();
         tmp<volScalarField> tQ
         (
             volScalarField::New
@@ -322,9 +342,31 @@ public:
                 dimensionedScalar(dimEnergy/dimVolume/dimTime, Zero)
             )
         );
-        tQ.ref().primitiveFieldRef() = QchemCells_;
+        scalarField& QCells = tQ.ref().primitiveFieldRef();
+
+        if (mutationMechanism_ == "none")
+        {
+            return tQ;
+        }
+
+        Mutation::Mixture& mix = *mutationMixturePtr_;
+
+        forAll(QCells, celli)
+        {
+            setSourceState(celli);
+            productionRates(mix, rhoS_, parkExponent_, wS_);
+
+            double Q = 0.0;
+            for (int s = 0; s < nMutationSpecies_; s++)
+            {
+                Q -= hf_[s]*wS_[s];
+            }
+            QCells[celli] = Q;
+        }
+
         return tQ;
     }
+    // ---- end of sources
 
     // ---- decode: obtains T_tr, T_ve and psi from the solved energies
     virtual void correct() override
@@ -399,13 +441,18 @@ void HighEnthalpyMulticomponentThermo<Thermo>::initMutation()
         parkExponent_ =
             mutationDict.lookupOrDefault<scalar>("parkExponent", parkExponent_);
 
-        // V-T tau: paper (eq. 9-17, default) or mutation
+        // V-T tau: mutation (Millikan-White with Park's correction, report
+        // eq. 7, default) or paper (eq. 9-17)
         const word tauModel =
-            mutationDict.lookupOrDefault<word>("relaxationTime", "paper");
-        // chemistry-vibration coupling: preferential (eq. 32, default)
-        // or nonPreferential (eq. 31)
+            mutationDict.lookupOrDefault<word>("relaxationTime", "mutation");
+        // chemistry-vibration coupling: nonPreferential (report eq. 8,
+        // default) or preferential (eq. 32)
         const word cvModel =
-            mutationDict.lookupOrDefault<word>("chemistryVibration", "preferential");
+            mutationDict.lookupOrDefault<word>
+            (
+                "chemistryVibration",
+                "nonPreferential"
+            );
         if
         (
             (tauModel != "paper" && tauModel != "mutation")

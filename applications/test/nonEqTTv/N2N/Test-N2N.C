@@ -3,14 +3,15 @@
 // N2 + N2 -> 2N + N2 with the Park constants (mechanism N2_Park, table 2)
 //
 // usage: Test-N2N <T_tr> <T_ve> <t_end> <mechanism> <Park_exponent> <csv_file> [tau] [C-V]
-//   fig 5: Test-N2N 30000  1000 1e-5 none    0.7 output/fig5.csv
-//   fig 7: Test-N2N 30000  1000 1e-3 N2_Park 0.7 output/fig7.csv
-//   fig 8: Test-N2N 30000 30000 1e-4 N2_Park 0.7 output/fig8.csv
+//   fig 5: Test-N2N 30000  1000 1e-5 none    0.7 output/fig5.csv paper preferential
+//   fig 7: Test-N2N 30000  1000 1e-3 N2_Park 0.7 output/fig7.csv paper preferential
+//   fig 8: Test-N2N 30000 30000 1e-4 N2_Park 0.7 output/fig8.csv paper preferential
 // the exponent is that of Park's temperature T^a Tv^(1-a) (eq. 29):
 // 0.7 as in the paper, 0.5 is the fixed one of Mutation++
-// optional arguments, for comparison with the choices of the paper (default):
-//   tau: paper (eq. 9-17, default) or mutation (MillikanWhite of Mutation++)
-//   C-V: preferential (eq. 32, alpha = 0.3, default) or nonPreferential (eq. 31)
+// optional arguments, the model choices (the same defaults as the thermo of
+// the solver, report section 2.5.3; the figures use the choices of report table 1):
+//   tau: mutation (MillikanWhite of Mutation++, default) or paper (eq. 9-17)
+//   C-V: nonPreferential (report eq. 8, default) or preferential (eq. 32, alpha = 0.3)
 
 #include "mutation++.h"
 #include "mutationSources.H"
@@ -37,9 +38,9 @@ int main(int argc, char *argv[])
     const double parkExponent = std::atof(argv[5]);
     const char* csvName = argv[6];
     const bool chemistry = (mechanism != "none");
-    // models of the paper by default: tau of eq. 9-17 and preferential Q_C-V
-    const bool paperTau = (argc < 8 || std::string(argv[7]) != "mutation");
-    const bool preferential = (argc < 9 || std::string(argv[8]) != "nonPreferential");
+    // defaults: tau of Mutation++ and non-preferential Q_C-V (report eq. 7-8)
+    const bool paperTau = (argc >= 8 && std::string(argv[7]) == "paper");
+    const bool preferential = (argc >= 9 && std::string(argv[8]) == "preferential");
     const double alpha = 0.3;
 
     Mutation::MixtureOptions opts("air_5");

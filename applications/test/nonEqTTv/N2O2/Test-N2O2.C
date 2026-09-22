@@ -7,9 +7,10 @@
 // the V-V exchange is written following eq. 18 of the paper
 //
 // usage: Test-N2O2 <VV: on|off> <t_end> <csv_file> [tau]
-//   fig 6: Test-N2O2 off 3e-6 output/fig6-noVV.csv
-//          Test-N2O2 on  3e-6 output/fig6-VV.csv
-// optional tau: paper (eq. 9-17, default) or mutation (for comparison)
+//   fig 6: Test-N2O2 off 3e-6 output/fig6-noVV.csv paper
+//          Test-N2O2 on  3e-6 output/fig6-VV.csv paper
+// optional tau: mutation (default, as in the thermo of the solver) or paper
+// (eq. 9-17, the choice of report table 1)
 
 #include "mutation++.h"
 #include "mutationSources.H"
@@ -53,7 +54,7 @@ int main(int argc, char *argv[])
     const bool withVV = (std::string(argv[1]) == "on");
     const double t_end = std::atof(argv[2]);
     const char* csvName = argv[3];
-    const bool paperTau = (argc < 5 || std::string(argv[4]) != "mutation");
+    const bool paperTau = (argc == 5 && std::string(argv[4]) == "paper");
 
     Mutation::MixtureOptions opts("air_5");
     opts.setStateModel("ChemNonEqTTv");

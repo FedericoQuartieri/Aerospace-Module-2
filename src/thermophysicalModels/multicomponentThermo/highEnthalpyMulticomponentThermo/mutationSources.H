@@ -136,8 +136,10 @@ inline double relaxationTimePaper(Mutation::Mixture& mix, const Vibrator& v)
 }
 // ---- end of relaxation time
 
-// relaxation time of the molecule: that of the paper (default) or
-// that of Mutation++, kept for comparison
+// relaxation time of the molecule: that of Mutation++ (Millikan-White with
+// Park's correction, report eq. 7; the default of the thermo and of the 0D
+// programs) or that of the paper (eq. 9-17), which the verification cases
+// select (report table 1)
 inline double relaxationTime
 (
     Mutation::Mixture& mix,
@@ -151,15 +153,17 @@ inline double relaxationTime
 // ---- V-T exchange of all the molecules, Landau-Teller (eq. 8), in W/m3, at the
 // current state of the mixture (T = mix.T(), Tv = mix.Tv())
 // the driving term is e_ve(T) - e_ve(Tv) of the relaxing molecule, as
-// written in the paper (eq. 8) and as in hy2Foam (LandauTellerVT); the OmegaVT of
-// Mutation++ would use the vibrational energy only (without electronic levels
-// the two forms coincide)
+// written in the paper (eq. 8) and as in hy2Foam (LandauTellerVT); with
+// vibrationalOnly it is e_v(T) - e_v(Tv), the vibrational energy only, as in the
+// OmegaVT of Mutation++: the alternative of report table 1, run by Test-N2 on
+// fig. 4 with electronic levels (without them the two forms coincide)
 inline double sourceVT
 (
     Mutation::Mixture& mix,
     const std::vector<double>& rho_s,
     const std::vector<Vibrator>& vibrators,
-    const bool paperTau
+    const bool paperTau,
+    const bool vibrationalOnly = false
 )
 {
     double Q = 0.0;
@@ -171,9 +175,10 @@ inline double sourceVT
             continue;
         }
         const double tau = relaxationTime(mix, v, paperTau);
-        Q += rho_s[v.species]
-           * (speciesEve(mix, v.species, mix.T()) - speciesEve(mix, v.species, mix.Tv()))
-           / tau;
+        const double deltaE = vibrationalOnly
+            ? speciesEv(mix, v.species, mix.T()) - speciesEv(mix, v.species, mix.Tv())
+            : speciesEve(mix, v.species, mix.T()) - speciesEve(mix, v.species, mix.Tv());
+        Q += rho_s[v.species] * deltaE / tau;
     }
     return Q;
 }
@@ -207,12 +212,15 @@ inline void productionRates
 // ---- end of species production
 
 // ---- vibro-electronic energy removed (or added) by the reactions, W/m3
-// eq. 30: Q_C-V = sum over the molecules m of omega_m (D'_m + e_el,m(Tv)), with
-//   - preferential (eq. 32):     D'_m = alpha D_m, constant alpha (0.3)
-//   - non-preferential (eq. 31): D'_m = e_v,m(Tv)
-// molecules only, as in the paper and in hy2Foam (chemistry2Model, ParkTTv).
-// The Park case of the paper (fig. 7 and 8) is the preferential one with alpha = 0.3:
-// it is the setting of the hy2Foam heatBath tutorial (same case as fig. 7)
+//   - non-preferential (default, report eq. 8): every species created or
+//     destroyed carries its vibro-electronic energy at Tv,
+//     Q_C-V = sum over all the species s of e_ve,s(Tv) omega_s
+//   - preferential (eq. 30 and 32 of the paper): the vibrational part of a
+//     molecule is replaced by a fraction alpha of its dissociation energy,
+//     Q_C-V = sum over the molecules m of omega_m (alpha D_m + e_el,m(Tv))
+// The Park configuration of the paper (fig. 7 and 8) is the preferential one with
+// alpha = 0.3 (report table 1): it is the setting of the hy2Foam heatBath
+// tutorial (same case as fig. 7), and the verification cases select it
 inline double sourceCV
 (
     Mutation::Mixture& mix,
@@ -224,6 +232,17 @@ inline double sourceCV
 {
     const double Tv = mix.Tv();
     double Q = 0.0;
+    if (!preferential)
+    {
+        for (int s = 0; s < mix.nSpecies(); s++)
+        {
+            if (wdot[s] != 0.0)
+            {
+                Q += speciesEve(mix, s, Tv) * wdot[s];
+            }
+        }
+        return Q;
+    }
     for (const Vibrator& v : vibrators)
     {
         const int s = v.species;
@@ -231,8 +250,7 @@ inline double sourceCV
         {
             continue;
         }
-        const double Dprime = preferential ? alpha * v.D : speciesEv(mix, s, Tv);
-        Q += wdot[s] * (Dprime + speciesEel(mix, s, Tv));
+        Q += wdot[s] * (alpha * v.D + speciesEel(mix, s, Tv));
     }
     return Q;
 }

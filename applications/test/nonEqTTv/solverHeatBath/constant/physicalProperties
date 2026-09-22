@@ -40,10 +40,11 @@ highEnthalpyMutation
     mechanism               $mechanism;
     // exponent a of Park's temperature T^a Tv^(1-a) for dissociation
     parkExponent            $parkExponent;
-    // models of the paper (they are also the defaults): V-T tau of eq. 9-17 as
-    // in hy2Foam (mutation for the Mutation++ one) and preferential Q_C-V with
-    // alpha = 0.3 (eq. 32, nonPreferential for eq. 31), as in the hy2Foam
-    // heatBath tutorial, which is the case of fig. 7
+    // choices of report table 1; without these entries the thermo uses the
+    // model of report section 2.5.3 (mutation: tau of Mutation++;
+    // nonPreferential: Q_C-V of report eq. 8). Here: V-T tau of eq. 9-17 as
+    // in hy2Foam and preferential Q_C-V with alpha = 0.3 (eq. 32), as in the
+    // hy2Foam heatBath tutorial, which is the case of fig. 7
     relaxationTime          paper;
     chemistryVibration      preferential;
     preferentialFactor      0.3;

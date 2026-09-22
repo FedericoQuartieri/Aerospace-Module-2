@@ -56,9 +56,9 @@ solver = load_csv(solver_path) if os.path.exists(solver_path) else None
 
 # curves of the paper: files fig-<curve>.csv, or figa-/figb- for the figures
 # with two panels (temperatures and number densities); the model variants
-# (-park05, -park, -QK, -tauMpp, -nonPref) are compared with the same curves
+# (-park05, -park, -QK, -tauMpp, -nonPref, -vibOnly) are compared with the same curves
 base = fig
-for suffix in ("-park05", "-park", "-QK", "-tauMpp", "-nonPref"):
+for suffix in ("-park05", "-park", "-QK", "-tauMpp", "-nonPref", "-vibOnly"):
     base = base.replace(suffix, "")
 paper = {}
 for prefix in (base, base + "a", base + "b"):

@@ -124,9 +124,11 @@ public:
 
     // sources computed by Mutation++ in the bridge (HighEnthalpyMulticomponentThermo.H)
 
-    //- computes all the sources once per corrector, at the same state;
-    //  the computeSource* functions below return the values computed here
-    virtual void correctSources() = 0;
+    //- stores the state of each cell at the start of the corrector (partial
+    //  densities and the two temperatures); each computeSource* function
+    //  below sets the Mutation++ state again from it, cell by cell, and
+    //  evaluates its own source, so all the sources refer to the same state
+    virtual void correctSourceState() = 0;
 
     //- source of the vibro-electronic energy: V-T plus chemistry (eq. 26) [W/m3]
     virtual tmp<volScalarField> computeSourceVe() const = 0;

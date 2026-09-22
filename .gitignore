@@ -40,5 +40,5 @@ applications/test/openmp/scalingBath/log.*
 
 
 .vscode/
-explainations/*
+explainations/
 report/main-ita.pdf

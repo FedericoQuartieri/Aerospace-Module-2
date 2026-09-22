@@ -14,8 +14,6 @@ The paper is available at
 Tommaso Marchesini, Federico Quartieri, Daniele Salvi —
 Politecnico di Milano, Department of Aerospace Science and Technology.
 
-This README describes the code on the `revised` branch.
-
 ## Overview
 
 The gas has two temperatures: `T` (translational-rotational) and `Tve`
@@ -29,10 +27,10 @@ properties.
   initialises `e` and `eve` from `(p, T, Tve)`, evaluates the source terms and,
   after each step, recovers `T`, `Tve` and `psi` from the energies.
 - **Source terms** (`mutationSources.H`): Landau-Teller V-T exchange with the
-  relaxation times of eqs. 9-17 of the paper, chemistry at Park's temperature
-  `T^0.7 Tv^0.3`, and preferential or non-preferential chemistry-vibration
-  coupling. The solver and the zero-dimensional programs use the same
-  functions.
+  relaxation time of Mutation++ or that of eqs. 9-17 of the paper, chemistry
+  at Park's temperature `T^0.7 Tv^0.3`, and non-preferential or preferential
+  chemistry-vibration coupling. The solver and the zero-dimensional programs
+  use the same functions.
 - **`shockThermo` solver** (`libshockThermo.so`): a `foamRun` module derived from
   `shockFluid` that solves the species, sensible-energy and `eve` equations.
 - **Zero-dimensional programs** (`Test-N2`, `Test-N2N`, `Test-N2O2`,
@@ -156,8 +154,10 @@ the paper, `mutation-data-noElectronic` only the ground state.
 ## Model selection in the solver
 
 The models are selected in the `highEnthalpyMutation` sub-dictionary of
-`constant/physicalProperties`. The defaults are those of the paper, and the
-`foamRun` log prints the models in use.
+`constant/physicalProperties`, and the `foamRun` log prints the models in use.
+The defaults are the model of Section 2.5.3 of the report: the relaxation time
+of Mutation++ and the non-preferential coupling of its Eq. 8. The verification
+cases select the choices of Table 1 of the report, as below.
 
 ```
 highEnthalpyMutation
@@ -166,16 +166,17 @@ highEnthalpyMutation
     stateModel              ChemNonEqTTv;
     thermodynamicDatabase   RRHO;
     mechanism               N2_Park;        // none: no chemistry
-    relaxationTime          paper;          // eqs. 9-17; mutation: Mutation++ formula
-    chemistryVibration      preferential;   // eq. 32; nonPreferential: eq. 31
+    relaxationTime          paper;          // eqs. 9-17; mutation (default): Mutation++ formula
+    chemistryVibration      preferential;   // eq. 32; nonPreferential (default): report Eq. 8
     preferentialFactor      0.3;
     parkExponent            0.7;            // T_P = T^a Tv^(1-a), eq. 29
 }
 ```
 
-In the zero-dimensional programs the same choices are command-line arguments:
-`Test-N2N` takes the Park exponent, the relaxation time and the C-V coupling,
-`Test-N2O2` the relaxation time.
+In the zero-dimensional programs the same choices are command-line arguments,
+with the same defaults: `Test-N2N` takes the Park exponent, the relaxation time
+and the C-V coupling, `Test-N2O2` the relaxation time. `Allrun` passes the
+choices of Table 1 explicitly.
 
 ## Repository layout
 
@@ -205,7 +206,6 @@ test/chemistry/                   one-temperature chemistry cases, not used in t
 tutorials/shockThermo/shockTube/  1D shock tube, not yet valid (see Limitations)
 thirdParty/                       build scripts for Mutation++ and GSL, Mutation++ Doxygen documentation
 docker/                           OpenFOAM-13 + Mutation++ image
-explainations/                    working notes and dependency diagrams
 report/                           LaTeX report
 ```
 
@@ -213,16 +213,6 @@ report/                           LaTeX report
 
 - **Report**: [report/](report/). Build it with `make` inside `report/`;
   instructions in [report/README.md](report/README.md).
-- **Working notes** (in Italian), in [explainations/](explainations/):
-  - [milestone-1-VT-relaxation.md](explainations/milestone-1-VT-relaxation.md):
-    thermophysical model, source terms and solver;
-  - [milestone-2-heat-bath-paper.md](explainations/milestone-2-heat-bath-paper.md):
-    figure-by-figure comparison, sources of every modelling choice,
-    conservation checks;
-  - [janaf-rrho-a-cosa-serve.md](explainations/janaf-rrho-a-cosa-serve.md):
-    what the `rrho` base thermo does and what Mutation++ does instead;
-  - [dipendenze/](explainations/dipendenze/): build, class and execution
-    diagrams.
 - **Paper curves**: [paper-data/README.md](applications/test/nonEqTTv/paper-data/README.md).
 - **Data from hyStrath**: [hystrath-data/README.md](applications/test/nonEqTTv/hystrath-data/README.md).
 

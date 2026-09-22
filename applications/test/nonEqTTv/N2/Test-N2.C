@@ -1,12 +1,15 @@
 // 0D heat bath of pure N2: V-T relaxation (fig. 3a, 3b, 4 of the paper)
 //
-// usage: Test-N2 <T_tr> <T_ve> <t_end> <csv_file>
+// usage: Test-N2 <T_tr> <T_ve> <t_end> <csv_file> [vibrationalOnly]
 //   fig 3a: Test-N2 10000  1000 3e-5 output/fig3a.csv
 //   fig 3b: Test-N2  3000 10000 1e-4 output/fig3b.csv
 //   fig 4 : Test-N2 30000  1000 1e-5 output/fig4-noEl.csv   (or fig4-el.csv)
 //
 // whether electronic energy is included is decided by the Mutation++ data folder
 // (variable MPP_DATA_DIRECTORY: mutation-data or mutation-data-noElectronic)
+// optional argument vibrationalOnly: the V-T exchange is driven by the vibrational
+// energy only, as in the OmegaVT of Mutation++, instead of e_ve (paper eq. 8, default);
+// it is the alternative of report table 1, which changes fig. 4 with E_el only
 
 #include "mutation++.h"
 #include "mutationSources.H"
@@ -15,19 +18,23 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <string>
 #include <vector>
 
 int main(int argc, char *argv[])
 {
-    if (argc != 5)
+    if (argc < 5 || argc > 6)
     {
-        std::cerr << "usage: Test-N2 <T_tr> <T_ve> <t_end> <csv_file>" << std::endl;
+        std::cerr << "usage: Test-N2 <T_tr> <T_ve> <t_end> <csv_file> [vibrationalOnly]"
+                  << std::endl;
         return 1;
     }
     const double T_tr0 = std::atof(argv[1]);
     const double T_ve0 = std::atof(argv[2]);
     const double t_end = std::atof(argv[3]);
     const char* csvName = argv[4];
+    // default: e_ve drives the V-T exchange (paper eq. 8)
+    const bool vibrationalOnly = (argc == 6 && std::string(argv[5]) == "vibrationalOnly");
 
     // 5-species air mixture (contains N2), two-temperature model,
     // RRHO energies, no chemical reactions
@@ -82,7 +89,7 @@ int main(int argc, char *argv[])
     {
         // Q_VT: energy transferred from the translational reservoir to the
         // vibro-electronic one (Landau-Teller, eq. 8, tau from Mutation++)
-        const double Q = sourceVT(mix, rho_s, vibrators, paperTau);
+        const double Q = sourceVT(mix, rho_s, vibrators, paperTau, vibrationalOnly);
 
         // eq. 22: only E_ve changes, the total energy E is conserved
         Eve += Q * dt;
